@@ -5,9 +5,9 @@
 It combines:
 
 * **Agent-based data collection** (lightweight Go binaries installed on remote servers)
-* **Centralized configuration & control** (ReactJS)
-* **Real-time alerting and automation** (Redis + Go worker engine)
-* **Database-backed persistence** (PostgreSQL)
+* **Centralized configuration & control** ([ReactJS](https://react.dev/))
+* **Real-time alerting and automation** ([Redis](https://redis.io/) + Go worker engine)
+* **Database-backed persistence** ([PostgreSQL](https://www.postgresql.org/))
 
 With Watchtower, users can deploy monitoring agents, collect system metrics, configure custom events, in order to manage multiple servers from a single dashboard and/or command line interface
 
@@ -22,7 +22,7 @@ Modern companies run many servers, services, and jobs. When something goes wrong
 * Automated recovery workflows
 * Centralized visibility into all incidents
 
-Existing tools like PagerDuty, Datadog, and Ansible are powerful but expensive and often overly complex for smaller teams.
+Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://www.datadoghq.com/), and [Ansible](https://docs.ansible.com/) are powerful but expensive and often overly complex for smaller teams.
 
 **Watchtower** offers an open-source, lightweight alternative that combines monitoring, incident management, and remote orchestration.
 
@@ -30,14 +30,14 @@ Existing tools like PagerDuty, Datadog, and Ansible are powerful but expensive a
 
 ## 🏗️ Architecture
 
-### 🔧 Components
+ - Diagram of architecture can be found **[HERE](https://drive.google.com/file/d/1M5uuJO1P3fCySoNSBnkVTFyPqVh9pYCr/view?usp=drive_link)**, can be opened on [Draw.io](http://draw.io).
 
 | Component           | Tech Stack                 | Function                                                                 |
 | ------------------- | -------------------------- | ------------------------------------------------------------------------ |
 | **Admin Dashboard** | ReactJS                    | Manage servers, alert rules, view incidents, trigger deployments         |
 | **Incident Engine** | Go (goroutines, channels)  | Real-time event ingestion, alert routing, auto-remediation               |
 | **Database**        | PostgreSQL                 | Stores configuration, users, incidents, logs                             |
-| **Cache / Queue**   | Redis                      | Event deduplication, queues, timers for escalations                      |
+| **Cache**   | Redis                      | Event deduplication, queues, timers for escalations                      |
 | **Agent**           | Go (cross-compiled binary) | Collects metrics (CPU, memory, disk, logs) and reports to central server |
 
 ---
@@ -54,25 +54,11 @@ Existing tools like PagerDuty, Datadog, and Ansible are powerful but expensive a
 
 ## ✨ Features
 
-✅ **Multi-Server Agent Deployment** – One-click install via SSH from the central UI/CLI.
-
-✅ **Real-Time Metric Collection** – CPU, memory, disk, process monitoring.
-
-✅ **Event-Based Alerting** – Execute tasks when an event occurs.
-
-✅ **Incident Dashboard** – View open incidents, acknowledgements, resolution times.
-
-✅ **Auto-Remediation** – Run custom scripts on affected servers automatically.
-
-✅ **CLI Tool** – Trigger test incidents or manually collect metrics
-
----
-## 🏁 Possible Extensions
-
-* **Prometheus & Grafana Integration** – Graph metrics visually.
-* **Role-Based Access Control (RBAC)** – Secure multi-user access.
-* **Kubernetes Agent** – Monitor container workloads.
-* **WebSocket Live Updates** – Real-time dashboard refresh without reload.
-* **ML-Powered Predictions** – Forecast incidents before they happen.
+- **Multi-Server Agent Deployment** – One-click install via SSH from the central UI/CLI.
+- **Real-Time Metric Collection** – CPU, memory, disk, process monitoring.
+- **Event-Based Alerting** – Execute tasks when an event occurs.
+- **Incident Dashboard** – View open incidents, acknowledgements, resolution times.
+- **Auto-Remediation** – Run custom scripts on affected servers automatically.
+- **CLI Tool** – Trigger test incidents or manually collect metrics
 
 ---
