@@ -1,6 +1,8 @@
 package authentication
 
 import (
+	"watchtower/cli/ui/global"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -11,7 +13,9 @@ func DisplayAuthMenu() {
 		SetBackgroundColor(tcell.Color102)
 
 	list := tview.NewList().
-		AddItem("Login", "Gain access to you'r system account", '>', nil).
+		AddItem("Login", "Gain access to you'r system account", '>', func() {
+			global.DisplayAccountMenu()
+		}).
 		AddItem("Troubleshooting", "View guides to help resolve account issues", '>', nil).
 		SetSelectedTextColor(tcell.Color100).
 		SetShortcutColor(tcell.Color102).
