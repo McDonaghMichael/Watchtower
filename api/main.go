@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"watchtower/api/database"
 	"watchtower/api/routes"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +11,8 @@ import (
 func main() {
 
 	gin.SetMode(gin.ReleaseMode)
+
+	database.Connect()
 
 	r := gin.Default()
 
