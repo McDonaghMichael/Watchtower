@@ -19,6 +19,15 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	r.POST("/account", getDefault())       // Create a new account
 	r.DELETE("/account/:id", getDefault()) // Delete the account given the ID
 
+	// ========== Server Routes ==========
+	r.GET("/servers", getDefault()) // List all servers
+	r.GET("/server/:id", getDefault()) // Find server given the ID
+	r.GET("/server/:id/metrics", getDefault()) // Get server metrics given the ID
+	r.GET("/server/:id/health", getDefault()) // Get server health given the ID
+	r,POST("/server/:id/execute", getDefault()) // Execute command on server given the ID
+	r.POST("/server/:id", getDefault()) // Update the server given the ID
+	r.POST("/server", getDefault()) // Create a new server
+	r.DELETE("/server/:id", getDefault()) // Delete the server given the ID
 }
 
 func corsMiddleware() gin.HandlerFunc {
