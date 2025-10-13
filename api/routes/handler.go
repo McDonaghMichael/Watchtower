@@ -12,6 +12,13 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 
 	r.GET("/health", getHealth())
 
+	// ========== Account Routes ==========
+	r.GET("/accounts", getDefault())       // List all accounts
+	r.GET("/account/:id", getDefault())    // Find account given the ID
+	r.POST("/account/:id", getDefault())   // Update the account given the ID
+	r.POST("/account", getDefault())       // Create a new account
+	r.DELETE("/account/:id", getDefault()) // Delete the account given the ID
+
 }
 
 func corsMiddleware() gin.HandlerFunc {
@@ -32,5 +39,12 @@ func getHealth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		c.JSON(http.StatusOK, "All good")
+	}
+}
+
+func getDefault() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		c.JSON(http.StatusOK, "Default")
 	}
 }
