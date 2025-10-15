@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-function AddServerPage() {
+function EditServerPage() {
 
   const navigate = useNavigate();
 
-  const [validated, setValidated] = useState(false);
-
-  const [showssh_password, setShowssh_password] = useState(false);
+  const { id } = useParams();
   
+  const [validated, setValidated] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     server_name: '',
     ip_address: '',
@@ -29,50 +32,85 @@ function AddServerPage() {
     tags: ''
   });
 
+  useEffect(() => {
+    if (id) {
+      axios.get(`http://localhost:8080/api/v1/server/${id}`)
+        .then(res => {
+          console.log('Response data:', res.data);
+          if (res.data) {
+            setFormData({
+              ...res.data,
+              ssh_port: res.data.ssh_port?.toString() || '22',
+              monitoring_interval: res.data.monitoring_interval?.toString() || '5',
+              cpu_threshold: res.data.cpu_threshold?.toString() || '90',
+              memory_threshold: res.data.memory_threshold?.toString() || '90',
+              disk_threshold: res.data.disk_threshold?.toString() || '90'
+            });
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching server:', err);
+          setError('Failed to load server data');
+        });
+    }
+  }, [id]);
 
   const environments = ['production', 'staging', 'development', 'testing'];
   const operatingSystems = ['Ubuntu', 'CentOS', 'Debian', 'RedHat', 'Windows Server', 'Other'];
-  
+
   const handleSubmit = (event) => {
     event.preventDefault();
+    const form = event.currentTarget;
+    
+    if (!form.checkValidity()) {
+      event.stopPropagation();
+      setValidated(true);
+      return;
+    }
 
-    setFormData(prev => ({
-        ...prev,
-        ssh_port: parseInt(prev.ssh_port, 10),
-        monitoring_interval: parseInt(prev.monitoring_interval, 10),
-        cpu_threshold: parseInt(prev.cpu_threshold, 10),
-        memory_threshold: parseInt(prev.memory_threshold, 10),
-        disk_threshold: parseInt(prev.disk_threshold, 10)
-      }));
+    setLoading(true);
+    setError('');
 
-      const response = axios.post('http://localhost:8080/api/v1/server', formData)
-        .then(res => {
-          console.log('Server added successfully:', res.data);
-       //   navigate('/servers');
-        })
-        .catch(err => {
-          console.error('Error adding server:', err);
-          alert('Failed to add server. Please try again.');
-        });
+    const submitData = {
+      ...formData,
+      ssh_port: parseInt(formData.ssh_port, 10),
+      monitoring_interval: parseInt(formData.monitoring_interval, 10),
+      cpu_threshold: parseInt(formData.cpu_threshold, 10),
+      memory_threshold: parseInt(formData.memory_threshold, 10),
+      disk_threshold: parseInt(formData.disk_threshold, 10)
+    };
 
+    axios.put(`http://localhost:8080/api/v1/server/${id}`, submitData)
+      .then(res => {
+        console.log('Server updated successfully:', res.data);
+        navigate('/servers');
+      })
+      .catch(err => {
+        console.error('Error updating server:', err);
+        setError('Failed to update server. Please try again.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
     <Container className="py-4">
       <Card className="shadow-sm">
         <Card.Header className="bg-primary text-white">
-          <h4 className="mb-0">Add New Server</h4>
+          <h4 className="mb-0">Edit Server</h4>
         </Card.Header>
         <Card.Body>
+          {error && <Alert variant="danger">{error}</Alert>}
+          
           <Form noValidate validated={validated} onSubmit={handleSubmit}>
 
             <h5 className="mb-3">Basic Information</h5>
@@ -83,7 +121,7 @@ function AddServerPage() {
                   <Form.Control
                     required
                     type="text"
-                    name="Name"
+                    name="server_name"
                     value={formData.server_name}
                     onChange={handleInputChange}
                     placeholder="e.g., prod-web-01"
@@ -99,7 +137,7 @@ function AddServerPage() {
                   <Form.Control
                     required
                     type="text"
-                    name="IP Address"
+                    name="ip_address"
                     value={formData.ip_address}
                     onChange={handleInputChange}
                     placeholder="e.g., 192.168.1.100"
@@ -132,16 +170,17 @@ function AddServerPage() {
                   <div className="input-group">
                     <Form.Control
                       required
-                      type={showssh_password ? "text" : "ssh_password"}
+                      type={showPassword ? "text" : "password"}
                       name="ssh_password"
                       value={formData.ssh_password}
                       onChange={handleInputChange}
                     />
                     <Button 
                       variant="outline-secondary"
-                      onClick={() => setShowssh_password(!showssh_password)}
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
                     >
-                      <i className={`bi bi-eye${showssh_password ? '-slash' : ''}`}></i>
+                      <i className={`bi bi-eye${showPassword ? '-slash' : ''}`}></i>
                     </Button>
                   </div>
                 </Form.Group>
@@ -224,7 +263,6 @@ function AddServerPage() {
               </Col>
             </Row>
 
-
             <h5 className="mb-3">Monitoring Settings</h5>
             <Row className="mb-4">
               <Col md={6}>
@@ -275,7 +313,7 @@ function AddServerPage() {
                   <Form.Label>Memory Usage</Form.Label>
                   <Form.Control
                     type="number"
-                    name="amemory_threshold"
+                    name="memory_threshold"
                     value={formData.memory_threshold}
                     onChange={handleInputChange}
                     min="0"
@@ -299,10 +337,18 @@ function AddServerPage() {
             </Row>
 
             <div className="d-flex gap-2">
-              <Button type="submit" variant="primary">
-                Add Server
+              <Button 
+                type="submit" 
+                variant="primary"
+                disabled={loading}
+              >
+                {loading ? 'Updating...' : 'Update Server'}
               </Button>
-              <Button variant="secondary" onClick={() => navigate('/servers')}>
+              <Button 
+                variant="secondary" 
+                onClick={() => navigate('/servers')}
+                disabled={loading}
+              >
                 Cancel
               </Button>
             </div>
@@ -313,4 +359,4 @@ function AddServerPage() {
   );
 }
 
-export default AddServerPage;
+export default EditServerPage;
