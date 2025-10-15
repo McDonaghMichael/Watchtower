@@ -10,9 +10,9 @@ import (
 
 func main() {
 
-	gin.SetMode(gin.ReleaseMode)
-
 	database.Connect()
+
+	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.Default()
 
