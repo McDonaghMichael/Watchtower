@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function AddServerPage() {
 
@@ -8,60 +9,61 @@ function AddServerPage() {
 
   const [validated, setValidated] = useState(false);
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [showssh_password, setShowssh_password] = useState(false);
   
   const [formData, setFormData] = useState({
-    serverName: '',
-    ipAddress: '',
-    username: '',
-    password: '',
-    sshPort: '22',
+    server_name: '',
+    ip_address: '',
+    ssh_username: '',
+    ssh_password: '',
+    ssh_port: 22,
     location: '',
     description: '',
     operatingSystem: '',
     environment: 'production',
-    monitoringInterval: '5',
-    alertThreshold: {
-      cpu: '90',
-      memory: '90',
-      disk: '90'
-    },
+    monitoring_interval: '5',
+    cpu_threshold: '90',
+    memory_threshold: '90',
+    disk_threshold: '90',
+    status: 'unknown',
     tags: ''
   });
+
 
   const environments = ['production', 'staging', 'development', 'testing'];
   const operatingSystems = ['Ubuntu', 'CentOS', 'Debian', 'RedHat', 'Windows Server', 'Other'];
   
   const handleSubmit = (event) => {
     event.preventDefault();
-    const form = event.currentTarget;
-    
-    if (form.checkValidity() === false) {
-      event.stopPropagation();
-    } else {
-      navigate('/servers');
-    }
 
-    setValidated(true);
+    setFormData(prev => ({
+        ...prev,
+        ssh_port: parseInt(prev.ssh_port, 10),
+        monitoring_interval: parseInt(prev.monitoring_interval, 10),
+        cpu_threshold: parseInt(prev.cpu_threshold, 10),
+        memory_threshold: parseInt(prev.memory_threshold, 10),
+        disk_threshold: parseInt(prev.disk_threshold, 10)
+      }));
+
+      const response = axios.post('http://localhost:8080/api/v1/server', formData)
+        .then(res => {
+          console.log('Server added successfully:', res.data);
+       //   navigate('/servers');
+        })
+        .catch(err => {
+          console.error('Error adding server:', err);
+          alert('Failed to add server. Please try again.');
+        });
+
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith('alertThreshold.')) {
-      const threshold = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        alertThreshold: {
-          ...prev.alertThreshold,
-          [threshold]: value
-        }
-      }));
-    } else {
       setFormData(prev => ({
         ...prev,
         [name]: value
       }));
-    }
+    
   };
 
   return (
@@ -81,8 +83,8 @@ function AddServerPage() {
                   <Form.Control
                     required
                     type="text"
-                    name="serverName"
-                    value={formData.serverName}
+                    name="server_name"
+                    value={formData.server_name}
                     onChange={handleInputChange}
                     placeholder="e.g., prod-web-01"
                   />
@@ -97,8 +99,8 @@ function AddServerPage() {
                   <Form.Control
                     required
                     type="text"
-                    name="ipAddress"
-                    value={formData.ipAddress}
+                    name="ip_address"
+                    value={formData.ip_address}
                     onChange={handleInputChange}
                     placeholder="e.g., 192.168.1.100"
                     pattern="^(\d{1,3}\.){3}\d{1,3}$"
@@ -114,32 +116,32 @@ function AddServerPage() {
             <Row className="mb-4">
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Username</Form.Label>
+                  <Form.Label>ssh_username</Form.Label>
                   <Form.Control
                     required
                     type="text"
-                    name="username"
-                    value={formData.username}
+                    name="ssh_username"
+                    value={formData.ssh_username}
                     onChange={handleInputChange}
                   />
                 </Form.Group>
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Password</Form.Label>
+                  <Form.Label>ssh_password</Form.Label>
                   <div className="input-group">
                     <Form.Control
                       required
-                      type={showPassword ? "text" : "password"}
-                      name="password"
-                      value={formData.password}
+                      type={showssh_password ? "text" : "ssh_password"}
+                      name="ssh_password"
+                      value={formData.ssh_password}
                       onChange={handleInputChange}
                     />
                     <Button 
                       variant="outline-secondary"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={() => setShowssh_password(!showssh_password)}
                     >
-                      <i className={`bi bi-eye${showPassword ? '-slash' : ''}`}></i>
+                      <i className={`bi bi-eye${showssh_password ? '-slash' : ''}`}></i>
                     </Button>
                   </div>
                 </Form.Group>
@@ -150,8 +152,8 @@ function AddServerPage() {
                   <Form.Control
                     required
                     type="number"
-                    name="sshPort"
-                    value={formData.sshPort}
+                    name="ssh_port"
+                    value={formData.ssh_port}
                     onChange={handleInputChange}
                     min="1"
                     max="65535"
@@ -230,8 +232,8 @@ function AddServerPage() {
                   <Form.Label>Monitoring Interval (minutes)</Form.Label>
                   <Form.Control
                     type="number"
-                    name="monitoringInterval"
-                    value={formData.monitoringInterval}
+                    name="monitoring_interval"
+                    value={formData.monitoring_interval}
                     onChange={handleInputChange}
                     min="1"
                     max="60"
@@ -260,8 +262,8 @@ function AddServerPage() {
                   <Form.Label>CPU Usage</Form.Label>
                   <Form.Control
                     type="number"
-                    name="alertThreshold.cpu"
-                    value={formData.alertThreshold.cpu}
+                    name="cpu_threshold"
+                    value={formData.cpu_threshold}
                     onChange={handleInputChange}
                     min="0"
                     max="100"
@@ -273,8 +275,8 @@ function AddServerPage() {
                   <Form.Label>Memory Usage</Form.Label>
                   <Form.Control
                     type="number"
-                    name="alertThreshold.memory"
-                    value={formData.alertThreshold.memory}
+                    name="amemory_threshold"
+                    value={formData.memory_threshold}
                     onChange={handleInputChange}
                     min="0"
                     max="100"
@@ -286,8 +288,8 @@ function AddServerPage() {
                   <Form.Label>Disk Usage</Form.Label>
                   <Form.Control
                     type="number"
-                    name="alertThreshold.disk"
-                    value={formData.alertThreshold.disk}
+                    name="disk_threshold"
+                    value={formData.disk_threshold}
                     onChange={handleInputChange}
                     min="0"
                     max="100"

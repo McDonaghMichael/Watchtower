@@ -22,13 +22,13 @@ y_scaled = y_scaler.fit_transform(y)
 x_tensor = torch.tensor(x_scaled, dtype=torch.float32)
 y_tensor = torch.tensor(y_scaled, dtype=torch.float32)
 
-
 model = nn.Sequential(
     nn.Linear(2,4),
     nn.ReLU(),
     nn.Linear(4,2)
 )
 
+# Using the Mean Squared Error Loss function for regression tasks
 criterion = nn.MSELoss()  
 optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
