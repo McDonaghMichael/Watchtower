@@ -19,12 +19,8 @@ function NavigationBar() {
               <NavDropdown.Item as={Link} to="/servers">
                 View All Servers
               </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/servers/add">
+              <NavDropdown.Item as={Link} to="/server/add">
                 Add Server
-              </NavDropdown.Item>
-              <NavDropdown.Divider />
-              <NavDropdown.Item as={Link} to="/servers/monitoring">
-                Monitoring Dashboard
               </NavDropdown.Item>
             </NavDropdown>
 
@@ -32,45 +28,13 @@ function NavigationBar() {
               <NavDropdown.Item as={Link} to="/accounts">
                 View All Accounts
               </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/accounts/add">
+              <NavDropdown.Item as={Link} to="/account/create">
                 Add Account
-              </NavDropdown.Item>
-              <NavDropdown.Divider />
-              <NavDropdown.Item as={Link} to="/accounts/settings">
-                Account Settings
               </NavDropdown.Item>
             </NavDropdown>
           </Nav>
 
-          <Nav>
-            <NavDropdown 
-              title={
-                <div className="d-inline">
-                  <img
-                    src="https://github.com/identicons/user.png"
-                    alt="User"
-                    className="rounded-circle"
-                    width="24"
-                    height="24"
-                  />
-                  <span className="ms-2">Profile</span>
-                </div>
-              }
-              id="user-dropdown"
-              align="end"
-            >
-              <NavDropdown.Item as={Link} to="/profile">
-                My Profile
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/settings">
-                Settings
-              </NavDropdown.Item>
-              <NavDropdown.Divider />
-              <NavDropdown.Item onClick={() => navigate('/logout')}>
-                Logout
-              </NavDropdown.Item>
-            </NavDropdown>
-          </Nav>
+        
         </Navbar.Collapse>
       </Container>
     </Navbar>

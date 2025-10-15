@@ -39,7 +39,6 @@ func AddServer() gin.HandlerFunc {
 			return
 		}
 
-		// Use QueryRow with RETURNING to get the created server data
 		err := database.Pool.QueryRow(context.Background(),
 			`INSERT INTO servers (
 				server_name, ip_address, ssh_username, ssh_password, ssh_port, 
@@ -102,5 +101,71 @@ func GetServers() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, servers)
+	}
+}
+
+func GetServerByID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var server Server
+
+		err := database.Pool.QueryRow(context.Background(),
+
+			`SELECT 
+				id, server_name, ip_address, ssh_username, ssh_port, 
+				operating_system, environment, location, description,		
+				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold,
+				status, last_ping, created_at, updated_at
+			FROM servers WHERE id=$1`, id).Scan(
+			&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername,
+			&server.SSHPort, &server.OperatingSystem, &server.Environment,
+			&server.Location, &server.Description, &server.MonitoringInterval,
+			&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold,
+			&server.Status, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
+		)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, server)
+	}
+}
+
+func UpdateServer() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var server Server
+
+		if err := c.ShouldBindJSON(&server); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		err := database.Pool.QueryRow(context.Background(),
+			`INSERT INTO servers (
+				server_name, ip_address, ssh_username, ssh_password, ssh_port, 
+				operating_system, environment, location, description, 
+				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			RETURNING id, status, created_at, updated_at`,
+			server.ServerName, server.IPAddress, server.SSHUsername, server.SSHPassword,
+			server.SSHPort, server.OperatingSystem, server.Environment, server.Location,
+			server.Description, server.MonitoringInterval, server.CPUThreshold,
+			server.MemoryThreshold, server.DiskThreshold,
+		).Scan(&server.ID, &server.Status, &server.CreatedAt, &server.UpdatedAt)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, server)
+	}
+}
+
+func DeleteServer() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "DeleteServer - Not Implemented"})
 	}
 }
