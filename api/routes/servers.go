@@ -247,6 +247,45 @@ func UpdateLastPingServer() gin.HandlerFunc {
 
 }
 
+func GetServerStatus() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		id := c.Param("id")
+		var server Server
+
+		server.Status = "online"
+
+		err := database.Pool.QueryRow(context.Background(),
+
+			`SELECT 
+				id, server_name, ip_address, ssh_username, ssh_port, ssh_private_key, 
+				operating_system, environment, location, description,		
+				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold, last_ping, created_at, updated_at
+			FROM servers WHERE id=$1`, id).Scan(
+			&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername,
+			&server.SSHPort, &server.SSHPrivateKey, &server.OperatingSystem, &server.Environment,
+			&server.Location, &server.Description, &server.MonitoringInterval,
+			&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
+		)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		client, err := EstablishSSHConnection(server)
+		if err != nil {
+			server.Status = "offline"
+			fmt.Printf("Server %s SSH connection failed: %v\n", server.ServerName, err)
+		} else {
+			client.Close()
+		}
+
+		c.JSON(http.StatusAccepted, gin.H{"status": server.Status})
+	}
+
+}
+
 func EstablishSSHConnection(server Server) (*ssh.Client, error) {
 	if server.SSHPrivateKey == "" {
 		return nil, fmt.Errorf("no SSH private key provided")

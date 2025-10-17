@@ -152,12 +152,36 @@ function ServersPage() {
     });
 
     const handlePing = (id) => {
+
       axios.post('http://localhost:8080/api/v1/server/ping/' + id)
       .then(res => {
         console.log('Response data:', res.data);
       setServers(prevServers => 
         prevServers.map(server => 
           server.id === id ? { ...server, last_ping: res.data.ping } : server
+        )
+      );
+      handleStatusCheck(id)
+      })
+      .catch(err => {
+        console.error('Error fetching servers:', err);
+      });
+    }
+
+    const handleStatusCheck = (id) => {
+
+      setServers(prevServers => 
+        prevServers.map(server => 
+          server.id === id ? { ...server, status: 'loading'} : server
+        )
+      );
+
+      axios.get('http://localhost:8080/api/v1/server/status/' + id)
+      .then(res => {
+        console.log('Response data:', res.data);
+      setServers(prevServers => 
+        prevServers.map(server => 
+          server.id === id ? { ...server, status: res.data.status } : server
         )
       );
       })
@@ -171,7 +195,8 @@ function ServersPage() {
     const variants = {
       online: 'success',
       offline: 'danger',
-      warning: 'warning'
+      warning: 'warning',
+      loading: 'secondary'
     };
     return (
       <Badge bg={variants[status] || 'secondary'}>
@@ -182,7 +207,13 @@ function ServersPage() {
 
   const getPingBadge = (seconds) => {
 
-    if(seconds <= 10){ 
+    if(seconds <= 1){ 
+      return (
+      <Badge bg={'secondary'}>
+        {"Re-establishing connection"}
+      </Badge>
+    );
+  } else if(seconds <= 10 && seconds > 1){ 
       return (
       <Badge bg={'secondary'}>
         {"Loading..."}

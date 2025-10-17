@@ -27,6 +27,7 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	//r.POST("/server/:id/execute", getDefault()) // Execute command on server given the ID
 	r.POST("/server/:id", UpdateServer()) // Update the server given the ID
 	r.POST("/server/ping/:id", UpdateLastPingServer())
+	r.GET("/server/status/:id", GetServerStatus())
 	r.POST("/server", AddServer())          // Create a new server
 	r.DELETE("/server/:id", DeleteServer()) // Delete the server given the ID
 }
