@@ -166,6 +166,20 @@ func UpdateServer() gin.HandlerFunc {
 
 func DeleteServer() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "DeleteServer - Not Implemented"})
+		id := c.Param("id")
+
+		result, err := database.Pool.Exec(context.Background(),
+			`DELETE FROM servers WHERE id = $1`, id)
+
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		}
+
+		rowsAffected := result.RowsAffected()
+		if rowsAffected == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
+		}
+
+		c.JSON(http.StatusOK, gin.H{"response": "server deleted"})
 	}
 }
