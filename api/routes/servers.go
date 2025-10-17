@@ -215,7 +215,6 @@ func EstablishSSHConnection(server Server) (*ssh.Client, error) {
 	fmt.Printf("Attempting SSH to %s:%d as %s\n", server.IPAddress, server.SSHPort, server.SSHUsername)
 	fmt.Printf("Key length: %d characters\n", len(server.SSHPrivateKey))
 
-	// Test if the key starts correctly
 	if !strings.HasPrefix(server.SSHPrivateKey, "-----BEGIN") {
 		return nil, fmt.Errorf("private key format invalid - missing BEGIN header")
 	}

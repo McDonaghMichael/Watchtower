@@ -128,23 +128,23 @@ const handleSubmit = (event) => {
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>SSH Private Key</Form.Label>
-                  <div className="input-group">
-                    <Form.Control
-                      required
-                      type={showssh_private_key ? "text" : "ssh_private_key"}
-                      name="ssh_private_key"
-                      value={formData.ssh_private_key}
-                      onChange={handleInputChange}
-                    />
-                    <Button 
-                      variant="outline-secondary"
-                      onClick={() => setShowssh_private_key(!showssh_private_key)}
-                    >
-                      <i className={`bi bi-eye${showssh_private_key ? '-slash' : ''}`}></i>
-                    </Button>
-                  </div>
-                </Form.Group>
+                <Form.Label>SSH Private Key</Form.Label>
+                <div className="input-group">
+                  <Form.Control
+                    required
+                    as="textarea"  
+                    rows={6}      
+                    name="ssh_private_key"
+                    value={formData.ssh_private_key}
+                    onChange={handleInputChange}
+                    placeholder="Paste your SSH private key here (including -----BEGIN and -----END lines)"
+                    style={{ fontFamily: 'monospace' }} 
+                  />
+                </div>
+                <Form.Text className="text-muted">
+                  Paste your entire SSH private key including the BEGIN and END lines
+                </Form.Text>
+              </Form.Group>
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3">
