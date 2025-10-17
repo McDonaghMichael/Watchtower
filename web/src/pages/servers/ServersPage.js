@@ -6,9 +6,13 @@ import {
   MaterialReactTable,
   useMaterialReactTable,
 } from 'material-react-table';
+import {ListItemIcon, MenuItem} from "@mui/material";
+import { useNavigate } from 'react-router-dom';
+
+import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 
 function ServersPage() {
-  
+  var navigate = useNavigate();
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -101,13 +105,67 @@ function ServersPage() {
   const table = useMaterialReactTable({
     columns,
     data: servers,
-    enableRowSelection: true,
-    enableColumnOrdering: true,
-    enableGlobalFilter: true,
+     enableColumnFilterModes: true,
+        enableColumnOrdering: true,
+        enableGrouping: true,
+        enableColumnPinning: true,
+        enableFacetedValues: true,
+        enableRowActions: true,
+        enableRowSelection: false,
+        enableGlobalFilter: true, 
+        initialState: {
+            showColumnFilters: false,
+            showGlobalFilter: false,
+            columnPinning: {
+                left: ['mrt-row-expand', 'mrt-row-select'],
+                right: ['mrt-row-actions'],
+            },
+        },
+        
+        paginationDisplayMode: 'pages',
+        positionToolbarAlertBanner: 'bottom',
+        muiSearchTextFieldProps: {
+            size: 'small',
+            variant: 'outlined',
+        },
+        muiPaginationProps: {
+            color: 'primary',
+            rowsPerPageOptions: [25, 50, 100],
+            shape: 'rounded',
+            variant: 'outlined',
+        },
     state: {
       isLoading: loading,
     },
-  });
+    renderRowActionMenuItems: ({ row }) => [
+            <MenuItem
+                key="ping"
+                onClick={() => handlePing(row.original.id)}
+                sx={{ m: 0 }}
+            >
+                <ListItemIcon>
+                    <SignalCellularAltIcon />
+                </ListItemIcon>
+                Ping
+            </MenuItem>,
+        ],
+    });
+
+    const handlePing = (id) => {
+      axios.post('http://localhost:8080/api/v1/server/ping/' + id)
+      .then(res => {
+        console.log('Response data:', res.data);
+      setServers(prevServers => 
+  prevServers.map(server => 
+    server.id === id ? { ...server, last_ping: res.data.ping } : server
+  )
+);
+      })
+      .catch(err => {
+        console.error('Error fetching servers:', err);
+      });
+    }
+
 
   const getStatusBadge = (status) => {
     const variants = {

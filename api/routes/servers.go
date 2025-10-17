@@ -241,6 +241,8 @@ func UpdateLastPingServer() gin.HandlerFunc {
 		}
 
 		fmt.Printf("✅ %s: SUCCESS (pinged at %v)\n", serverID, time.Now().Format("15:04:05"))
+
+		c.JSON(http.StatusAccepted, gin.H{"ping": now})
 	}
 
 }
