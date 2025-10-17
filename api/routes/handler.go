@@ -25,7 +25,8 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	//r.GET("/server/:id/metrics", getDefault())  // Get server metrics given the ID
 	//r.GET("/server/:id/health", getDefault())   // Get server health given the ID
 	//r.POST("/server/:id/execute", getDefault()) // Execute command on server given the ID
-	r.POST("/server/:id", UpdateServer())   // Update the server given the ID
+	r.POST("/server/:id", UpdateServer()) // Update the server given the ID
+	r.POST("/server/ping/:id", UpdateLastPingServer())
 	r.POST("/server", AddServer())          // Create a new server
 	r.DELETE("/server/:id", DeleteServer()) // Delete the server given the ID
 }

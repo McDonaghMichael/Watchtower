@@ -224,6 +224,27 @@ func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
 
 }
 
+func UpdateLastPingServer() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		serverID := c.Param("id")
+		now := time.Now().UTC()
+		_, err := database.Pool.Exec(context.Background(),
+			"UPDATE servers SET last_ping = $1 WHERE id = $2",
+			now, serverID,
+		)
+		fmt.Printf("Go timestamp: %v (Unix: %d)\n", now, now.Unix())
+
+		if err != nil {
+			fmt.Printf("Pinging server error: %v\n", err)
+			return
+		}
+
+		fmt.Printf("✅ %s: SUCCESS (pinged at %v)\n", serverID, time.Now().Format("15:04:05"))
+	}
+
+}
+
 func EstablishSSHConnection(server Server) (*ssh.Client, error) {
 	if server.SSHPrivateKey == "" {
 		return nil, fmt.Errorf("no SSH private key provided")
