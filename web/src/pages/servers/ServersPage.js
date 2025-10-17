@@ -86,7 +86,7 @@ function ServersPage() {
           const lastPingTime = new Date(value).getTime();
           const currentMsDifference = currentTime - lastPingTime;
           const seconds = currentMsDifference / 1000;
-          return getPingBadge(Math.floor(seconds));
+          return getPingBadge(Math.abs(Math.floor(seconds)));
         },
       },
     ],
@@ -156,10 +156,10 @@ function ServersPage() {
       .then(res => {
         console.log('Response data:', res.data);
       setServers(prevServers => 
-  prevServers.map(server => 
-    server.id === id ? { ...server, last_ping: res.data.ping } : server
-  )
-);
+        prevServers.map(server => 
+          server.id === id ? { ...server, last_ping: res.data.ping } : server
+        )
+      );
       })
       .catch(err => {
         console.error('Error fetching servers:', err);
@@ -182,7 +182,13 @@ function ServersPage() {
 
   const getPingBadge = (seconds) => {
 
-    if(seconds < 60){ 
+    if(seconds <= 10){ 
+      return (
+      <Badge bg={'secondary'}>
+        {"Loading..."}
+      </Badge>
+    );
+  }else if(seconds < 60 && seconds > 10){ 
       return (
       <Badge bg={'danger'}>
         {seconds + 's' || '0s'}
