@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 	"watchtower/api/database"
 
@@ -95,10 +96,8 @@ func GetServers() gin.HandlerFunc {
 				return
 			}
 
-			// Set default status
 			server.Status = "online"
 
-			// Test SSH connection - don't stop on individual server failures
 			if server.SSHPrivateKey == "" {
 				server.Status = "offline"
 				fmt.Printf("Server %s: No SSH private key provided\n", server.ServerName)
@@ -108,13 +107,11 @@ func GetServers() gin.HandlerFunc {
 					server.Status = "offline"
 					fmt.Printf("Server %s SSH connection failed: %v\n", server.ServerName, err)
 				} else {
-					// Close connection immediately after checking
 					client.Close()
 				}
 			}
-
-			// Clear private key before sending to client for security
 			server.SSHPrivateKey = ""
+
 			servers = append(servers, server)
 		}
 
@@ -207,6 +204,26 @@ func DeleteServer() gin.HandlerFunc {
 	}
 }
 
+func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+
+	now := time.Now().UTC()
+	_, err := database.Pool.Exec(context.Background(),
+		"UPDATE servers SET last_ping = $1 WHERE id = $2",
+		now, serverID,
+	)
+	fmt.Printf("Go timestamp: %v (Unix: %d)\n", now, now.Unix())
+
+	if err != nil {
+		fmt.Printf("Pinging server error: %v\n", err)
+		return
+	}
+
+	fmt.Printf("✅ %s: SUCCESS (pinged at %v)\n", serverID, time.Now().Format("15:04:05"))
+
+}
+
 func EstablishSSHConnection(server Server) (*ssh.Client, error) {
 	if server.SSHPrivateKey == "" {
 		return nil, fmt.Errorf("no SSH private key provided")
@@ -243,4 +260,59 @@ func EstablishSSHConnection(server Server) (*ssh.Client, error) {
 
 	fmt.Printf("SSH connection successful!\n")
 	return client, nil
+}
+
+func PingAllServers() {
+
+	var wg sync.WaitGroup
+
+	// Here we will get all of the servers from the database
+	rows, err := database.Pool.Query(context.Background(),
+		`SELECT
+			id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port, last_ping
+		FROM servers`)
+
+	if err != nil {
+		fmt.Printf("Error querying servers: %v\n", err)
+		return
+	}
+	defer rows.Close()
+
+	// Create an array for storing all of the servers
+	var servers []Server
+
+	// Now lets loop through all of the servers
+	for rows.Next() {
+		// Store the values of each server into a variable
+		var server Server
+		err := rows.Scan(
+			&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername, &server.SSHPrivateKey,
+			&server.SSHPort, &server.LastPing,
+		)
+		if err != nil {
+			fmt.Printf("Error scanning server: %v\n", err)
+			continue // Continue to next server
+		}
+
+		if server.SSHPrivateKey == "" {
+			fmt.Printf("Server %s: No SSH key provided\n", server.ServerName)
+			continue // Skip this server
+		}
+
+		client, err := EstablishSSHConnection(server)
+		if err != nil {
+			fmt.Printf("Server %s SSH connection failed: %v\n", server.ServerName, err)
+			continue // Continue to next server
+		}
+
+		wg.Add(1)
+
+		go UpdateLastPing(server.ID, &wg)
+
+		client.Close()
+		servers = append(servers, server)
+	}
+
+	wg.Wait()
+	fmt.Printf("Pinged %d servers\n", len(servers))
 }

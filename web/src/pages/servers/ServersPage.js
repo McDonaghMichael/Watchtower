@@ -11,6 +11,7 @@ function ServersPage() {
   
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
   useEffect(() => {
     axios.get('http://localhost:8080/api/v1/servers')
@@ -77,12 +78,25 @@ function ServersPage() {
         accessorKey: 'last_ping',
         Cell: ({ cell }) => {
           const value = cell.getValue();
-          return value ? new Date(value).toLocaleString() : 'Never';
+
+          const lastPingTime = new Date(value).getTime();
+          const currentMsDifference = currentTime - lastPingTime;
+          const seconds = currentMsDifference / 1000;
+          return getPingBadge(Math.floor(seconds));
         },
       },
     ],
-    []
+    [currentTime]
   );
+  
+   useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
 
   const table = useMaterialReactTable({
     columns,
@@ -106,6 +120,29 @@ function ServersPage() {
         {status?.toUpperCase() || 'UNKNOWN'}
       </Badge>
     );
+  };
+
+  const getPingBadge = (seconds) => {
+
+    if(seconds < 60){ 
+      return (
+      <Badge bg={'danger'}>
+        {seconds + 's' || '0s'}
+      </Badge>
+    );
+  }else if(seconds => 60 && seconds < 900){ 
+      return (
+      <Badge bg={'warning'}>
+        {seconds + 's' || '0s'}
+      </Badge>
+    );
+  }else {
+    return (
+      <Badge bg={'success'}>
+        {seconds + 's' || '0s'}
+      </Badge>
+    )
+  }
   };
 
   return (
