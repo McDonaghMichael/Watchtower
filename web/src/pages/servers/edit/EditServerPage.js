@@ -18,7 +18,7 @@ function EditServerPage() {
     server_name: '',
     ip_address: '',
     ssh_username: '',
-    ssh_password: '',
+    ssh_private_key: '',
     ssh_port: 22,
     location: '',
     description: '',
@@ -28,7 +28,6 @@ function EditServerPage() {
     cpu_threshold: '90',
     memory_threshold: '90',
     disk_threshold: '90',
-    status: 'unknown',
     tags: ''
   });
 
@@ -166,13 +165,13 @@ function EditServerPage() {
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>SSH Password</Form.Label>
+                  <Form.Label>SSH Private Key</Form.Label>
                   <div className="input-group">
                     <Form.Control
                       required
                       type={showPassword ? "text" : "password"}
-                      name="ssh_password"
-                      value={formData.ssh_password}
+                      name="ssh_private_key"
+                      value={formData.ssh_private_key}
                       onChange={handleInputChange}
                     />
                     <Button 

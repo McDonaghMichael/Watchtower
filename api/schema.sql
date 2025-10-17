@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS servers (
   server_name VARCHAR(100) NOT NULL,
   ip_address VARCHAR(15) NOT NULL,
   ssh_username VARCHAR(50) NOT NULL,
-  ssh_password VARCHAR(255) NOT NULL,
+  ssh_private_key TEXT NOT NULL,
   ssh_port INT DEFAULT 22,
   operating_system VARCHAR(50),
   environment VARCHAR(20) CHECK (environment IN ('production', 'staging', 'development', 'testing')),

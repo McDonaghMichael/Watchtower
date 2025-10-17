@@ -9,13 +9,13 @@ function AddServerPage() {
 
   const [validated, setValidated] = useState(false);
 
-  const [showssh_password, setShowssh_password] = useState(false);
+  const [showssh_private_key, setShowssh_private_key] = useState(false);
   
   const [formData, setFormData] = useState({
     server_name: '',
     ip_address: '',
     ssh_username: '',
-    ssh_password: '',
+    ssh_private_key: '',
     ssh_port: 22,
     location: '',
     description: '',
@@ -25,7 +25,6 @@ function AddServerPage() {
     cpu_threshold: '90',
     memory_threshold: '90',
     disk_threshold: '90',
-    status: 'unknown',
     tags: ''
   });
 
@@ -33,29 +32,30 @@ function AddServerPage() {
   const environments = ['production', 'staging', 'development', 'testing'];
   const operatingSystems = ['Ubuntu', 'CentOS', 'Debian', 'RedHat', 'Windows Server', 'Other'];
   
-  const handleSubmit = (event) => {
-    event.preventDefault();
+const handleSubmit = (event) => {
+  event.preventDefault();
 
-    setFormData(prev => ({
-        ...prev,
-        ssh_port: parseInt(prev.ssh_port, 10),
-        monitoring_interval: parseInt(prev.monitoring_interval, 10),
-        cpu_threshold: parseInt(prev.cpu_threshold, 10),
-        memory_threshold: parseInt(prev.memory_threshold, 10),
-        disk_threshold: parseInt(prev.disk_threshold, 10)
-      }));
-
-      const response = axios.post('http://localhost:8080/api/v1/server', formData)
-        .then(res => {
-          console.log('Server added successfully:', res.data);
-       //   navigate('/servers');
-        })
-        .catch(err => {
-          console.error('Error adding server:', err);
-          alert('Failed to add server. Please try again.');
-        });
-
+  const submitData = {
+    ...formData,
+    ssh_port: parseInt(formData.ssh_port, 10),
+    monitoring_interval: parseInt(formData.monitoring_interval, 10),
+    cpu_threshold: parseInt(formData.cpu_threshold, 10),
+    memory_threshold: parseInt(formData.memory_threshold, 10),
+    disk_threshold: parseInt(formData.disk_threshold, 10)
   };
+
+  console.log('Sending data:', submitData); 
+
+  axios.post('http://localhost:8080/api/v1/server', submitData)
+    .then(res => {
+      console.log('Server added successfully:', res.data);
+      navigate('/servers');
+    })
+    .catch(err => {
+      console.error('Error adding server:', err);
+      alert('Failed to add server. Please try again.');
+    });
+};
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -83,7 +83,7 @@ function AddServerPage() {
                   <Form.Control
                     required
                     type="text"
-                    name="Name"
+                    name="server_name"
                     value={formData.server_name}
                     onChange={handleInputChange}
                     placeholder="e.g., prod-web-01"
@@ -99,7 +99,7 @@ function AddServerPage() {
                   <Form.Control
                     required
                     type="text"
-                    name="IP Address"
+                    name="ip_address"
                     value={formData.ip_address}
                     onChange={handleInputChange}
                     placeholder="e.g., 192.168.1.100"
@@ -128,20 +128,20 @@ function AddServerPage() {
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>SSH Password</Form.Label>
+                  <Form.Label>SSH Private Key</Form.Label>
                   <div className="input-group">
                     <Form.Control
                       required
-                      type={showssh_password ? "text" : "ssh_password"}
-                      name="ssh_password"
-                      value={formData.ssh_password}
+                      type={showssh_private_key ? "text" : "ssh_private_key"}
+                      name="ssh_private_key"
+                      value={formData.ssh_private_key}
                       onChange={handleInputChange}
                     />
                     <Button 
                       variant="outline-secondary"
-                      onClick={() => setShowssh_password(!showssh_password)}
+                      onClick={() => setShowssh_private_key(!showssh_private_key)}
                     >
-                      <i className={`bi bi-eye${showssh_password ? '-slash' : ''}`}></i>
+                      <i className={`bi bi-eye${showssh_private_key ? '-slash' : ''}`}></i>
                     </Button>
                   </div>
                 </Form.Group>
@@ -275,7 +275,7 @@ function AddServerPage() {
                   <Form.Label>Memory Usage</Form.Label>
                   <Form.Control
                     type="number"
-                    name="amemory_threshold"
+                    name="memory_threshold"
                     value={formData.memory_threshold}
                     onChange={handleInputChange}
                     min="0"
