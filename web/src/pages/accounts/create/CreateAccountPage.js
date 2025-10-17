@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function CreateAccountPage() {
+
   const navigate = useNavigate();
+  
   const [validated, setValidated] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');

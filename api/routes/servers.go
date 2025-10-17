@@ -178,8 +178,9 @@ func DeleteServer() gin.HandlerFunc {
 		rowsAffected := result.RowsAffected()
 		if rowsAffected == 0 {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"response": "server deleted"})
 		}
 
-		c.JSON(http.StatusOK, gin.H{"response": "server deleted"})
 	}
 }
