@@ -8,6 +8,8 @@ import (
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/shirou/gopsutil/v3/disk"
 )
 
 type Metrics struct {
@@ -16,6 +18,9 @@ type Metrics struct {
 	NumOfCPU          int    `json:"num_of_cpu"`
 	MemoryAllocated   int    `json:"memory_allocated"`
 	MemoryAllocations int    `json:"memory_allocations"`
+	DiskUsageTotal    uint64 `json:"disk_usage_total"`
+	DiskUsageUsed     uint64 `json:"disk_usage_used"`
+	DiskUsageFree     uint64 `json:"disk_usage_free"`
 }
 
 func main() {
@@ -38,8 +43,13 @@ func main() {
 		var totalMemoryAllocated uint64 = mem.Alloc
 		var totalMemoryAllocations uint64 = mem.Mallocs
 
-		jsonString := fmt.Sprintf(`{"ip_address": "%s", "num_of_cpu": %v, "memory_allocated": %v, "memory_allocations": %v}`,
-			ipAddress, numOfCPU, totalMemoryAllocated, totalMemoryAllocations)
+		usage, err := disk.Usage("/")
+		if err != nil {
+			panic(err)
+		}
+
+		jsonString := fmt.Sprintf(`{"ip_address": "%s", "num_of_cpu": %v, "memory_allocated": %v, "memory_allocations": %v, "disk_usage_total": %v, "disk_usage_used": %v, "disk_usage_free": %v}`,
+			ipAddress, numOfCPU, totalMemoryAllocated, totalMemoryAllocations, usage.Total, usage.Used, usage.Free)
 		body := []byte(jsonString)
 
 		r, err := http.NewRequest("POST", routeIP, bytes.NewBuffer(body))
@@ -56,8 +66,6 @@ func main() {
 			panic(err)
 		}
 
-		defer res.Body.Close()
-
 		post := &Metrics{}
 		derr := json.NewDecoder(res.Body).Decode(post)
 		if derr != nil {
@@ -72,7 +80,7 @@ func main() {
 		fmt.Println("IP:", post.IPAddress)
 		fmt.Println("Num Of CPU:", post.NumOfCPU)
 		fmt.Println("Memory Allocated:", post.MemoryAllocated)
-		fmt.Println("Mmeory Allocations:", post.MemoryAllocations)
+		fmt.Println("Memory Allocations:", post.MemoryAllocations)
 
 		time.Sleep(time.Second * 5)
 	}

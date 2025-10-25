@@ -14,6 +14,9 @@ type Metrics struct {
 	NumOfCPU          int    `json:"num_of_cpu"`
 	MemoryAllocated   int    `json:"memory_allocated"`
 	MemoryAllocations int    `json:"memory_allocations"`
+	DiskUsageTotal    uint64 `json:"disk_usage_total"`
+	DiskUsageUsed     uint64 `json:"disk_usage_used"`
+	DiskUsageFree     uint64 `json:"disk_usage_free"`
 }
 
 func AddMetric() gin.HandlerFunc {
@@ -26,9 +29,9 @@ func AddMetric() gin.HandlerFunc {
 		}
 
 		err := database.Pool.QueryRow(context.Background(),
-			`INSERT INTO metrics (ip_address, num_of_cpu, memory_allocated, memory_allocations) 
-             VALUES ($1, $2, $3, $4) RETURNING id`,
-			metric.IPAddress, metric.NumOfCPU, metric.MemoryAllocated, metric.MemoryAllocations).Scan(&metric.ID)
+			`INSERT INTO metrics (ip_address, num_of_cpu, memory_allocated, memory_allocations, disk_usage_total, disk_usage_free, disk_usage_used) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+			metric.IPAddress, metric.NumOfCPU, metric.MemoryAllocated, metric.MemoryAllocations, metric.DiskUsageTotal, metric.DiskUsageUsed, metric.DiskUsageFree).Scan(&metric.ID)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

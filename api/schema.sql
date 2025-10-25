@@ -32,5 +32,8 @@ CREATE TABLE IF NOT EXISTS metrics (
   num_of_cpu INT,
   memory_allocated INT,
   memory_allocations INT,
+  disk_usage_total BIGINT,
+  disk_usage_used BIGINT,
+  disk_usage_free BIGINT,
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
