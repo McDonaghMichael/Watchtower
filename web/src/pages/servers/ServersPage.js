@@ -213,13 +213,7 @@ function ServersPage() {
         {"Re-establishing connection"}
       </Badge>
     );
-  } else if(seconds <= 10 && seconds > 1){ 
-      return (
-      <Badge bg={'secondary'}>
-        {"Loading..."}
-      </Badge>
-    );
-  }else if(seconds < 60 && seconds > 10){ 
+  } else if(seconds < 60 && seconds > 1){ 
       return (
       <Badge bg={'danger'}>
         {seconds + 's' || '0s'}
