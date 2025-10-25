@@ -50,7 +50,7 @@ jobs:
         context: ./api
         push: true
         tags: ghcr.io/mcdonaghmichael/watchtower-api:latest  
-              
+            
   build-and-push-agent:
     runs-on: ubuntu-latest
     permissions:
