@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -12,7 +13,13 @@ import (
 var Pool *pgxpool.Pool
 
 func Connect() {
-	connStr := "postgres://sysadmin:sysadmin123@localhost:5432/watchtower?sslmode=disable"
+	dbHost := os.Getenv("DB_HOST")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable",
+		dbUser, dbPassword, dbHost, dbName)
 	err := error(nil)
 	Pool, err = pgxpool.New(context.Background(), connStr)
 	if err != nil {
