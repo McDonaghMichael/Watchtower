@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"runtime"
 	"time"
 )
@@ -19,6 +20,16 @@ type Metrics struct {
 
 func main() {
 
+	serverIP := os.Getenv("SERVER_URL")
+
+	if serverIP == "" {
+		serverIP = "http://localhost:8080"
+	}
+
+	var routeIP string = serverIP + "/api/v1/metric"
+
+	ipAddress := "80.209.228.5"
+
 	for {
 		var mem runtime.MemStats
 		runtime.ReadMemStats(&mem)
@@ -26,10 +37,6 @@ func main() {
 		var numOfCPU int = runtime.NumCPU()
 		var totalMemoryAllocated uint64 = mem.Alloc
 		var totalMemoryAllocations uint64 = mem.Mallocs
-
-		var routeIP string = "http://localhost:8080/api/v1/metric"
-
-		ipAddress := "80.209.228.5"
 
 		jsonString := fmt.Sprintf(`{"ip_address": "%s", "num_of_cpu": %v, "memory_allocated": %v, "memory_allocations": %v}`,
 			ipAddress, numOfCPU, totalMemoryAllocated, totalMemoryAllocations)

@@ -65,8 +65,15 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 > [!CAUTION]
 > Watchtower is still in active development and is not ready for productio servers, please be careful!
 > 
-1. Install Docker Images
+1. Install Docker Images onto the Main Server
+   ```
    docker pull ghcr.io/mcdonaghmichael/watchtower-web:latest
-   docker pull ghcr.io/mcdonaghmichael/watchtower-api:latest`
+   docker pull ghcr.io/mcdonaghmichael/watchtower-api:latest
+2. Install Docker Image of the Agent Manually onto the test server
+   ```
+   docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest
+3. When running the agent please specify which URL to send to
+
+   `docker run -e SERVER_URL=http://192.168.1.32:8080 watchtower-agent`
 
 ---
