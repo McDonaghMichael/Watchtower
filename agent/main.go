@@ -1,7 +1,20 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+)
 
 func main() {
-	fmt.Println("Agents is not implemented yet")
+
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+
+	var numOfCPU int = runtime.NumCPU()
+	var totalMemoryAllocated uint64 = mem.TotalAlloc
+	var totalMemoryAllocations uint64 = mem.Mallocs
+
+	fmt.Println(numOfCPU)
+	fmt.Println(totalMemoryAllocated)
+	fmt.Println(totalMemoryAllocations)
 }
