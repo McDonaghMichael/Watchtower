@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS roles (
 CREATE TABLE IF NOT EXISTS servers (
   id SERIAL PRIMARY KEY,
   server_name VARCHAR(100) NOT NULL,
-  ip_address VARCHAR(15) NOT NULL,
+  ip_address VARCHAR(15) UNIQUE NOT NULL,
   ssh_username VARCHAR(50) NOT NULL,
   ssh_private_key TEXT NOT NULL,
   ssh_port INT DEFAULT 22,
@@ -26,20 +26,11 @@ CREATE TABLE IF NOT EXISTS servers (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS server_metrics (
+CREATE TABLE IF NOT EXISTS metrics (
   id SERIAL PRIMARY KEY,
-  server_id INT REFERENCES servers(id) ON DELETE CASCADE,
-  cpu_usage FLOAT,
-  memory_usage FLOAT,
-  disk_usage FLOAT,
-  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS server_events (
-  id SERIAL PRIMARY KEY,
-  server_id INT REFERENCES servers(id) ON DELETE CASCADE,
-  event_type VARCHAR(50) NOT NULL,
-  description TEXT,
-  severity VARCHAR(20) CHECK (severity IN ('info', 'warning', 'critical')),
+  ip_address VARCHAR(15) REFERENCES servers(ip_address) ON DELETE CASCADE,
+  num_of_cpu INT,
+  memory_allocated INT,
+  memory_allocations INT,
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
