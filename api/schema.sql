@@ -35,5 +35,8 @@ CREATE TABLE IF NOT EXISTS metrics (
   disk_usage_total BIGINT,
   disk_usage_used BIGINT,
   disk_usage_free BIGINT,
+  ssh_connections INT,
+  http_connections INT,
+  https_connections INT,
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

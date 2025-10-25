@@ -17,6 +17,9 @@ type Metrics struct {
 	DiskUsageTotal    uint64 `json:"disk_usage_total"`
 	DiskUsageUsed     uint64 `json:"disk_usage_used"`
 	DiskUsageFree     uint64 `json:"disk_usage_free"`
+	SSHConnections    int    `json:"ssh_connections"`
+	HTTPConnections   int    `json:"http_connections"`
+	HTTPSConnections  int    `json:"https_connections"`
 }
 
 func AddMetric() gin.HandlerFunc {
@@ -29,9 +32,20 @@ func AddMetric() gin.HandlerFunc {
 		}
 
 		err := database.Pool.QueryRow(context.Background(),
-			`INSERT INTO metrics (ip_address, num_of_cpu, memory_allocated, memory_allocations, disk_usage_total, disk_usage_free, disk_usage_used) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-			metric.IPAddress, metric.NumOfCPU, metric.MemoryAllocated, metric.MemoryAllocations, metric.DiskUsageTotal, metric.DiskUsageUsed, metric.DiskUsageFree).Scan(&metric.ID)
+			`INSERT INTO metrics (ip_address, num_of_cpu, memory_allocated, memory_allocations, 
+                                  disk_usage_total, disk_usage_used, disk_usage_free, 
+                                  ssh_connections, http_connections, https_connections) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+			metric.IPAddress,
+			metric.NumOfCPU,
+			metric.MemoryAllocated,
+			metric.MemoryAllocations,
+			metric.DiskUsageTotal,
+			metric.DiskUsageUsed,
+			metric.DiskUsageFree,
+			metric.SSHConnections,
+			metric.HTTPConnections,
+			metric.HTTPSConnections).Scan(&metric.ID)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

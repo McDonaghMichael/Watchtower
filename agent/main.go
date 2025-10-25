@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/net"
 )
 
 type Metrics struct {
@@ -21,6 +22,9 @@ type Metrics struct {
 	DiskUsageTotal    uint64 `json:"disk_usage_total"`
 	DiskUsageUsed     uint64 `json:"disk_usage_used"`
 	DiskUsageFree     uint64 `json:"disk_usage_free"`
+	SSHConnections    int    `json:"ssh_connections"`
+	HTTPConnections   int    `json:"http_connections"`
+	HTTPSConnections  int    `json:"https_connections"`
 }
 
 func main() {
@@ -48,8 +52,30 @@ func main() {
 			panic(err)
 		}
 
-		jsonString := fmt.Sprintf(`{"ip_address": "%s", "num_of_cpu": %v, "memory_allocated": %v, "memory_allocations": %v, "disk_usage_total": %v, "disk_usage_used": %v, "disk_usage_free": %v}`,
-			ipAddress, numOfCPU, totalMemoryAllocated, totalMemoryAllocations, usage.Total, usage.Used, usage.Free)
+		connections, err := net.Connections("all")
+		if err != nil {
+			panic(err)
+		}
+
+		sshConnections := 0
+		httpConnections := 0
+		httpsConnections := 0
+
+		for _, conn := range connections {
+			if conn.Status == "ESTABLISHED" {
+				switch conn.Laddr.Port {
+				case 22:
+					sshConnections++
+				case 80:
+					httpConnections++
+				case 443:
+					httpsConnections++
+				}
+			}
+		}
+
+		jsonString := fmt.Sprintf(`{"ip_address": "%s", "num_of_cpu": %v, "memory_allocated": %v, "memory_allocations": %v, "disk_usage_total": %v, "disk_usage_used": %v, "disk_usage_free": %v, "ssh_connections": %v, "http_connections": %v, "https_connections": %v}`,
+			ipAddress, numOfCPU, totalMemoryAllocated, totalMemoryAllocations, usage.Total, usage.Used, usage.Free, sshConnections, httpConnections, httpsConnections)
 		body := []byte(jsonString)
 
 		r, err := http.NewRequest("POST", routeIP, bytes.NewBuffer(body))
