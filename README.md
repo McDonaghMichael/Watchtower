@@ -1,4 +1,4 @@
-## 📖 Overview
+## Overview
 
 **Watchtower** is a robust, production-grade platform designed to monitor, manage, and automate infrastructure across multiple servers from a single, central dashboard.
 
@@ -13,7 +13,7 @@ With Watchtower, users can deploy monitoring agents, collect system metrics, con
 
 ---
 
-## 🎯 Problem Statement
+## Problem Statement
 
 Modern companies run many servers, services, and jobs. When something goes wrong (server overload, service downtime, security event), teams need:
 
@@ -28,7 +28,7 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
  - Diagram of architecture can be found **[HERE](https://drive.google.com/file/d/1M5uuJO1P3fCySoNSBnkVTFyPqVh9pYCr/view?usp=drive_link)**, can be opened on [Draw.io](http://draw.io).
 
@@ -42,7 +42,7 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 
 ---
 
-### 🌐 Deployment Flow
+## Deployment Flow
 
 1. **User adds a server** in the Admin UI.
 2. **Watchtower connects via SSH** to the remote host.
@@ -52,7 +52,7 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 6. If thresholds are breached → **notifications + auto-remediation** trigger.
 ---
 
-## ✨ Features
+## Features
 
 - **Multi-Server Agent Deployment** – One-click install via SSH from the central UI/CLI.
 - **Real-Time Metric Collection** – CPU, memory, disk, process monitoring.
@@ -60,5 +60,13 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 - **Incident Dashboard** – View open incidents, acknowledgements, resolution times.
 - **Auto-Remediation** – Run custom scripts on affected servers automatically.
 - **CLI Tool** – Trigger test incidents or manually collect metrics
+
+## Deployment
+> [!CAUTION]
+> Watchtower is still in active development and is not ready for productio servers, please be careful!
+> 
+1. Install Docker Images
+   docker pull ghcr.io/mcdonaghmichael/watchtower-web:latest
+   docker pull ghcr.io/mcdonaghmichael/watchtower-api:latest`
 
 ---
