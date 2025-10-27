@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS servers (
   disk_threshold INT DEFAULT 90,
   status VARCHAR(20) DEFAULT 'offline' CHECK (status IN ('online', 'offline', 'warning')),
   last_ping TIMESTAMP,
+  message TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

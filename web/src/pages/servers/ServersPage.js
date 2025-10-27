@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Container, Badge } from 'react-bootstrap';
+import { Container, Badge, Alert } from 'react-bootstrap';
 import './ServersPage.css';
 import axios from 'axios';
 import {
@@ -12,15 +12,37 @@ import { useNavigate } from 'react-router-dom';
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 
 function ServersPage() {
+
   var navigate = useNavigate();
+
   const [servers, setServers] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  const [errors, setErrors] = useState([
+    
+  ]);
 
   useEffect(() => {
     axios.get('http://localhost:8080/api/v1/servers')
       .then(res => {
         console.log('Response data:', res.data);
+
+        var test = []
+        if(res.data){
+          for(const server of res.data){
+            if(server.status == "warning"){
+              test.push({
+                id: server.id,
+                status: server.status,
+                message: server.message || "No message provided"
+              })
+            }
+          }
+        }
+        setErrors(test)
         setServers(res.data || []);
         setLoading(false);
       })
@@ -237,6 +259,14 @@ function ServersPage() {
   return (
     <Container fluid className="py-4">
       <h2 className="mb-4">Server Monitoring</h2>
+    {errors.map((err, index) => {
+      return (
+        <Alert key={index} variant={err.status}>
+          <strong>{err.id}:</strong> {err.message}
+        </Alert>
+      );
+    })}
+
       <MaterialReactTable table={table} />
     </Container>
   );

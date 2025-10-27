@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"watchtower/api/database"
+	"watchtower/api/utils"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/ssh"
@@ -32,6 +34,7 @@ type Server struct {
 	LastPing           *time.Time `json:"last_ping"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
+	Message            *string    `json:"message"`
 }
 
 func AddServer() gin.HandlerFunc {
@@ -71,7 +74,7 @@ func GetServers() gin.HandlerFunc {
 			`SELECT 
 				id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port, 
 				operating_system, environment, location, description, 
-				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold, last_ping, status, created_at, updated_at 
+				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold, last_ping, status, message, created_at, updated_at 
 			FROM servers`)
 
 		if err != nil {
@@ -88,7 +91,7 @@ func GetServers() gin.HandlerFunc {
 				&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername, &server.SSHPrivateKey,
 				&server.SSHPort, &server.OperatingSystem, &server.Environment,
 				&server.Location, &server.Description, &server.MonitoringInterval,
-				&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold, &server.LastPing, &server.Status, &server.CreatedAt, &server.UpdatedAt,
+				&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold, &server.LastPing, &server.Status, &server.Message, &server.CreatedAt, &server.UpdatedAt,
 			)
 
 			if err != nil {
@@ -196,16 +199,13 @@ func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
 		"UPDATE servers SET last_ping = $1 WHERE id = $2",
 		now, serverID,
 	)
-	fmt.Printf("Go timestamp: %v (Unix: %d)\n", now, now.Unix())
 
 	if err != nil {
 
 		fmt.Printf("Pinging server error: %v\n", err)
 
-		_, err := database.Pool.Exec(context.Background(),
-			"UPDATE servers SET status = $1 WHERE id = $2",
-			"offline", serverID,
-		)
+		database.UpdateServerWarningStatus(err, serverID)
+
 		if err != nil {
 			fmt.Printf("Error updating database: %v\n", err)
 			return
@@ -221,9 +221,10 @@ func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
 func UpdateLastPingServer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		serverID := c.Param("id")
+		serverID, err := strconv.Atoi(c.Param("id"))
+
 		now := time.Now().UTC()
-		_, err := database.Pool.Exec(context.Background(),
+		_, err = database.Pool.Exec(context.Background(),
 			"UPDATE servers SET last_ping = $1 WHERE id = $2",
 			now, serverID,
 		)
@@ -232,10 +233,8 @@ func UpdateLastPingServer() gin.HandlerFunc {
 
 			fmt.Printf("Pinging server error: %v\n", err)
 
-			_, err := database.Pool.Exec(context.Background(),
-				"UPDATE servers SET status = $1 WHERE id = $2",
-				"offline", serverID,
-			)
+			database.UpdateServerWarningStatus(err, serverID)
+
 			if err != nil {
 				fmt.Printf("Error updating database: %v\n", err)
 				return
@@ -280,7 +279,7 @@ func GetServerStatus() gin.HandlerFunc {
 		client, err := EstablishSSHConnection(server)
 		if err != nil {
 			server.Status = "offline"
-			fmt.Printf("Server %s SSH connection failed: %v\n", server.ServerName, err)
+			fmt.Printf("Server %s 3SSH connection failed: %v\n", server.ServerName, err)
 		} else {
 			client.Close()
 		}
@@ -320,14 +319,7 @@ func EstablishSSHConnection(server Server) (*ssh.Client, error) {
 	address := fmt.Sprintf("%s:%d", server.IPAddress, server.SSHPort)
 	client, err := ssh.Dial("tcp", address, config)
 	if err != nil {
-		fmt.Printf("SSH dial error: %v\n", err)
-		_, err := database.Pool.Exec(context.Background(),
-			"UPDATE servers SET status = $1 WHERE id = $2",
-			"offline", server.ID,
-		)
-		if err != nil {
-			fmt.Printf("Error updating database: %v\n", err)
-		}
+		database.UpdateServerWarningStatus(err, server.ID)
 		return nil, fmt.Errorf("SSH connection failed: %w", err)
 	}
 
@@ -339,7 +331,6 @@ func PingAllServers() {
 
 	var wg sync.WaitGroup
 
-	// Here we will get all of the servers from the database
 	rows, err := database.Pool.Query(context.Background(),
 		`SELECT
 			id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port, last_ping
@@ -351,12 +342,10 @@ func PingAllServers() {
 	}
 	defer rows.Close()
 
-	// Create an array for storing all of the servers
 	var servers []Server
 
-	// Now lets loop through all of the servers
 	for rows.Next() {
-		// Store the values of each server into a variable
+
 		var server Server
 		err := rows.Scan(
 			&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername, &server.SSHPrivateKey,
@@ -364,18 +353,26 @@ func PingAllServers() {
 		)
 		if err != nil {
 			fmt.Printf("Error scanning server: %v\n", err)
-			continue // Continue to next server
+			database.UpdateServerWarningStatus(fmt.Errorf("Error scanning server: %v\n", err), server.ID)
+			continue
 		}
 
 		if server.SSHPrivateKey == "" {
 			fmt.Printf("Server %s: No SSH key provided\n", server.ServerName)
-			continue // Skip this server
+			database.UpdateServerWarningStatus(fmt.Errorf("Server %s: No SSH key provided\n", server.ServerName), server.ID)
+			continue
+		}
+
+		_, err = utils.Ping(server.IPAddress)
+		if err != nil {
+			database.UpdateServerWarningStatus(fmt.Errorf("Server %s could not be pinged: %v\n", server.ServerName, err), server.ID)
+			continue
 		}
 
 		client, err := EstablishSSHConnection(server)
 		if err != nil {
-			fmt.Printf("Server %s SSH connection failed: %v\n", server.ServerName, err)
-			continue // Continue to next server
+			database.UpdateServerWarningStatus(fmt.Errorf("Server %s SSH connection failed: %v\n", server.ServerName, err), server.ID)
+			continue
 		}
 
 		wg.Add(1)
@@ -387,5 +384,4 @@ func PingAllServers() {
 	}
 
 	wg.Wait()
-	fmt.Printf("Pinged %d servers\n", len(servers))
 }
