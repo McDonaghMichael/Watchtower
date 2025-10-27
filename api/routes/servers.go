@@ -193,13 +193,24 @@ func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
 
 	now := time.Now().UTC()
 	_, err := database.Pool.Exec(context.Background(),
-		"UPDATE servers SET last_ping = $1, status = $2 WHERE id = $3",
-		now, "online", serverID,
+		"UPDATE servers SET last_ping = $1 WHERE id = $2",
+		now, serverID,
 	)
 	fmt.Printf("Go timestamp: %v (Unix: %d)\n", now, now.Unix())
 
 	if err != nil {
+
 		fmt.Printf("Pinging server error: %v\n", err)
+
+		_, err := database.Pool.Exec(context.Background(),
+			"UPDATE servers SET status = $1 WHERE id = $2",
+			"offline", serverID,
+		)
+		if err != nil {
+			fmt.Printf("Error updating database: %v\n", err)
+			return
+		}
+
 		return
 	}
 
@@ -213,13 +224,23 @@ func UpdateLastPingServer() gin.HandlerFunc {
 		serverID := c.Param("id")
 		now := time.Now().UTC()
 		_, err := database.Pool.Exec(context.Background(),
-			"UPDATE servers SET last_ping = $1, status = $2 WHERE id = $3",
-			now, "online", serverID,
+			"UPDATE servers SET last_ping = $1 WHERE id = $2",
+			now, serverID,
 		)
-		fmt.Printf("Go timestamp: %v (Unix: %d)\n", now, now.Unix())
 
 		if err != nil {
+
 			fmt.Printf("Pinging server error: %v\n", err)
+
+			_, err := database.Pool.Exec(context.Background(),
+				"UPDATE servers SET status = $1 WHERE id = $2",
+				"offline", serverID,
+			)
+			if err != nil {
+				fmt.Printf("Error updating database: %v\n", err)
+				return
+			}
+
 			return
 		}
 
@@ -300,6 +321,13 @@ func EstablishSSHConnection(server Server) (*ssh.Client, error) {
 	client, err := ssh.Dial("tcp", address, config)
 	if err != nil {
 		fmt.Printf("SSH dial error: %v\n", err)
+		_, err := database.Pool.Exec(context.Background(),
+			"UPDATE servers SET status = $1 WHERE id = $2",
+			"offline", server.ID,
+		)
+		if err != nil {
+			fmt.Printf("Error updating database: %v\n", err)
+		}
 		return nil, fmt.Errorf("SSH connection failed: %w", err)
 	}
 
