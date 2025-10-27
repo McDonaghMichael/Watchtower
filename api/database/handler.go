@@ -14,9 +14,21 @@ var Pool *pgxpool.Pool
 
 func Connect() {
 	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
 	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		dbUser = "sysadmin"
+	}
 	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		dbPassword = "sysadmin123"
+	}
 	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "watchtower"
+	}
 
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable",
 		dbUser, dbPassword, dbHost, dbName)
