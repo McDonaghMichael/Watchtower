@@ -71,7 +71,7 @@ func GetServers() gin.HandlerFunc {
 			`SELECT 
 				id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port, 
 				operating_system, environment, location, description, 
-				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold, last_ping, created_at, updated_at 
+				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold, last_ping, status, created_at, updated_at 
 			FROM servers`)
 
 		if err != nil {
@@ -88,30 +88,13 @@ func GetServers() gin.HandlerFunc {
 				&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername, &server.SSHPrivateKey,
 				&server.SSHPort, &server.OperatingSystem, &server.Environment,
 				&server.Location, &server.Description, &server.MonitoringInterval,
-				&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
+				&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold, &server.LastPing, &server.Status, &server.CreatedAt, &server.UpdatedAt,
 			)
 
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
-
-			server.Status = "online"
-
-			if server.SSHPrivateKey == "" {
-				server.Status = "offline"
-				fmt.Printf("Server %s: No SSH private key provided\n", server.ServerName)
-			} else {
-				client, err := EstablishSSHConnection(server)
-				if err != nil {
-					server.Status = "offline"
-					fmt.Printf("Server %s SSH connection failed: %v\n", server.ServerName, err)
-				} else {
-					client.Close()
-				}
-			}
-			server.SSHPrivateKey = ""
-
 			servers = append(servers, server)
 		}
 
@@ -210,8 +193,8 @@ func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
 
 	now := time.Now().UTC()
 	_, err := database.Pool.Exec(context.Background(),
-		"UPDATE servers SET last_ping = $1 WHERE id = $2",
-		now, serverID,
+		"UPDATE servers SET last_ping = $1, status = $2 WHERE id = $3",
+		now, "online", serverID,
 	)
 	fmt.Printf("Go timestamp: %v (Unix: %d)\n", now, now.Unix())
 
@@ -230,8 +213,8 @@ func UpdateLastPingServer() gin.HandlerFunc {
 		serverID := c.Param("id")
 		now := time.Now().UTC()
 		_, err := database.Pool.Exec(context.Background(),
-			"UPDATE servers SET last_ping = $1 WHERE id = $2",
-			now, serverID,
+			"UPDATE servers SET last_ping = $1, status = $2 WHERE id = $3",
+			now, "online", serverID,
 		)
 		fmt.Printf("Go timestamp: %v (Unix: %d)\n", now, now.Unix())
 
