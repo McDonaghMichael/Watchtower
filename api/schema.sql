@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS servers (
 
 CREATE TABLE IF NOT EXISTS metrics (
   id SERIAL PRIMARY KEY,
-  ip_address VARCHAR(15) REFERENCES servers(ip_address) ON DELETE CASCADE,
+  server_id INT REFERENCES servers(id) ON DELETE CASCADE;
   num_of_cpu INT,
   memory_allocated INT,
   memory_allocations INT,

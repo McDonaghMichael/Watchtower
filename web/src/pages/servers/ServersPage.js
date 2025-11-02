@@ -287,7 +287,7 @@ function ServersPage() {
   };
 
   return (
-    <Container fluid className="py-4">
+    <Container fluid className="w-75 mt-5">
       <h2 className="mb-4">Server Monitoring</h2>
     {errors.map((err, index) => {
       return (

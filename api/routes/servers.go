@@ -119,12 +119,12 @@ func GetServerByID() gin.HandlerFunc {
 		err := database.Pool.QueryRow(context.Background(),
 
 			`SELECT 
-				id, server_name, ip_address, ssh_username, ssh_port, 
+				id, server_name, ip_address, ssh_username, ssh_port, ssh_private_key, 
 				operating_system, environment, location, description,		
 				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold, last_ping, created_at, updated_at
 			FROM servers WHERE id=$1`, id).Scan(
 			&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername,
-			&server.SSHPort, &server.OperatingSystem, &server.Environment,
+			&server.SSHPort, &server.SSHPrivateKey, &server.OperatingSystem, &server.Environment,
 			&server.Location, &server.Description, &server.MonitoringInterval,
 			&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
 		)
@@ -148,16 +148,27 @@ func UpdateServer() gin.HandlerFunc {
 		}
 
 		err := database.Pool.QueryRow(context.Background(),
-			`INSERT INTO servers (
-				server_name, ip_address, ssh_username, ssh_private_key, ssh_port, 
-				operating_system, environment, location, description, 
-				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-			RETURNING id, created_at, updated_at`,
+			`UPDATE servers SET
+        server_name = $1,
+        ip_address = $2,
+        ssh_username = $3,
+        ssh_private_key = $4,
+        ssh_port = $5,
+        operating_system = $6,
+        environment = $7,
+        location = $8,
+        description = $9,
+        monitoring_interval = $10,
+        cpu_threshold = $11,
+        memory_threshold = $12,
+        disk_threshold = $13,
+        updated_at = NOW()
+     WHERE id = $14
+     RETURNING id, created_at, updated_at`,
 			server.ServerName, server.IPAddress, server.SSHUsername, server.SSHPrivateKey,
 			server.SSHPort, server.OperatingSystem, server.Environment, server.Location,
 			server.Description, server.MonitoringInterval, server.CPUThreshold,
-			server.MemoryThreshold, server.DiskThreshold,
+			server.MemoryThreshold, server.DiskThreshold, server.ID,
 		).Scan(&server.ID, &server.CreatedAt, &server.UpdatedAt)
 
 		if err != nil {

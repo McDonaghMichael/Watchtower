@@ -22,7 +22,7 @@ function EditServerPage() {
     ssh_port: 22,
     location: '',
     description: '',
-    operatingSystem: '',
+    operating_system: '',
     environment: 'production',
     monitoring_interval: '5',
     cpu_threshold: '90',
@@ -55,7 +55,7 @@ function EditServerPage() {
   }, [id]);
 
   const environments = ['production', 'staging', 'development', 'testing'];
-  const operatingSystems = ['Ubuntu', 'CentOS', 'Debian', 'RedHat', 'Windows Server', 'Other'];
+  const operating_systems = ['Ubuntu', 'CentOS', 'Debian', 'RedHat', 'Windows Server', 'Other'];
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -169,6 +169,8 @@ function EditServerPage() {
                   <div className="input-group">
                     <Form.Control
                       required
+                      as="textarea"  
+                    rows={6}      
                       type={showPassword ? "text" : "password"}
                       name="ssh_private_key"
                       value={formData.ssh_private_key}
@@ -207,12 +209,12 @@ function EditServerPage() {
                   <Form.Label>Operating System</Form.Label>
                   <Form.Select
                     required
-                    name="operatingSystem"
-                    value={formData.operatingSystem}
+                    name="operating_system"
+                    value={formData.operating_system}
                     onChange={handleInputChange}
                   >
                     <option value="">Select OS</option>
-                    {operatingSystems.map(os => (
+                    {operating_systems.map(os => (
                       <option key={os} value={os}>{os}</option>
                     ))}
                   </Form.Select>
