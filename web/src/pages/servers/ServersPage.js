@@ -182,7 +182,7 @@ function ServersPage() {
             </MenuItem>,
             <MenuItem
                 key="view_metrics"
-                onClick={() => navigate(`/servers/metrics/${row.original.id}`)}
+                onClick={() => navigate(`/server/metrics/${row.original.id}`)}
                 sx={{ m: 0 }}
             >
                 <ListItemIcon>
@@ -191,14 +191,14 @@ function ServersPage() {
                 View Metrics
             </MenuItem>,
             <MenuItem
-                key="manage_server"
-                onClick={() => navigate(`/servers/manage/${row.original.id}`)}
+                key="edit_server"
+                onClick={() => navigate(`/server/edit/${row.original.id}`)}
                 sx={{ m: 0 }}
             >
                 <ListItemIcon>
                     <SettingsIcon />
                 </ListItemIcon>
-                Manage Server
+                Edit Server
             </MenuItem>,
         ],
     });
