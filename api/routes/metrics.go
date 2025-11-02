@@ -63,22 +63,39 @@ func AddMetric() gin.HandlerFunc {
 func GetMetricsByServerID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		var metrics Metrics
+		var metricsList []Metrics
 
-		err := database.Pool.QueryRow(context.Background(),
-			`SELECT id, server_id, num_of_cpu, memory_allocated, memory_allocations, disk_usage_total, disk_usage_used, disk_usage_free,
+		rows, err := database.Pool.Query(context.Background(),
+			`SELECT id, server_id, num_of_cpu, memory_allocated, memory_allocations,
+			        disk_usage_total, disk_usage_used, disk_usage_free,
 			        ssh_connections, http_connections, https_connections, timestamp
-			   FROM metrics WHERE server_id = $1 ORDER BY timestamp DESC LIMIT 1`, id).Scan(
-			&metrics.ID, &metrics.ServerID, &metrics.NumOfCPU, &metrics.MemoryAllocated, &metrics.MemoryAllocations,
-			&metrics.DiskUsageTotal, &metrics.DiskUsageUsed, &metrics.DiskUsageFree,
-			&metrics.SSHConnections, &metrics.HTTPConnections, &metrics.HTTPSConnections, &metrics.Timestamp,
-		)
-
+			   FROM metrics
+			   WHERE server_id = $1
+			   ORDER BY timestamp DESC`, id)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var m Metrics
+			if err := rows.Scan(
+				&m.ID, &m.ServerID, &m.NumOfCPU, &m.MemoryAllocated, &m.MemoryAllocations,
+				&m.DiskUsageTotal, &m.DiskUsageUsed, &m.DiskUsageFree,
+				&m.SSHConnections, &m.HTTPConnections, &m.HTTPSConnections, &m.Timestamp,
+			); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			metricsList = append(metricsList, m)
+		}
+
+		if len(metricsList) == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "no metrics found for server"})
 			return
 		}
 
-		c.JSON(http.StatusOK, metrics)
+		c.JSON(http.StatusOK, metricsList)
 	}
 }
