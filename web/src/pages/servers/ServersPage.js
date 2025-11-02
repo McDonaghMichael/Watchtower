@@ -102,8 +102,16 @@ function ServersPage() {
       {
         header: 'Last Ping',
         accessorKey: 'last_ping',
-        Cell: ({ cell }) => {
+        Cell: ({ cell, row }) => {
           const value = cell.getValue();
+
+          if(row.original.status == "warning"){
+            return (
+              <Badge bg={'warning'}>
+                WARNING
+              </Badge>
+            )
+          }
 
           const lastPingTime = new Date(value).getTime();
           const currentMsDifference = currentTime - lastPingTime;
@@ -237,13 +245,13 @@ function ServersPage() {
     );
   } else if(seconds < 60 && seconds > 1){ 
       return (
-      <Badge bg={'danger'}>
+      <Badge bg={'secondary'}>
         {seconds + 's' || '0s'}
       </Badge>
     );
   }else if(seconds => 60 && seconds < 900){ 
       return (
-      <Badge bg={'warning'}>
+      <Badge bg={'info'}>
         {seconds + 's' || '0s'}
       </Badge>
     );

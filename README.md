@@ -79,7 +79,7 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
    docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest
 4. When running the agent please specify which URL to send to
 
-   `docker run -e SERVER_URL=http://192.168.1.32:8080 watchtower-agent`
+   `docker run -e SERVER_URL=http://192.168.1.32:8080 -e SERVER_IP=<server ip that agent is on> watchtower-agent`
 
 
 ---

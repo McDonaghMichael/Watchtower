@@ -33,6 +33,7 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 
 	// ========== Metrics Routes ==========
 	r.POST("/metric", AddMetric())
+	r.GET("/metrics/server/:id", GetMetricsByServerID()) // Gets metrics by server ID
 }
 
 func corsMiddleware() gin.HandlerFunc {

@@ -15,7 +15,7 @@ import (
 
 type Metrics struct {
 	ID                int    `json:"id"`
-	IPAddress         string `json:"ip_address"`
+	ServerID          int    `json:"server_id"`
 	NumOfCPU          int    `json:"num_of_cpu"`
 	MemoryAllocated   int    `json:"memory_allocated"`
 	MemoryAllocations int    `json:"memory_allocations"`
@@ -37,7 +37,7 @@ func main() {
 
 	var routeIP string = serverIP + "/api/v1/metric"
 
-	ipAddress := "80.209.228.5"
+	serverID := 2
 
 	for {
 		var mem runtime.MemStats
@@ -74,8 +74,9 @@ func main() {
 			}
 		}
 
-		jsonString := fmt.Sprintf(`{"ip_address": "%s", "num_of_cpu": %v, "memory_allocated": %v, "memory_allocations": %v, "disk_usage_total": %v, "disk_usage_used": %v, "disk_usage_free": %v, "ssh_connections": %v, "http_connections": %v, "https_connections": %v}`,
-			ipAddress, numOfCPU, totalMemoryAllocated, totalMemoryAllocations, usage.Total, usage.Used, usage.Free, sshConnections, httpConnections, httpsConnections)
+		jsonString := fmt.Sprintf(`{"server_id": %d, "num_of_cpu": %v, "memory_allocated": %v, "memory_allocations": %v, "disk_usage_total": %v, "disk_usage_used": %v, "disk_usage_free": %v, "ssh_connections": %v, "http_connections": %v, "https_connections": %v}`,
+			serverID, numOfCPU, totalMemoryAllocated, totalMemoryAllocations, usage.Total, usage.Used, usage.Free, sshConnections, httpConnections, httpsConnections)
+
 		body := []byte(jsonString)
 
 		r, err := http.NewRequest("POST", routeIP, bytes.NewBuffer(body))
@@ -103,7 +104,7 @@ func main() {
 		}
 
 		fmt.Println("Id:", post.ID)
-		fmt.Println("IP:", post.IPAddress)
+		fmt.Println("SERVER:", post.ServerID)
 		fmt.Println("Num Of CPU:", post.NumOfCPU)
 		fmt.Println("Memory Allocated:", post.MemoryAllocated)
 		fmt.Println("Memory Allocations:", post.MemoryAllocations)
