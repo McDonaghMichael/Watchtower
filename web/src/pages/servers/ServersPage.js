@@ -10,6 +10,8 @@ import {ListItemIcon, MenuItem} from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 function ServersPage() {
 
@@ -177,6 +179,26 @@ function ServersPage() {
                     <SignalCellularAltIcon />
                 </ListItemIcon>
                 Ping
+            </MenuItem>,
+            <MenuItem
+                key="view_metrics"
+                onClick={() => navigate(`/servers/metrics/${row.original.id}`)}
+                sx={{ m: 0 }}
+            >
+                <ListItemIcon>
+                    <AssessmentIcon />
+                </ListItemIcon>
+                View Metrics
+            </MenuItem>,
+            <MenuItem
+                key="manage_server"
+                onClick={() => navigate(`/servers/manage/${row.original.id}`)}
+                sx={{ m: 0 }}
+            >
+                <ListItemIcon>
+                    <SettingsIcon />
+                </ListItemIcon>
+                Manage Server
             </MenuItem>,
         ],
     });
