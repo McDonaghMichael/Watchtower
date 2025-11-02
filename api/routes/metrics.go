@@ -92,7 +92,7 @@ func GetMetricsByServerID() gin.HandlerFunc {
 		}
 
 		if len(metricsList) == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "no metrics found for server"})
+			c.JSON(http.StatusNotFound, gin.H{})
 			return
 		}
 

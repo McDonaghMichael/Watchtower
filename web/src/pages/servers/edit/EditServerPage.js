@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
 import axios from 'axios';
+import AlertNotice from '../../../components/notices/AlertNotice';
 
 function EditServerPage() {
 
@@ -49,7 +50,7 @@ function EditServerPage() {
         })
         .catch(err => {
           console.error('Error fetching server:', err);
-          setError('Failed to load server data');
+          setError(err);
         });
     }
   }, [id]);
@@ -101,6 +102,10 @@ function EditServerPage() {
     }));
   };
 
+  if (error) {
+    return <AlertNotice error={error} />;
+  }
+  
   return (
     <Container className="py-4">
       <Card className="shadow-sm">

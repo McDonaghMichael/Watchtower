@@ -130,7 +130,7 @@ func GetServerByID() gin.HandlerFunc {
 		)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "message": "Unable to locate server with given id"})
 			return
 		}
 
