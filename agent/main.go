@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
@@ -31,13 +32,9 @@ func main() {
 
 	serverIP := os.Getenv("SERVER_URL")
 
-	if serverIP == "" {
-		serverIP = "http://localhost:8080"
-	}
+	var routeIP string = serverIP
 
-	var routeIP string = serverIP + "/api/v1/metric"
-
-	serverID := 2
+	serverID, _ := strconv.Atoi(os.Getenv("SERVER_ID"))
 
 	for {
 		var mem runtime.MemStats
