@@ -3,7 +3,7 @@ import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 
 function AddServerPage() {

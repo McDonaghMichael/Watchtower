@@ -13,7 +13,7 @@ import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsIcon from '@mui/icons-material/Settings';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ServersPage() {
 
