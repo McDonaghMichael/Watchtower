@@ -10,19 +10,26 @@ import (
 )
 
 type Metrics struct {
-	ID                int       `json:"id"`
-	ServerID          int       `json:"server_id"`
-	IPAddress         string    `json:"ip_address"`
-	NumOfCPU          int       `json:"num_of_cpu"`
-	MemoryAllocated   int       `json:"memory_allocated"`
-	MemoryAllocations int       `json:"memory_allocations"`
-	DiskUsageTotal    uint64    `json:"disk_usage_total"`
-	DiskUsageUsed     uint64    `json:"disk_usage_used"`
-	DiskUsageFree     uint64    `json:"disk_usage_free"`
-	SSHConnections    int       `json:"ssh_connections"`
-	HTTPConnections   int       `json:"http_connections"`
-	HTTPSConnections  int       `json:"https_connections"`
-	Timestamp         time.Time `json:"timestamp"`
+	ID                 int       `json:"id"`
+	ServerID           int       `json:"server_id"`
+	NumOfCPU           int       `json:"num_of_cpu"`
+	CPUUsage           float64   `json:"cpu_usage"`
+	MemoryAllocated    int       `json:"memory_allocated"`
+	MemoryAllocations  int       `json:"memory_allocations"`
+	MemoryUsagePercent float64   `json:"memory_usage_percent"`
+	SwapUsed           int64     `json:"swap_used"`
+	SwapTotal          int64     `json:"swap_total"`
+	SwapFree           int64     `json:"swap_free"`
+	CacheMemory        int64     `json:"cache_memory"`
+	BufferMemory       int64     `json:"buffer_memory"`
+	DiskUsageTotal     uint64    `json:"disk_usage_total"`
+	DiskUsageUsed      uint64    `json:"disk_usage_used"`
+	DiskUsageFree      uint64    `json:"disk_usage_free"`
+	SSHConnections     int       `json:"ssh_connections"`
+	HTTPConnections    int       `json:"http_connections"`
+	HTTPSConnections   int       `json:"https_connections"`
+	UptimeSeconds      int64     `json:"uptime_seconds"`
+	Timestamp          time.Time `json:"timestamp"`
 }
 
 func AddMetric() gin.HandlerFunc {
@@ -35,20 +42,45 @@ func AddMetric() gin.HandlerFunc {
 		}
 
 		err := database.Pool.QueryRow(context.Background(),
-			`INSERT INTO metrics (server_id, num_of_cpu, memory_allocated, memory_allocations,
-                                  disk_usage_total, disk_usage_used, disk_usage_free,
-                                  ssh_connections, http_connections, https_connections)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+			`INSERT INTO metrics (
+			server_id,
+			num_of_cpu,
+			cpu_usage,
+			memory_allocated,
+			memory_allocations,
+			memory_usage_percent,
+			swap_used,
+			swap_total,
+			swap_free,
+			cache_memory,
+			buffer_memory,
+            disk_usage_total,
+			disk_usage_used,
+			disk_usage_free,
+            ssh_connections,
+			http_connections,
+			https_connections,
+			uptime_seconds
+			)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id`,
 			metric.ServerID,
 			metric.NumOfCPU,
+			metric.CPUUsage,
 			metric.MemoryAllocated,
 			metric.MemoryAllocations,
+			metric.MemoryUsagePercent,
+			metric.SwapUsed,
+			metric.SwapTotal,
+			metric.SwapFree,
+			metric.CacheMemory,
+			metric.BufferMemory,
 			metric.DiskUsageTotal,
 			metric.DiskUsageUsed,
 			metric.DiskUsageFree,
 			metric.SSHConnections,
 			metric.HTTPConnections,
 			metric.HTTPSConnections,
+			metric.UptimeSeconds,
 		).Scan(&metric.ID)
 
 		if err != nil {
