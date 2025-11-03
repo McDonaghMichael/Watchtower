@@ -62,7 +62,8 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 - **CLI Tool** – Trigger test incidents or manually collect metrics
 
 ## Deployment
-> [!CAUTION]
+
+>[!CAUTION]
 > Watchtower is still in active development and is not ready for production servers, please be careful!
 
 
@@ -70,16 +71,37 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
    ```
    docker pull ghcr.io/mcdonaghmichael/watchtower-api:latest
    ```
-2. Starting the API Docker Image
+2. Create network container for the api and database to communicate
+   ```
+   docker network create watchtower-net
+   ```
+2. Run the docker image of Postgres Locally
 
-   `docker compose up -d`
+   ```
+   docker run -d --name postgres-db --network watchtower-net -e POSTGRES_DB=watchtower -e POSTGRES_USER=sysadmin -e POSTGRES_PASSWORD=password -p 5432:5432 postgres:15
+   ```
+
+3. Run the api image
+
+   ```
+   docker run -d --name watchtower-api --network watchtower-net -p 8080:8080 -e DB_HOST=postgres-db -e DB_USER=sysadmin  -e DB_PASSWORD=password -e DB_NAME=watchtower -e ALLOWED_ORIGIN=<ip of web server> ghcr.io/mcdonaghmichael/watchtower-api:latest
+   ```
 
 3. Install Docker Image of the Agent Manually onto the test server
    ```
    docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest
 4. When running the agent please specify which URL to send to
 
-   `docker run -e SERVER_URL=http://192.168.1.32:8080 -e SERVER_IP=<server ip that agent is on> watchtower-agent`
+   `docker run -e SERVER_URL=http://192.168.1.32:8080 -e SERVER_ID=<server id that agent is on> watchtower-agent`
+   
+   If you plan on running the agent without docker use this command
 
+   `SERVER_URL="http://192.168.1.32:8080/api/v1/metric" SERVER_ID=<server id that agent is on> go run .`
+
+5. RUn web
+
+```
+docker run -d --name watchtower-web -p 80:80 ghcr.io/mcdonaghmichael/watchtower-web:latest
+```
 
 ---

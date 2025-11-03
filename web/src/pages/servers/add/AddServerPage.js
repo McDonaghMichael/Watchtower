@@ -3,6 +3,9 @@ import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1';
+
+
 function AddServerPage() {
 
   const navigate = useNavigate();
@@ -44,9 +47,10 @@ const handleSubmit = (event) => {
     disk_threshold: parseInt(formData.disk_threshold, 10)
   };
 
+  console.log(API_BASE_URL)
   console.log('Sending data:', submitData); 
 
-  axios.post('http://localhost:8080/api/v1/server', submitData)
+  axios.post(`${API_BASE_URL}/server`, submitData)
     .then(res => {
       console.log('Server added successfully:', res.data);
       navigate('/servers');

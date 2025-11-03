@@ -3,7 +3,10 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import AlertNotice from '../../../components/notices/AlertNotice';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1';
+
 function ServerMetricsPage() {
+
   const { id } = useParams();
   const [metrics, setMetrics] = useState([]);
   const [error, setError] = useState(null);
@@ -13,7 +16,7 @@ function ServerMetricsPage() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const res = await axios.get(`http://localhost:8080/api/v1/metrics/server/${id}`);
+        const res = await axios.get(`${API_BASE_URL}/api/v1/metrics/server/${id}`);
         const data = Array.isArray(res.data) ? res.data : [res.data];
         console.log(data);
         setMetrics(data);

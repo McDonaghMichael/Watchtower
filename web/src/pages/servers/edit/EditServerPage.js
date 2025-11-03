@@ -4,6 +4,8 @@ import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap'
 import axios from 'axios';
 import AlertNotice from '../../../components/notices/AlertNotice';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1';
+
 function EditServerPage() {
 
   const navigate = useNavigate();
@@ -34,7 +36,7 @@ function EditServerPage() {
 
   useEffect(() => {
     if (id) {
-      axios.get(`http://localhost:8080/api/v1/server/${id}`)
+      axios.get(`${API_BASE_URL}/server/${id}`)
         .then(res => {
           console.log('Response data:', res.data);
           if (res.data) {
@@ -80,7 +82,7 @@ function EditServerPage() {
       disk_threshold: parseInt(formData.disk_threshold, 10)
     };
 
-    axios.put(`http://localhost:8080/api/v1/server/${id}`, submitData)
+    axios.put(`${API_BASE_URL}/server/${id}`, submitData)
       .then(res => {
         console.log('Server updated successfully:', res.data);
         navigate('/servers');

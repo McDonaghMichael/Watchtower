@@ -13,6 +13,8 @@ import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsIcon from '@mui/icons-material/Settings';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1';
+
 function ServersPage() {
 
   var navigate = useNavigate();
@@ -28,7 +30,7 @@ function ServersPage() {
   ]);
 
   useEffect(() => {
-    axios.get('http://localhost:8080/api/v1/servers')
+    axios.get(`${API_BASE_URL}/servers`)
       .then(res => {
         console.log('Response data:', res.data);
 
@@ -205,7 +207,7 @@ function ServersPage() {
 
     const handlePing = (id) => {
 
-      axios.post('http://localhost:8080/api/v1/server/ping/' + id)
+      axios.post(`${API_BASE_URL}/server/ping/` + id)
       .then(res => {
         console.log('Response data:', res.data);
       setServers(prevServers => 
@@ -228,7 +230,7 @@ function ServersPage() {
         )
       );
 
-      axios.get('http://localhost:8080/api/v1/server/status/' + id)
+      axios.get(`${API_BASE_URL}/server/status/` + id)
       .then(res => {
         console.log('Response data:', res.data);
       setServers(prevServers => 

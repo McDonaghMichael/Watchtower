@@ -1,8 +1,8 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,20 +39,27 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
 
-		allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
-		if allowedOrigin == "" {
-			allowedOrigin = "http://localhost:3000"
+		fmt.Printf("=== CORS DEBUG ===\n")
+		fmt.Printf("Request Origin: '%s'\n", origin)
+		fmt.Printf("Request Method: '%s'\n", c.Request.Method)
+		fmt.Printf("All Headers: %v\n", c.Request.Header)
+
+		// If origin is empty or matches our server, allow it
+		if origin == "" {
+			origin = "*" // Allow all for now during debugging
 		}
 
-		c.Header("Access-Control-Allow-Origin", allowedOrigin)
+		c.Header("Access-Control-Allow-Origin", origin)
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
+			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
+
 		c.Next()
 	}
 }
