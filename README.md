@@ -66,6 +66,10 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 >[!CAUTION]
 > Watchtower is still in active development and is not ready for production servers, please be careful!
 
+1. Install docker on the server
+   ```
+      curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
+   ```
 
 1. Install Docker Image of the API
    ```
@@ -90,9 +94,10 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 3. Install Docker Image of the Agent Manually onto the test server
    ```
    docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest
+   ```
 4. When running the agent please specify which URL to send to
 
-   `docker run -e SERVER_URL=http://192.168.1.32:8080 -e SERVER_ID=<server id that agent is on> watchtower-agent`
+   `docker run -e SERVER_URL=http://<API URL>/api/v1/metric -e SERVER_ID=<ID> ghcr.io/mcdonaghmichael/watchtower-agent:latest`
    
    If you plan on running the agent without docker use this command
 
