@@ -5,11 +5,13 @@ import sklearn
 import openpyxl
 from sklearn.preprocessing import StandardScaler
 
-# Open up and load the data from the excel file, in the future this will be training from data from the database!!!
-df = pd.read_excel('data.xlsx')
+import requests
 
-input_values = ['memory_usage', 'disk_usage']
-output_values= ['cpu_usage', 'disk_usage']
+
+df = pd.DataFrame()
+
+input_values = ['memory_allocated', 'memory_allocations']
+output_values= ['disk_usage_used']
 
 x = df[input_values].values
 y = df[output_values].values
@@ -47,7 +49,33 @@ test_scaled = torch.tensor(x_scaler.transform([[60.0, 20.5]]), dtype=torch.float
 pred = model(test_scaled)
 predictions = y_scaler.inverse_transform(pred.detach().numpy())
 
-
 print("Predicted CPU usage for memory_usage=60:")
 print(f"Predicted CPU usage: {predictions[0][0]:.2f}%")
 print(f"Predicted Disk usage: {predictions[0][1]:.2f}%")
+
+
+def get_metric_training_data():
+    data = requests.get("http://80.208.227.58:8080/api/v1/metrics/server/2")
+    jsonData = data.json()
+
+    dataArray = []
+
+    for x in jsonData:
+        dataObj = {
+            "id": x["id"],
+            "server_id": x["server_id"],
+            "num_of_cpu": x["num_of_cpu"],
+            "memory_allocated": x["memory_allocated"],
+            "memory_allocations": x["memory_allocations"],
+            "disk_usage_total": x["disk_usage_total"],
+            "disk_usage_used": x["disk_usage_used"],
+            "disk_usage_free": x["disk_usage_free"],
+            "ssh_connections": x["ssh_connections"],
+            "http_connections": x["http_connections"],
+            "https_connections": x["https_connections"],
+            "timestamp": x["timestamp"]
+        }
+
+        dataArray.append(dataObj)
+    
+    print(dataArray[0])
