@@ -95,6 +95,8 @@ func AddMetric() gin.HandlerFunc {
 func GetMetricsByServerID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
+		limit := c.Query("limit")
+
 		var metricsList []Metrics
 
 		rows, err := database.Pool.Query(context.Background(),
@@ -103,7 +105,7 @@ func GetMetricsByServerID() gin.HandlerFunc {
 			        ssh_connections, http_connections, https_connections, timestamp
 			   FROM metrics
 			   WHERE server_id = $1
-			   ORDER BY timestamp DESC`, id)
+			   ORDER BY timestamp DESC LIMIT $2`, id, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
