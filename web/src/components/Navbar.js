@@ -5,7 +5,7 @@ function NavigationBar() {
   const navigate = useNavigate();
 
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="navbar-custom">
+    <Navbar className='dark-navbar' expand="lg">
       <Container>
         <Navbar.Brand as={Link} to="/">
           <i className="bi bi-display me-2"></i>
