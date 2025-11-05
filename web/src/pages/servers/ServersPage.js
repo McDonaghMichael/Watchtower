@@ -5,7 +5,7 @@ import {
   MaterialReactTable,
   useMaterialReactTable,
 } from 'material-react-table';
-import {ListItemIcon, MenuItem} from "@mui/material";
+import { ListItemIcon, MenuItem } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
@@ -127,119 +127,195 @@ function ServersPage() {
   const table = useMaterialReactTable({
     columns,
     data: servers,
-     enableColumnFilterModes: true,
-        enableColumnOrdering: true,
-        enableGrouping: true,
-        enableColumnPinning: true,
-        enableFacetedValues: true,
-        enableRowActions: true,
-        enableRowSelection: false,
-        enableGlobalFilter: true, 
-        initialState: {
-            showColumnFilters: false,
-            showGlobalFilter: false,
-            columnPinning: {
-                left: ['mrt-row-expand', 'mrt-row-select'],
-                right: ['mrt-row-actions'],
-            },
+    enableColumnFilterModes: true,
+    enableColumnOrdering: true,
+    enableGrouping: true,
+    enableColumnPinning: true,
+    enableFacetedValues: true,
+    enableRowActions: true,
+    enableRowSelection: false,
+    enableGlobalFilter: true, 
+    initialState: {
+      showColumnFilters: false,
+      showGlobalFilter: false,
+      columnPinning: {
+        left: ['mrt-row-expand', 'mrt-row-select'],
+        right: ['mrt-row-actions'],
+      },
+    },
+    paginationDisplayMode: 'pages',
+    positionToolbarAlertBanner: 'bottom',
+    muiSearchTextFieldProps: {
+      size: 'small',
+      variant: 'outlined',
+    },
+    muiPaginationProps: {
+      color: 'primary',
+      rowsPerPageOptions: [25, 50, 100],
+      shape: 'rounded',
+      variant: 'outlined',
+    },
+    // Dark mode styling
+    muiTablePaperProps: {
+      sx: {
+        backgroundColor: '#1e1e1e',
+      }
+    },
+    muiTableProps: {
+      sx: {
+        backgroundColor: '#1e1e1e',
+      }
+    },
+    muiTableHeadCellProps: {
+      sx: {
+        backgroundColor: '#2d2d2d',
+        color: '#fff',
+        borderBottom: '1px solid #404040',
+      }
+    },
+    muiTableBodyCellProps: {
+      sx: {
+        backgroundColor: '#1e1e1e',
+        color: '#e0e0e0',
+        borderBottom: '1px solid #404040',
+      }
+    },
+    muiTableBodyRowProps: {
+      sx: {
+        '&:hover': {
+          backgroundColor: '#2d2d2d',
+        }
+      }
+    },
+    muiTopToolbarProps: {
+      sx: {
+        backgroundColor: '#2d2d2d',
+        color: '#fff',
+        '& .MuiIconButton-root': {
+          color: '#fff',
         },
-        
-        paginationDisplayMode: 'pages',
-        positionToolbarAlertBanner: 'bottom',
-        muiSearchTextFieldProps: {
-            size: 'small',
-            variant: 'outlined',
+        '& .MuiButtonBase-root': {
+          color: '#fff',
         },
-        muiPaginationProps: {
-            color: 'primary',
-            rowsPerPageOptions: [25, 50, 100],
-            shape: 'rounded',
-            variant: 'outlined',
+      }
+    },
+    muiBottomToolbarProps: {
+      sx: {
+        backgroundColor: '#2d2d2d',
+        color: '#fff',
+        '& .MuiTablePagination-root': {
+          color: '#fff',
         },
+        '& .MuiTablePagination-selectLabel': {
+          color: '#fff',
+        },
+        '& .MuiTablePagination-displayedRows': {
+          color: '#fff',
+        },
+        '& .MuiTablePagination-select': {
+          color: '#fff',
+        },
+        '& .MuiIconButton-root': {
+          color: '#fff',
+        },
+      }
+    },
+    muiTableBodyRowProps: {
+      sx: {
+        '&:hover': {
+          backgroundColor: '#2d2d2d',
+        }
+      }
+    },
+    mrtTheme: {
+      baseBackgroundColor: '#1e1e1e',
+    },
     state: {
       isLoading: loading,
     },
     renderRowActionMenuItems: ({ row }) => [
-            <MenuItem
-                key="ping"
-                onClick={() => handlePing(row.original.id)}
-                sx={{ m: 0 }}
-            >
-                <ListItemIcon>
-                    <SignalCellularAltIcon />
-                </ListItemIcon>
-                Ping
-            </MenuItem>,
-            <MenuItem
-                key="view_metrics"
-                onClick={() => navigate(`/server/metrics/${row.original.id}`)}
-                sx={{ m: 0 }}
-            >
-                <ListItemIcon>
-                    <AssessmentIcon />
-                </ListItemIcon>
-                View Metrics
-            </MenuItem>,
-            <MenuItem
-                key="edit_server"
-                onClick={() => navigate(`/server/edit/${row.original.id}`)}
-                sx={{ m: 0 }}
-            >
-                <ListItemIcon>
-                    <SettingsIcon />
-                </ListItemIcon>
-                Edit Server
-            </MenuItem>,
-        ],
+      <MenuItem
+        key="ping"
+        onClick={() => handlePing(row.original.id)}
+        sx={{ m: 0 }}
+      >
+        <ListItemIcon>
+          <SignalCellularAltIcon />
+        </ListItemIcon>
+        Ping
+      </MenuItem>,
+      <MenuItem
+        key="view_metrics"
+        onClick={() => navigate(`/server/metrics/${row.original.id}`)}
+        sx={{ m: 0 }}
+      >
+        <ListItemIcon>
+          <AssessmentIcon />
+        </ListItemIcon>
+        View Metrics
+      </MenuItem>,
+      <MenuItem
+        key="edit_server"
+        onClick={() => navigate(`/server/edit/${row.original.id}`)}
+        sx={{ m: 0 }}
+      >
+        <ListItemIcon>
+          <SettingsIcon />
+        </ListItemIcon>
+        Edit Server
+      </MenuItem>,
+    ],
+  });
+
+
+
+  const handlePing = (id) => {
+
+    axios.post(`${API_BASE_URL}/server/ping/` + id)
+    .then(res => {
+      console.log('Response data:', res.data);
+    setServers(prevServers => 
+      prevServers.map(server => 
+        server.id === id ? { ...server, last_ping: res.data.ping } : server
+      )
+    );
+    handleStatusCheck(id)
+    })
+    .catch(err => {
+      console.error('Error fetching servers:', err);
     });
+  }
 
-    const handlePing = (id) => {
+  const handleStatusCheck = (id) => {
 
-      axios.post(`${API_BASE_URL}/server/ping/` + id)
-      .then(res => {
-        console.log('Response data:', res.data);
-      setServers(prevServers => 
-        prevServers.map(server => 
-          server.id === id ? { ...server, last_ping: res.data.ping } : server
-        )
-      );
-      handleStatusCheck(id)
-      })
-      .catch(err => {
-        console.error('Error fetching servers:', err);
-      });
-    }
+    setServers(prevServers => 
+      prevServers.map(server => 
+        server.id === id ? { ...server, status: 'loading'} : server
+      )
+    );
 
-    const handleStatusCheck = (id) => {
-
-      setServers(prevServers => 
-        prevServers.map(server => 
-          server.id === id ? { ...server, status: 'loading'} : server
-        )
-      );
-
-      axios.get(`${API_BASE_URL}/server/status/` + id)
-      .then(res => {
-        console.log('Response data:', res.data);
-      setServers(prevServers => 
-        prevServers.map(server => 
-          server.id === id ? { ...server, status: res.data.status } : server
-        )
-      );
-      })
-      .catch(err => {
-        console.error('Error fetching servers:', err);
-      });
-    }
+    axios.get(`${API_BASE_URL}/server/status/` + id)
+    .then(res => {
+      console.log('Response data:', res.data);
+    setServers(prevServers => 
+      prevServers.map(server => 
+        server.id === id ? { ...server, status: res.data.status } : server
+      )
+    );
+    })
+    .catch(err => {
+      console.error('Error fetching servers:', err);
+    });
+  }
 
   return (
     <Container fluid className="w-75 mt-5">
       <h2 className="mb-4">Server Monitoring</h2>
-    {errors.map((err, index) => {
-      return (
-        <AlertBadge status={err.status} message={err.message} id={err.id} index={index}></AlertBadge>
-      );
-    })}
+      {errors.map((err, index) => {
+        return (
+          <AlertBadge key={index} status={err.status} message={err.message} id={err.id} index={index}></AlertBadge>
+        );
+      })}
 
       <MaterialReactTable table={table} />
     </Container>

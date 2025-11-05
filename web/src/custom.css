@@ -1,17 +1,40 @@
+
+body,
+.dark-mode, bg, .card-body {
+  background-color: #121212 !important;
+  color: #e0e0e0 !important;
+}
+
 .dark-navbar {
   background-color: #181818; 
 }
-
 .dark-navbar .nav-link,
 .dark-navbar .navbar-brand {
   color: #fff !important;
 }
-
 .dark-navbar .nav-link:hover {
   color: #ffcc00 !important;
 }
 
+.dark-mode .container,
+.dark-mode .container-fluid {
+  background-color: transparent !important;
+}
 
+.dark-mode h1, 
+.dark-mode h2, 
+.dark-mode h3, 
+.dark-mode h4, 
+.dark-mode h5, 
+.dark-mode h6 {
+  color: #fff !important;
+}
+
+.dark-mode p,
+.dark-mode span,
+.dark-mode div {
+  color: #e0e0e0;
+}
 
 .alert-badge {
   animation: fadeIn 0.3s ease-in-out;
