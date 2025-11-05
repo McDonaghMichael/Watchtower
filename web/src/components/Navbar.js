@@ -15,6 +15,7 @@ function NavigationBar() {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
+            <Nav.Link as={Link} to="/">Dashboard</Nav.Link>
             <NavDropdown title="Servers" id="servers-dropdown">
               <NavDropdown.Item as={Link} to="/servers">
                 View All Servers
@@ -32,9 +33,44 @@ function NavigationBar() {
                 Add Account
               </NavDropdown.Item>
             </NavDropdown>
-          </Nav>
+          
 
-        
+          <NavDropdown title="Management" id="management-dropdown">
+           <NavDropdown.Item as={Link} to="/">
+                Roles
+              </NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/">
+                Reports
+              </NavDropdown.Item>
+              
+              <NavDropdown.Item as={Link} to="/">
+                Settings
+              </NavDropdown.Item>
+            </NavDropdown>
+
+            <NavDropdown title="Security" id="security-dropdown">
+               <NavDropdown.Item as={Link} to="/">
+                Audit Logs
+              </NavDropdown.Item>
+            
+              <NavDropdown.Item as={Link} to="/">
+                Sessions
+              </NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/">
+                Alerts
+              </NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/">
+                Backups
+              </NavDropdown.Item>
+            </NavDropdown>
+            
+
+</Nav>
+
+          <Navbar.Text>
+            Signed in as: <a href="#login">John Doe</a>
+          </Navbar.Text>
+
         </Navbar.Collapse>
       </Container>
     </Navbar>
