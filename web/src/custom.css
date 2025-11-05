@@ -10,3 +10,9 @@
 .dark-navbar .nav-link:hover {
   color: #ffcc00 !important;
 }
+
+
+
+.alert-badge {
+  animation: fadeIn 0.3s ease-in-out;
+}

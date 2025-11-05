@@ -1,0 +1,49 @@
+.alert-badge {
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(6px);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.alert-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.alert-success.alert-badge {
+  background: linear-gradient(135deg, #3ac47d, #2e9f68);
+  color: #fff;
+}
+
+.alert-warning.alert-badge {
+  background: linear-gradient(135deg, #f6b93b, #e58e26);
+  color: #fff;
+}
+
+.alert-danger.alert-badge {
+  background: linear-gradient(135deg, #e55039, #b71540);
+  color: #fff;
+}
+
+.alert-info.alert-badge {
+  background: linear-gradient(135deg, #54a0ff, #2e86de);
+  color: #fff;
+}
+
+.alert-badge strong {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

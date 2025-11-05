@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsIcon from '@mui/icons-material/Settings';
+import AlertBadge from '../../components/notices/AlertBadge';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -293,9 +294,7 @@ function ServersPage() {
       <h2 className="mb-4">Server Monitoring</h2>
     {errors.map((err, index) => {
       return (
-        <Alert key={index} variant={err.status}>
-          <strong>{err.id}:</strong> {err.message}
-        </Alert>
+        <AlertBadge status={err.status} message={err.message} id={err.id} index={index}></AlertBadge>
       );
     })}
 
