@@ -16,7 +16,7 @@ function ServerMetricsPage() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/metrics/server/${id}`);
+        const res = await axios.get(`${API_BASE_URL}/metrics/server/${id}?limit=100`);
         const data = Array.isArray(res.data) ? res.data : [res.data];
         console.log(data);
         setMetrics(data);
