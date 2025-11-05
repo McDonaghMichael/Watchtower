@@ -1,0 +1,60 @@
+.custom-badge {
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  border: none;
+  transition: all 0.25s ease-in-out;
+  color: #fff !important;
+  cursor: default;
+}
+
+.custom-badge:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.3);
+}
+
+.custom-badge-success {
+  background: linear-gradient(135deg, #3ac47d, #2e9f68);
+}
+
+.custom-badge-warning {
+  background: linear-gradient(135deg, #f6b93b, #e58e26);
+}
+
+.custom-badge-danger {
+  background: linear-gradient(135deg, #e55039, #b71540);
+}
+
+.custom-badge-info {
+  background: linear-gradient(135deg, #54a0ff, #2e86de);
+}
+
+.custom-badge-secondary {
+  background: linear-gradient(135deg, #5a5c6e, #3a3c4f);
+}
+
+.custom-badge-ubuntu {
+  background: linear-gradient(135deg, #ff7a46, #86470c);
+}
+
+.custom-badge-windows {
+  background: linear-gradient(135deg, #6ed5e7, #076a88);
+}
+
+.custom-badge-centos {
+  background: linear-gradient(135deg, #e36ee7, #540788);
+}
+
+.custom-badge-debian {
+  background: linear-gradient(135deg, #f15539, #f89797);
+}
+
+.custom-badge-redhat {
+  background: linear-gradient(135deg, #b30505, #4e2727);
+}
+
+.custom-badge-other {
+  background: linear-gradient(135deg, #1d1d1d, #202020);
+}

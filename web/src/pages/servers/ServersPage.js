@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Container, Badge, Alert } from 'react-bootstrap';
-import './ServersPage.css';
 import axios from 'axios';
 import {
   MaterialReactTable,
@@ -13,6 +12,9 @@ import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AlertBadge from '../../components/notices/AlertBadge';
+import PingBadge from '../../components/badges/PingBadge';
+import CustomBadge from '../../components/badges/CustomBadge';
+import StatusBadge from '../../components/badges/StatusBadge';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -75,11 +77,13 @@ function ServersPage() {
       {
         header: 'Status',
         accessorKey: 'status',
-        Cell: ({ cell }) => getStatusBadge(cell.getValue()),
+        Cell: ({ cell }) => <StatusBadge status={cell.getValue()}/>,
+        
       },
       {
         header: 'Operating System',
         accessorKey: 'operating_system',
+        Cell: ({ cell }) => <StatusBadge status={cell.getValue()}/>,
       },
       {
         header: 'Environment',
@@ -90,21 +94,6 @@ function ServersPage() {
         accessorKey: 'location',
       },
       {
-        header: 'CPU Threshold',
-        accessorKey: 'cpu_threshold',
-        Cell: ({ cell }) => `${cell.getValue()}%`,
-      },
-      {
-        header: 'Memory Threshold',
-        accessorKey: 'memory_threshold',
-        Cell: ({ cell }) => `${cell.getValue()}%`,
-      },
-      {
-        header: 'Disk Threshold',
-        accessorKey: 'disk_threshold',
-        Cell: ({ cell }) => `${cell.getValue()}%`,
-      },
-      {
         header: 'Last Ping',
         accessorKey: 'last_ping',
         Cell: ({ cell, row }) => {
@@ -112,16 +101,14 @@ function ServersPage() {
 
           if(row.original.status == "warning"){
             return (
-              <Badge bg={'warning'}>
-                WARNING
-              </Badge>
+              <CustomBadge variant={'warning'} text={"WARNING"}/>
             )
           }
 
           const lastPingTime = new Date(value).getTime();
           const currentMsDifference = currentTime - lastPingTime;
           const seconds = currentMsDifference / 1000;
-          return getPingBadge(Math.abs(Math.floor(seconds)));
+          return <PingBadge seconds={Math.abs(Math.floor(seconds))}/>;
         },
       },
     ],
@@ -244,50 +231,6 @@ function ServersPage() {
         console.error('Error fetching servers:', err);
       });
     }
-
-
-  const getStatusBadge = (status) => {
-    const variants = {
-      online: 'success',
-      offline: 'danger',
-      warning: 'warning',
-      loading: 'secondary'
-    };
-    return (
-      <Badge bg={variants[status] || 'secondary'}>
-        {status?.toUpperCase() || 'UNKNOWN'}
-      </Badge>
-    );
-  };
-
-  const getPingBadge = (seconds) => {
-
-    if(seconds <= 1){ 
-      return (
-      <Badge bg={'secondary'}>
-        {"Re-establishing connection"}
-      </Badge>
-    );
-  } else if(seconds < 60 && seconds > 1){ 
-      return (
-      <Badge bg={'secondary'}>
-        {seconds + 's' || '0s'}
-      </Badge>
-    );
-  }else if(seconds => 60 && seconds < 900){ 
-      return (
-      <Badge bg={'info'}>
-        {seconds + 's' || '0s'}
-      </Badge>
-    );
-  }else {
-    return (
-      <Badge bg={'success'}>
-        {seconds + 's' || '0s'}
-      </Badge>
-    )
-  }
-  };
 
   return (
     <Container fluid className="w-75 mt-5">

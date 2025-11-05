@@ -10,6 +10,7 @@ import EditAccountPage from './pages/accounts/edit/EditAccountPage';
 import ServerMetricsPage from './pages/servers/metrics/ServerMetricsPage';
 
 function App() {
+
   return (
     <BrowserRouter>
       <div className="App">
