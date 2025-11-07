@@ -197,22 +197,6 @@ function ServerMetricsPage() {
           <Card className="h-100 border-start border-4 border-secondary bg-dark">
             <Card.Body className="py-3">
               <div style={{ minHeight: "100vh" }}>
-                <div
-                  style={{
-                    padding: "12px 16px",
-                    marginBottom: "10px",
-                    fontFamily: "monospace",
-                    color: "#c9d1d9",
-                  }}
-                >
-                  <span style={{ color: "#7ee787" }}>SERVER_METRICS</span>
-                  <span style={{ color: "#8b949e" }}> // </span>
-                  <span style={{ color: "#ffa657" }}>server_id={id}</span>
-                  <span style={{ color: "#8b949e" }}> // </span>
-                  <span style={{ color: "#79c0ff" }}>
-                    count={filteredMetrics.length}
-                  </span>
-                </div>
 
                 <div style={{ marginBottom: "10px" }}>
                   <input
