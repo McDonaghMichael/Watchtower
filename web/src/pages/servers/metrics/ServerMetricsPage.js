@@ -17,6 +17,7 @@ function ServerMetricsPage() {
 
   const [metrics, setMetrics] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [queryLimit, setQueryLimit] = useState(100);
 
   const [error, setError] = useState(null);
 
@@ -58,7 +59,7 @@ function ServerMetricsPage() {
     const fetchMetrics = async () => {
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/metrics/server/${id}?limit=100`
+          `${API_BASE_URL}/metrics/server/${id}?limit=${queryLimit}`
         );
         const data = Array.isArray(res.data) ? res.data : [res.data];
         console.log(data);
@@ -78,7 +79,7 @@ function ServerMetricsPage() {
     fetchMetrics();
     const interval = setInterval(fetchMetrics, 5000);
     return () => clearInterval(interval);
-  }, [id]);
+  }, [id, queryLimit]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -211,7 +212,23 @@ function ServerMetricsPage() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="bg-dark"
                     style={{
-                      width: "100%",
+                      width: "50%",
+                      padding: "10px 16px",
+                      borderRadius: "6px",
+                      color: "#c9d1d9",
+                      fontFamily: "monospace",
+                      fontSize: "14px",
+                      outline: "none",
+                    }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Query Limit"
+                    value={queryLimit}
+                    onChange={(e) => setQueryLimit(e.target.value)}
+                    className="bg-dark"
+                    style={{
+                      width: "25%",
                       padding: "10px 16px",
                       borderRadius: "6px",
                       color: "#c9d1d9",
@@ -241,9 +258,9 @@ function ServerMetricsPage() {
                           fontFamily: "monospace",
                           fontSize: "13px",
                           padding: "12px 16px",
-                          background: index % 2 === 0 ? "#0d1117" : "#161b22",
+                          background: index % 2 === 0 ? "#0c0c0cff" : "#222222ff",
                           color: "#c9d1d9",
-                          borderLeft: "3px solid #58a6ff",
+                          borderLeft: "3px solid #202020ff",
                           marginBottom: "2px",
                         }}
                       >
