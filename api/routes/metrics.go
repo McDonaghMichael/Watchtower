@@ -100,9 +100,28 @@ func GetMetricsByServerID() gin.HandlerFunc {
 		var metricsList []Metrics
 
 		rows, err := database.Pool.Query(context.Background(),
-			`SELECT id, server_id, num_of_cpu, memory_allocated, memory_allocations,
-			        disk_usage_total, disk_usage_used, disk_usage_free,
-			        ssh_connections, http_connections, https_connections, timestamp
+			`SELECT 
+			id, 
+			server_id,
+			num_of_cpu,
+			cpu_usage,
+			memory_allocated,
+			memory_allocations,
+			memory_usage_percent,
+			swap_used,
+			swap_total,
+			swap_free,
+			cache_memory,
+			buffer_memory,
+            disk_usage_total,
+			disk_usage_used,
+			disk_usage_free,
+            ssh_connections,
+			http_connections,
+			https_connections,
+			uptime_seconds,
+			timestamp
+
 			   FROM metrics
 			   WHERE server_id = $1
 			   ORDER BY timestamp DESC LIMIT $2`, id, limit)
@@ -115,9 +134,24 @@ func GetMetricsByServerID() gin.HandlerFunc {
 		for rows.Next() {
 			var m Metrics
 			if err := rows.Scan(
-				&m.ID, &m.ServerID, &m.NumOfCPU, &m.MemoryAllocated, &m.MemoryAllocations,
-				&m.DiskUsageTotal, &m.DiskUsageUsed, &m.DiskUsageFree,
-				&m.SSHConnections, &m.HTTPConnections, &m.HTTPSConnections, &m.Timestamp,
+				&m.ID, &m.ServerID,
+				&m.NumOfCPU,
+				&m.CPUUsage,
+				&m.MemoryAllocated,
+				&m.MemoryAllocations,
+				&m.MemoryUsagePercent,
+				&m.SwapUsed,
+				&m.SwapTotal,
+				&m.SwapFree,
+				&m.CacheMemory,
+				&m.BufferMemory,
+				&m.DiskUsageTotal,
+				&m.DiskUsageUsed,
+				&m.DiskUsageFree,
+				&m.SSHConnections,
+				&m.HTTPConnections,
+				&m.HTTPSConnections,
+				&m.UptimeSeconds, &m.Timestamp,
 			); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
