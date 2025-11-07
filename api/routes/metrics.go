@@ -28,6 +28,7 @@ type Metrics struct {
 	SSHConnections     int       `json:"ssh_connections"`
 	HTTPConnections    int       `json:"http_connections"`
 	HTTPSConnections   int       `json:"https_connections"`
+	Connections        int       `json:"connections"`
 	UptimeSeconds      int64     `json:"uptime_seconds"`
 	Timestamp          time.Time `json:"timestamp"`
 }
@@ -156,6 +157,7 @@ func GetMetricsByServerID() gin.HandlerFunc {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
+			m.Connections = m.HTTPConnections + m.SSHConnections + m.HTTPSConnections
 			metricsList = append(metricsList, m)
 		}
 

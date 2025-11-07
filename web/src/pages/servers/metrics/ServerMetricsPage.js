@@ -17,52 +17,26 @@ function ServerMetricsPage() {
 
   const [metrics, setMetrics] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [queryLimit, setQueryLimit] = useState(100);
-
+  const [queryLimit, setQueryLimit] = useState(10);
   const [error, setError] = useState(null);
-
   const [loading, setLoading] = useState(true);
 
-  const [chartData, setChartData] = useState({
-    xData: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    series1: [2, 5.5, 2, 8.5, 1.5, 5, 7, 3, 6, 4],
-    series2: [4, 3, 6, 2, 7, 4, 5, 8, 3, 6],
-    series3: [1, 4, 3, 6, 2, 7, 4, 5, 7, 3],
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setChartData((prev) => {
-        const newX = prev.xData[prev.xData.length - 1] + 1;
-        const newSeries1 = Math.random() * 10;
-        const newSeries2 = Math.random() * 10;
-        const newSeries3 = Math.random() * 10;
-
-        const newXData = [...prev.xData.slice(1), newX];
-        const newSeries1Data = [...prev.series1.slice(1), newSeries1];
-        const newSeries2Data = [...prev.series2.slice(1), newSeries2];
-        const newSeries3Data = [...prev.series3.slice(1), newSeries3];
-
-        return {
-          xData: newXData,
-          series1: newSeries1Data,
-          series2: newSeries2Data,
-          series3: newSeries3Data,
-        };
-      });
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
+
+        // some safety checks to avoid crashing
+        if(queryLimit <= 0){
+          setQueryLimit(10)
+        }
+        if(queryLimit > 200){
+          setQueryLimit(200)
+        }
         const res = await axios.get(
           `${API_BASE_URL}/metrics/server/${id}?limit=${queryLimit}`
         );
         const data = Array.isArray(res.data) ? res.data : [res.data];
-        console.log(data);
         setMetrics(data);
         setError(null);
         setLoading(false);
@@ -82,83 +56,123 @@ function ServerMetricsPage() {
   }, [id, queryLimit]);
 
   if (loading) return <LoadingSpinner />;
-
   if (error) return <AlertNotice id={id} error={error} />;
+  if (!metrics.length) return <AlertDefaultNotice title="No Data" message="No metrics available" />;
 
   const filteredMetrics = metrics.filter((metric) => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
-      String(metric.id || "")
-        .toLowerCase()
-        .includes(search) ||
-      String(metric.num_of_cpu || "")
-        .toLowerCase()
-        .includes(search) ||
-      String(metric.memory_allocated || "")
-        .toLowerCase()
-        .includes(search) ||
-      String(metric.disk_usage_used || "")
-        .toLowerCase()
-        .includes(search)
+      String(metric.id || "").toLowerCase().includes(search) ||
+      String(metric.num_of_cpu || "").toLowerCase().includes(search) ||
+      String(metric.memory_allocated || "").toLowerCase().includes(search) ||
+      String(metric.disk_usage_used || "").toLowerCase().includes(search)
     );
   });
+
+  const latest10Metrics = metrics.slice(0, queryLimit).reverse(); 
+  
+  const chartData = {
+    xData: latest10Metrics.map((m, idx) => idx + 1), 
+    connections: latest10Metrics.map((m) => m.connections || 0),
+    cpuUsage: latest10Metrics.map((m) => parseFloat(m.cpu_usage) || 0),
+    memoryUsage: latest10Metrics.map((m) => parseFloat(m.memory_usage_percent) || 0),
+    diskUsage: latest10Metrics.map((m) => 
+      Math.round((m.disk_usage_used / m.disk_usage_total) * 100) || 0
+    ),
+    swapUsage: latest10Metrics.map((m) => 
+      Math.round((m.swap_used / m.swap_total) * 100) || 0
+    ),
+  };
 
   return (
     <>
       <div>
         <Container className="mt-4">
           <Row className="mb-4 g-3">
-            <Col md={3}>
-              <DisplayCard />
+            <Col md={2}>
+              <DisplayCard value={metrics[0].cpu_usage + "%"} message={"CPU USAGE"} />
             </Col>
-            <Col md={3}>
-              <DisplayCard />
+            <Col md={2}>
+              <DisplayCard 
+                value={Math.round(metrics[0].memory_usage_percent * 100) / 100 + "%"} 
+                message={"MEMORY USAGE"} 
+              />
             </Col>
-            <Col md={3}>
-              <DisplayCard />
+            <Col md={2}>
+              <DisplayCard 
+                value={Math.round((metrics[0].disk_usage_used / metrics[0].disk_usage_total) * 100) + "%"} 
+                message={"DISK USAGE"} 
+              />
             </Col>
-            <Col md={3}>
-              <DisplayCard />
+            <Col md={2}>
+              <DisplayCard 
+                value={Math.round((metrics[0].swap_used / metrics[0].swap_total) * 100) + "%"} 
+                message={"SWAP USAGE"} 
+              />
+            </Col>
+            <Col md={2}>
+              <DisplayCard value={metrics[0].connections} message={"CONN"} />
+            </Col>
+            <Col md={2}>
+              <DisplayCard 
+                value={metrics[0].http_connections + metrics[0].https_connections} 
+                message={"DEFAULT"} 
+              />
             </Col>
           </Row>
-          <Card className="h-100 border-start border-4 border-danger">
+          <Card className="h-100 border-start border-4 border-secondary mb-4">
             <Card.Body className="py-3">
               <LineChart
                 xAxis={[
                   {
                     data: chartData.xData,
-                    label: "Time",
+                    label: "Metrics",
                     labelStyle: {
-                      fill: "#ca6f6fff",
+                      fill: "#fff",
                       fontSize: 14,
                     },
                   },
                 ]}
                 yAxis={[
                   {
-                    label: "Value",
+                    label: "Percentage (%)",
                     labelStyle: {
-                      fill: "#805a5aff",
+                      fill: "#fff",
                       fontSize: 14,
                     },
                   },
                 ]}
                 series={[
                   {
-                    data: chartData.series1,
+                    data: chartData.cpuUsage,
                     label: "CPU Usage",
-                    color: "#0d00ffff",
+                    color: "#ffa657",
+                    showMark: false
                   },
                   {
-                    data: chartData.series2,
+                    data: chartData.memoryUsage,
                     label: "Memory Usage",
-                    color: "#00ff62ff",
+                    color: "#d2a8ff",
+                    showMark: false
                   },
                   {
-                    data: chartData.series3,
-                    label: "Network Traffic",
-                    color: "#ffa600ff",
+                    data: chartData.diskUsage,
+                    label: "Disk Usage",
+                    color: "#f85149",
+                    showMark: false
+                  },
+                  {
+                    data: chartData.swapUsage,
+                    label: "Swap Usage",
+                    color: "#97355bff",
+                    showMark: false
+                  },
+                  {
+                    data: chartData.connections,
+                    label: "Live Connections",
+                    color: "#799eafff",
+                    showMark: false
                   },
                 ]}
                 height={500}
@@ -180,13 +194,9 @@ function ServerMetricsPage() {
       </div>
       <div>
         <Container className="mt-4">
-          <Card className="h-100 border-start border-4 border-danger bg-dark">
+          <Card className="h-100 border-start border-4 border-secondary bg-dark">
             <Card.Body className="py-3">
-              <div
-                style={{
-                  minHeight: "100vh",
-                }}
-              >
+              <div style={{ minHeight: "100vh" }}>
                 <div
                   style={{
                     padding: "12px 16px",
@@ -225,7 +235,10 @@ function ServerMetricsPage() {
                     type="number"
                     placeholder="Query Limit"
                     value={queryLimit}
-                    onChange={(e) => setQueryLimit(e.target.value)}
+                    min={10}
+                    max={200}
+                    interval={10}
+                    onChange={(e) => setQueryLimit(Number(e.target.value))}
                     className="bg-dark"
                     style={{
                       width: "25%",
@@ -240,7 +253,10 @@ function ServerMetricsPage() {
                 </div>
 
                 {filteredMetrics.length === 0 ? (
-                  <AlertDefaultNotice title="0 Metrics" message={"There is no metrics found for the query " + searchTerm} />
+                  <AlertDefaultNotice 
+                    title="0 Metrics" 
+                    message={`There is no metrics found for the query "${searchTerm}"`} 
+                  />
                 ) : (
                   <div
                     style={{
@@ -265,27 +281,22 @@ function ServerMetricsPage() {
                         }}
                       >
                         <span style={{ color: "#8b949e", minWidth: "160px" }}>
-                          [{getTimestamp()}]
+                          [{metric.timestamp || getTimestamp()}]
                         </span>
                         <span style={{ color: "#7ee787" }}>
                           ID: {metric.id || "N/A"}
                         </span>
                         <span style={{ color: "#ffa657" }}>
-                          CPU Count: {metric.num_of_cpu || "N/A"}
+                          CPU Count: {metric.num_of_cpu || "N/A"} ({metric.cpu_usage + "%" || "N/A"})
                         </span>
                         <span style={{ color: "#d2a8ff" }}>
-                          Memory Usage: {metric.memory_allocations || "N/A"} / {metric.memory_allocated || "N/A"}
-                        </span>
-                        <span style={{ color: "#56d364" }}>
+                          Memory Usage: {metric.memory_usage || "N/A"} / {metric.memory_allocated || "N/A"} ({Math.round(metric.memory_usage_percent * 100) / 100 + "%" || "N/A"})
                         </span>
                         <span style={{ color: "#f85149" }}>
                           Disk Usage: {metric.disk_usage_used || "N/A"} / {metric.disk_usage_total || "N/A"}
                         </span>
-                        <span style={{ color: "#a557ffff" }}>
-                          SSH: {metric.ssh_connections || "N/A"}
-                        </span>
-                        <span style={{ color: "#79c0ff" }}>
-                          HTTP: {metric.http_connections || "N/A"}
+                        <span style={{ color: "#799eafff" }}>
+                          CONN: {metric.connections || "0"}
                         </span>
                       </div>
                     ))}
