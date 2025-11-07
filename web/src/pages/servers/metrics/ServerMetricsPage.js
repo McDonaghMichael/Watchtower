@@ -271,24 +271,17 @@ function ServerMetricsPage() {
                           ID: {metric.id || "N/A"}
                         </span>
                         <span style={{ color: "#ffa657" }}>
-                          CPU: {metric.num_of_cpu || "N/A"}
-                        </span>
-                        <span style={{ color: "#79c0ff" }}>
-                          MEM_ALLOCATED: {metric.memory_allocated || "N/A"}
+                          CPU Count: {metric.num_of_cpu || "N/A"}
                         </span>
                         <span style={{ color: "#d2a8ff" }}>
-                          MEM_ALLOCATIONS: {metric.memory_allocations || "N/A"}
+                          Memory Usage: {metric.memory_allocations || "N/A"} / {metric.memory_allocated || "N/A"}
                         </span>
                         <span style={{ color: "#56d364" }}>
-                          DISK_TOTAL: {metric.disk_usage_total || "N/A"}
                         </span>
                         <span style={{ color: "#f85149" }}>
-                          DISK_USED: {metric.disk_usage_used || "N/A"}
+                          Disk Usage: {metric.disk_usage_used || "N/A"} / {metric.disk_usage_total || "N/A"}
                         </span>
-                        <span style={{ color: "#58a6ff" }}>
-                          DISK_FREE: {metric.disk_usage_free || "N/A"}
-                        </span>
-                        <span style={{ color: "#ffa657" }}>
+                        <span style={{ color: "#a557ffff" }}>
                           SSH: {metric.ssh_connections || "N/A"}
                         </span>
                         <span style={{ color: "#79c0ff" }}>
