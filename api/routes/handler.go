@@ -41,7 +41,7 @@ func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 
-		fmt.Printf("=== CORS DEBUG ===\n")
+		fmt.Printf("=== CORS DEBUG 2 ===\n")
 		fmt.Printf("Request Origin: '%s'\n", origin)
 		fmt.Printf("Request Method: '%s'\n", c.Request.Method)
 		fmt.Printf("All Headers: %v\n", c.Request.Header)
