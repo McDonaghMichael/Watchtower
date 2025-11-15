@@ -16,6 +16,7 @@ function ServerMetricsPage() {
   const { id } = useParams();
 
   const [metrics, setMetrics] = useState([]);
+  const [health, setHealth] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [queryLimit, setQueryLimit] = useState(10);
   const [error, setError] = useState(null);
@@ -26,7 +27,6 @@ function ServerMetricsPage() {
     const fetchMetrics = async () => {
       try {
 
-        // some safety checks to avoid crashing
         if(queryLimit <= 0){
           setQueryLimit(10)
         }
@@ -55,8 +55,40 @@ function ServerMetricsPage() {
     return () => clearInterval(interval);
   }, [id, queryLimit]);
 
+  useEffect(() => {
+    const fetchHealth = async () => {
+      try {
+
+        if(queryLimit <= 0){
+          setQueryLimit(10)
+        }
+        if(queryLimit > 200){
+          setQueryLimit(200)
+        }
+        const res = await axios.get(
+          `${API_BASE_URL}/health/server/${id}?limit=${queryLimit}`
+        );
+        const data = Array.isArray(res.data) ? res.data : [res.data];
+        setHealth(data);
+        setError(null);
+        setLoading(false);
+      } catch (err) {
+        console.error(err);
+        setError({
+          status: err.response?.status,
+          message: err.message,
+        });
+        setLoading(false);
+      }
+    };
+
+    fetchHealth();
+    const interval = setInterval(fetchHealth, 5000);
+    return () => clearInterval(interval);
+  }, [id, queryLimit]);
+
   if (loading) return <LoadingSpinner />;
-  if (error) return <AlertNotice id={id} error={error} />;
+  if (error) return <AlertDefaultNotice idtitle={id} message={error.message} />;
   if (!metrics.length) return <AlertDefaultNotice title="No Data" message="No metrics available" />;
 
   const filteredMetrics = metrics.filter((metric) => {
@@ -91,6 +123,12 @@ function ServerMetricsPage() {
         <Container className="mt-4">
           <Row className="mb-4 g-3">
             <Col md={2}>
+              <DisplayCard 
+                value={(health[0].status ? "ONLINE" : "OFFLINE")} 
+                message={"STATUS"} 
+              />
+            </Col>
+            <Col md={2}>
               <DisplayCard value={metrics[0].cpu_usage + "%"} message={"CPU USAGE"} />
             </Col>
             <Col md={2}>
@@ -114,12 +152,7 @@ function ServerMetricsPage() {
             <Col md={2}>
               <DisplayCard value={metrics[0].connections} message={"CONN"} />
             </Col>
-            <Col md={2}>
-              <DisplayCard 
-                value={metrics[0].http_connections + metrics[0].https_connections} 
-                message={"DEFAULT"} 
-              />
-            </Col>
+            
           </Row>
           <Card className="h-100 border-start border-4 border-secondary mb-4">
             <Card.Body className="py-3">
