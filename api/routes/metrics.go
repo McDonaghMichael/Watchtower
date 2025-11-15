@@ -2,40 +2,20 @@ package routes
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
-	"time"
+	"strconv"
 	"watchtower/api/database"
+	"watchtower/api/models"
+	"watchtower/api/redis"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Metrics struct {
-	ID                 int       `json:"id"`
-	ServerID           int       `json:"server_id"`
-	NumOfCPU           int       `json:"num_of_cpu"`
-	CPUUsage           float64   `json:"cpu_usage"`
-	MemoryAllocated    int       `json:"memory_allocated"`
-	MemoryAllocations  int       `json:"memory_allocations"`
-	MemoryUsagePercent float64   `json:"memory_usage_percent"`
-	SwapUsed           int64     `json:"swap_used"`
-	SwapTotal          int64     `json:"swap_total"`
-	SwapFree           int64     `json:"swap_free"`
-	CacheMemory        int64     `json:"cache_memory"`
-	BufferMemory       int64     `json:"buffer_memory"`
-	DiskUsageTotal     uint64    `json:"disk_usage_total"`
-	DiskUsageUsed      uint64    `json:"disk_usage_used"`
-	DiskUsageFree      uint64    `json:"disk_usage_free"`
-	SSHConnections     int       `json:"ssh_connections"`
-	HTTPConnections    int       `json:"http_connections"`
-	HTTPSConnections   int       `json:"https_connections"`
-	Connections        int       `json:"connections"`
-	UptimeSeconds      int64     `json:"uptime_seconds"`
-	Timestamp          time.Time `json:"timestamp"`
-}
-
 func AddMetric() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var metric Metrics
+		var metric models.Metrics
 
 		if err := c.ShouldBindJSON(&metric); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -89,6 +69,8 @@ func AddMetric() gin.HandlerFunc {
 			return
 		}
 
+		redis.StoreMetrics(metric.ServerID, metric)
+
 		c.JSON(http.StatusCreated, metric)
 	}
 }
@@ -96,36 +78,47 @@ func AddMetric() gin.HandlerFunc {
 func GetMetricsByServerID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		limit := c.Query("limit")
+		limitStr := c.Query("limit")
+		limit := 50 // default limit
+		if limitStr != "" {
+			if l, err := strconv.Atoi(limitStr); err == nil {
+				limit = l
+			}
+		}
 
-		var metricsList []Metrics
+		var ctx = context.Background()
+		var metricsList []models.Metrics
 
+		key := fmt.Sprintf("server:%s:metrics", id)
+		vals, err := redis.Rdb.LRange(ctx, key, 0, int64(limit-1)).Result()
+		if err == nil && len(vals) > 0 {
+			for _, v := range vals {
+				var m models.Metrics
+				if err := json.Unmarshal([]byte(v), &m); err != nil {
+					fmt.Println("JSON unmarshal error:", err)
+					continue
+				}
+				m.Connections = m.HTTPConnections + m.SSHConnections + m.HTTPSConnections
+				metricsList = append(metricsList, m)
+			}
+
+			fmt.Print("YES!!")
+			c.JSON(http.StatusOK, metricsList)
+			return
+		}
+
+		// 2️⃣ Fallback to PostgreSQL if Redis is empty or error
 		rows, err := database.Pool.Query(context.Background(),
 			`SELECT 
-			id, 
-			server_id,
-			num_of_cpu,
-			cpu_usage,
-			memory_allocated,
-			memory_allocations,
-			memory_usage_percent,
-			swap_used,
-			swap_total,
-			swap_free,
-			cache_memory,
-			buffer_memory,
-            disk_usage_total,
-			disk_usage_used,
-			disk_usage_free,
-            ssh_connections,
-			http_connections,
-			https_connections,
-			uptime_seconds,
-			timestamp
-
-			   FROM metrics
-			   WHERE server_id = $1
-			   ORDER BY timestamp DESC LIMIT $2`, id, limit)
+			id, server_id, num_of_cpu, cpu_usage,
+			memory_allocated, memory_allocations, memory_usage_percent,
+			swap_used, swap_total, swap_free, cache_memory, buffer_memory,
+			disk_usage_total, disk_usage_used, disk_usage_free,
+			ssh_connections, http_connections, https_connections,
+			uptime_seconds, timestamp
+			FROM metrics
+			WHERE server_id = $1
+			ORDER BY timestamp DESC LIMIT $2`, id, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -133,25 +126,13 @@ func GetMetricsByServerID() gin.HandlerFunc {
 		defer rows.Close()
 
 		for rows.Next() {
-			var m Metrics
+			var m models.Metrics
 			if err := rows.Scan(
-				&m.ID, &m.ServerID,
-				&m.NumOfCPU,
-				&m.CPUUsage,
-				&m.MemoryAllocated,
-				&m.MemoryAllocations,
-				&m.MemoryUsagePercent,
-				&m.SwapUsed,
-				&m.SwapTotal,
-				&m.SwapFree,
-				&m.CacheMemory,
-				&m.BufferMemory,
-				&m.DiskUsageTotal,
-				&m.DiskUsageUsed,
-				&m.DiskUsageFree,
-				&m.SSHConnections,
-				&m.HTTPConnections,
-				&m.HTTPSConnections,
+				&m.ID, &m.ServerID, &m.NumOfCPU, &m.CPUUsage,
+				&m.MemoryAllocated, &m.MemoryAllocations, &m.MemoryUsagePercent,
+				&m.SwapUsed, &m.SwapTotal, &m.SwapFree, &m.CacheMemory, &m.BufferMemory,
+				&m.DiskUsageTotal, &m.DiskUsageUsed, &m.DiskUsageFree,
+				&m.SSHConnections, &m.HTTPConnections, &m.HTTPSConnections,
 				&m.UptimeSeconds, &m.Timestamp,
 			); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

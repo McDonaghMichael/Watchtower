@@ -343,7 +343,7 @@ function ServerMetricsPage() {
                   </div>
                 )}
                 </Tab>
-                <Tab eventKey="health" title="health">
+                <Tab eventKey="health" title="Health">
                   {filteredMetrics.length === 0 ? (
                   <AlertDefaultNotice 
                     title="0 Health Logs" 

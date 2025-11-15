@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 	"watchtower/api/database"
+	"watchtower/api/redis"
 	"watchtower/api/routes"
 
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,8 @@ func main() {
 
 	StartHealthChecker()
 
+	redis.Init()
+	redis.ExampleClient()
 	port := "8080"
 	log.Printf("🚀 API server running on http://localhost:%s/api/v1\n", port)
 	log.Fatal(r.Run(":" + port))
