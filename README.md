@@ -95,9 +95,9 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
    ```
    docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest
    ```
-4. When running the agent please specify which URL to send to
+4. When running the agent please specify which URL to send 
 
-   `docker run -d -e SERVER_URL=http://<API URL>/api/v1/metric -e SERVER_ID=<ID> ghcr.io/mcdonaghmichael/watchtower-agent:latest`
+   `docker run -d --network host -e SERVER_URL=http://<API URL>/api/v1/metric -e SERVER_ID=<ID> ghcr.io/mcdonaghmichael/watchtower-agent:latest`
    
    If you plan on running the agent without docker use this command
 

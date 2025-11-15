@@ -49,3 +49,11 @@ CREATE TABLE IF NOT EXISTS metrics (
   uptime_seconds BIGINT,
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+CREATE TABLE IF NOT EXISTS health_status (
+  id SERIAL PRIMARY KEY,
+  server_id INT REFERENCES servers(id) ON DELETE CASCADE,
+  status INT,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

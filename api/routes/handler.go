@@ -1,15 +1,12 @@
 package routes
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupAPIRoutes(r *gin.RouterGroup) {
-
-	r.Use(corsMiddleware())
 
 	r.GET("/health", getHealth())
 
@@ -35,28 +32,10 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	// ========== Metrics Routes ==========
 	r.POST("/metric", AddMetric())
 	r.GET("/metrics/server/:id", GetMetricsByServerID()) // Gets metrics by server ID
-}
 
-func corsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		origin := c.Request.Header.Get("Origin")
-
-		fmt.Printf("=== CORS DEBUG 2 ===\n")
-		fmt.Printf("Request Origin: '%s'\n", origin)
-		fmt.Printf("Request Method: '%s'\n", c.Request.Method)
-		fmt.Printf("All Headers: %v\n", c.Request.Header)
-
-		// If origin is empty or matches our server, allow it
-		if origin == "" {
-			origin = "*" // Allow all for now during debugging
-		}
-
-		c.Header("Access-Control-Allow-Origin", origin)
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		c.Next()
-	}
+	// ========== Health Routes ==========
+	r.POST("/health", addHealthStatus())
+	r.GET("/health/server/:id", GetHealthStatusByServerID())
 }
 
 func getHealth() gin.HandlerFunc {

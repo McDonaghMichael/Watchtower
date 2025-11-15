@@ -396,3 +396,27 @@ func PingAllServers() {
 
 	wg.Wait()
 }
+
+func GetAllServers() ([]Server, error) {
+	rows, err := database.Pool.Query(
+		context.Background(),
+		`SELECT id, ip_address, status, last_ping FROM servers`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var servers []Server
+
+	for rows.Next() {
+		var s Server
+		err := rows.Scan(&s.ID, &s.IPAddress, &s.Status, &s.LastPing)
+		if err != nil {
+			return nil, err
+		}
+		servers = append(servers, s)
+	}
+
+	return servers, nil
+}
