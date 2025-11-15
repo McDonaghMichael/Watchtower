@@ -119,6 +119,12 @@ function ServerMetricsPage() {
     ),
   };
 
+  function getMetricColor(percent) {
+    if (percent < 20) return "#37fc47ff"; 
+    if (percent < 65) return "#ffa600ff";  
+    return "#ff3b30ff";                    
+  }
+
   return (
     <>
       <div>
@@ -132,23 +138,31 @@ function ServerMetricsPage() {
               />
             </Col>
             <Col md={2}>
-              <DisplayCard value={metrics[0].cpu_usage + "%"} message={"CPU USAGE"} />
+                
+              <DisplayCard
+              value={metrics[0].cpu_usage + "%"}
+              color={getMetricColor((Math.round((metrics[0].cpu_usage))))}
+              message={"CPU USAGE"} />
+
             </Col>
             <Col md={2}>
               <DisplayCard 
-                value={Math.round(metrics[0].memory_usage_percent * 100) / 100 + "%"} 
+                value={(Math.round(metrics[0].memory_usage_percent * 100) / 100) + "%"} 
+                color={getMetricColor((Math.round(metrics[0].memory_usage_percent * 100) / 100))}
                 message={"MEMORY USAGE"} 
               />
             </Col>
             <Col md={2}>
               <DisplayCard 
                 value={Math.round((metrics[0].disk_usage_used / metrics[0].disk_usage_total) * 100) + "%"} 
+                color={getMetricColor((Math.round((metrics[0].disk_usage_used / metrics[0].disk_usage_total) * 100)))}
                 message={"DISK USAGE"} 
               />
             </Col>
             <Col md={2}>
               <DisplayCard 
                 value={Math.round((metrics[0].swap_used / metrics[0].swap_total) * 100) + "%"} 
+                color={getMetricColor((Math.round((metrics[0].swap_used / metrics[0].swap_total) * 100)))}
                 message={"SWAP USAGE"} 
               />
             </Col>
