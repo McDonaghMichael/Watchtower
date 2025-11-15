@@ -9,6 +9,8 @@ import Container from "react-bootstrap/Container";
 import DisplayCard from "../../../components/metrics/DisplayCard";
 import { LineChart } from "@mui/x-charts/LineChart";
 import AlertDefaultNotice from "../../../components/notices/AlertDefaultNotice";
+import Tab from 'react-bootstrap/Tab';
+import Tabs from 'react-bootstrap/Tabs';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -125,6 +127,7 @@ function ServerMetricsPage() {
             <Col md={2}>
               <DisplayCard 
                 value={(health[0].status ? "ONLINE" : "OFFLINE")} 
+                color={health[0].status ? "#37fc47ff" : "#ff7349ff"}
                 message={"STATUS"} 
               />
             </Col>
@@ -234,7 +237,7 @@ function ServerMetricsPage() {
                 <div style={{ marginBottom: "10px" }}>
                   <input
                     type="text"
-                    placeholder="Search metrics..."
+                    placeholder="Search stats..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="bg-dark"
@@ -269,7 +272,13 @@ function ServerMetricsPage() {
                   />
                 </div>
 
-                {filteredMetrics.length === 0 ? (
+                <Tabs
+                defaultActiveKey="metrics"
+                id="uncontrolled-tab-example"
+                className="mb-3"
+              >
+                <Tab eventKey="metrics" title="Metrics">
+                  {filteredMetrics.length === 0 ? (
                   <AlertDefaultNotice 
                     title="0 Metrics" 
                     message={`There is no metrics found for the query "${searchTerm}"`} 
@@ -319,6 +328,53 @@ function ServerMetricsPage() {
                     ))}
                   </div>
                 )}
+                </Tab>
+                <Tab eventKey="health" title="health">
+                  {filteredMetrics.length === 0 ? (
+                  <AlertDefaultNotice 
+                    title="0 Health Logs" 
+                    message={`There is no health logs found for the query "${searchTerm}"`} 
+                  />
+                ) : (
+                  <div
+                    style={{
+                      maxHeight: "calc(100vh - 150px)",
+                      overflowY: "auto",
+                    }}
+                  >
+                    {health.map((h, index) => (
+                      <div
+                        key={h.id || index}
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "16px",
+                          fontFamily: "monospace",
+                          fontSize: "13px",
+                          padding: "12px 16px",
+                          background: index % 2 === 0 ? "#0c0c0cff" : "#222222ff",
+                          color: "#c9d1d9",
+                          borderLeft: "3px solid #202020ff",
+                          marginBottom: "2px",
+                        }}
+                      >
+                        <span style={{ color: "#8b949e", minWidth: "160px" }}>
+                          [{h.timestamp || getTimestamp()}]
+                        </span>
+                        <span style={{ color: "#7ee787" }}>
+                          ID: {h.id || "N/A"}
+                        </span>
+                        <span style={{ color: h.status ? "#37fc47ff" : "#ff7349ff" }}>
+                          ID: {(h.status ? "ONLINE" : "OFFLINE")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                </Tab>
+              </Tabs>
+
+                
               </div>
             </Card.Body>
           </Card>
