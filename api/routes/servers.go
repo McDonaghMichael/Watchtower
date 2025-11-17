@@ -9,37 +9,16 @@ import (
 	"sync"
 	"time"
 	"watchtower/api/database"
+	"watchtower/api/models"
 	"watchtower/api/utils"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/ssh"
 )
 
-type Server struct {
-	ID                 int        `json:"id"`
-	ServerName         string     `json:"server_name"`
-	IPAddress          string     `json:"ip_address"`
-	SSHUsername        string     `json:"ssh_username"`
-	SSHPrivateKey      string     `json:"ssh_private_key,omitempty"`
-	SSHPort            int        `json:"ssh_port"`
-	OperatingSystem    string     `json:"operating_system"`
-	Environment        string     `json:"environment"`
-	Location           string     `json:"location"`
-	Description        string     `json:"description"`
-	Status             string     `json:"status"`
-	MonitoringInterval int        `json:"monitoring_interval"`
-	CPUThreshold       int        `json:"cpu_threshold"`
-	MemoryThreshold    int        `json:"memory_threshold"`
-	DiskThreshold      int        `json:"disk_threshold"`
-	LastPing           *time.Time `json:"last_ping"`
-	CreatedAt          time.Time  `json:"created_at"`
-	UpdatedAt          time.Time  `json:"updated_at"`
-	Message            *string    `json:"message"`
-}
-
 func AddServer() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var server Server
+		var server models.Server
 
 		if err := c.ShouldBindJSON(&server); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -83,9 +62,9 @@ func GetServers() gin.HandlerFunc {
 		}
 		defer rows.Close()
 
-		var servers []Server
+		var servers []models.Server
 		for rows.Next() {
-			var server Server
+			var server models.Server
 
 			err := rows.Scan(
 				&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername, &server.SSHPrivateKey,
@@ -112,7 +91,7 @@ func GetServers() gin.HandlerFunc {
 func GetServerByID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		var server Server
+		var server models.Server
 
 		server.Status = "online"
 
@@ -140,7 +119,7 @@ func GetServerByID() gin.HandlerFunc {
 
 func UpdateServer() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var server Server
+		var server models.Server
 
 		if err := c.ShouldBindJSON(&server); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -193,7 +172,7 @@ func DeleteServer() gin.HandlerFunc {
 
 		rowsAffected := result.RowsAffected()
 		if rowsAffected == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "models.Server not found"})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"response": "server deleted"})
 		}
@@ -265,7 +244,7 @@ func GetServerStatus() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		id := c.Param("id")
-		var server Server
+		var server models.Server
 
 		server.Status = "online"
 
@@ -290,7 +269,7 @@ func GetServerStatus() gin.HandlerFunc {
 		client, err := EstablishSSHConnection(server)
 		if err != nil {
 			server.Status = "offline"
-			fmt.Printf("Server %s 3SSH connection failed: %v\n", server.ServerName, err)
+			fmt.Printf("models.Server %s 3SSH connection failed: %v\n", server.ServerName, err)
 		} else {
 			client.Close()
 		}
@@ -300,7 +279,7 @@ func GetServerStatus() gin.HandlerFunc {
 
 }
 
-func EstablishSSHConnection(server Server) (*ssh.Client, error) {
+func EstablishSSHConnection(server models.Server) (*ssh.Client, error) {
 	if server.SSHPrivateKey == "" {
 		return nil, fmt.Errorf("no SSH private key provided")
 	}
@@ -353,11 +332,11 @@ func PingAllServers() {
 	}
 	defer rows.Close()
 
-	var servers []Server
+	var servers []models.Server
 
 	for rows.Next() {
 
-		var server Server
+		var server models.Server
 		err := rows.Scan(
 			&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername, &server.SSHPrivateKey,
 			&server.SSHPort, &server.LastPing,
@@ -369,20 +348,20 @@ func PingAllServers() {
 		}
 
 		if server.SSHPrivateKey == "" {
-			fmt.Printf("Server %s: No SSH key provided\n", server.ServerName)
-			database.UpdateServerWarningStatus(fmt.Errorf("Server %s: No SSH key provided\n", server.ServerName), server.ID)
+			fmt.Printf("models.Server %s: No SSH key provided\n", server.ServerName)
+			database.UpdateServerWarningStatus(fmt.Errorf("models.Server %s: No SSH key provided\n", server.ServerName), server.ID)
 			continue
 		}
 
 		_, err = utils.Ping(server.IPAddress)
 		if err != nil {
-			database.UpdateServerWarningStatus(fmt.Errorf("Server %s could not be pinged: %v\n", server.ServerName, err), server.ID)
+			database.UpdateServerWarningStatus(fmt.Errorf("models.Server %s could not be pinged: %v\n", server.ServerName, err), server.ID)
 			continue
 		}
 
 		client, err := EstablishSSHConnection(server)
 		if err != nil {
-			database.UpdateServerWarningStatus(fmt.Errorf("Server %s SSH connection failed: %v\n", server.ServerName, err), server.ID)
+			database.UpdateServerWarningStatus(fmt.Errorf("models.Server %s SSH connection failed: %v\n", server.ServerName, err), server.ID)
 			continue
 		}
 
@@ -397,7 +376,7 @@ func PingAllServers() {
 	wg.Wait()
 }
 
-func GetAllServers() ([]Server, error) {
+func GetAllServers() ([]models.Server, error) {
 	rows, err := database.Pool.Query(
 		context.Background(),
 		`SELECT id, ip_address, status, last_ping FROM servers`,
@@ -407,10 +386,10 @@ func GetAllServers() ([]Server, error) {
 	}
 	defer rows.Close()
 
-	var servers []Server
+	var servers []models.Server
 
 	for rows.Next() {
-		var s Server
+		var s models.Server
 		err := rows.Scan(&s.ID, &s.IPAddress, &s.Status, &s.LastPing)
 		if err != nil {
 			return nil, err

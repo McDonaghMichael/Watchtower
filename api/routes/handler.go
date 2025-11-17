@@ -36,6 +36,12 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	// ========== Health Routes ==========
 	r.POST("/health", addHealthStatus())
 	r.GET("/health/server/:id", GetHealthStatusByServerID())
+
+	// ========== Group Routes ==========
+	r.POST("/group", addGroup())
+	r.POST("/condition", addCondition())
+	r.GET("/condition/server/:id", GetConditionsByServer())
+	r.PUT("/condition/server/:id", UpdateConditionsByServer())
 }
 
 func getHealth() gin.HandlerFunc {

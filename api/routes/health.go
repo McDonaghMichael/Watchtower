@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 	"watchtower/api/database"
+	"watchtower/api/models"
 	"watchtower/api/utils"
 
 	"github.com/gin-gonic/gin"
@@ -120,7 +121,7 @@ func CheckAllServersHealth() error {
 	for _, s := range servers {
 		wg.Add(1)
 
-		go func(server Server) {
+		go func(server models.Server) {
 			defer wg.Done()
 
 			// Ping server

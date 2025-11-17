@@ -47,9 +47,6 @@ const handleSubmit = (event) => {
     disk_threshold: parseInt(formData.disk_threshold, 10)
   };
 
-  console.log(API_BASE_URL)
-  console.log('Sending data:', submitData); 
-
   axios.post(`${API_BASE_URL}/server`, submitData)
     .then(res => {
       console.log('Server added successfully:', res.data);

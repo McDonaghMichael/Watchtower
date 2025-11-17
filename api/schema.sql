@@ -57,3 +57,17 @@ CREATE TABLE IF NOT EXISTS health_status (
   status INT,
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS groups (
+    group_id SERIAL PRIMARY KEY,
+    server_id INT NOT NULL REFERENCES servers(id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS conditions (
+    condition_id SERIAL PRIMARY KEY,
+    group_id INT NOT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
+    metric VARCHAR(255),
+    operator VARCHAR(3) CHECK (operator IN ('>', '<', '>=', '<=', '=', '!=')),
+    value DECIMAL(10,2)
+);
