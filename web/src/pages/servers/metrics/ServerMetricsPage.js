@@ -246,7 +246,7 @@ function ServerMetricsPage() {
         <Container className="mt-4">
           <Card className="h-100 border-start border-4 border-secondary bg-dark">
             <Card.Body className="py-3">
-              <div style={{ minHeight: "100vh" }}>
+              <div style={{ minHeight: "50vh" }}>
 
                 <div style={{ marginBottom: "10px" }}>
                   <input
