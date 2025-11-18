@@ -17,9 +17,11 @@ import AddBoxIcon from "@mui/icons-material/AddBox";
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function EditServerEvent() {
+
   const { id } = useParams();
   const { group_id } = useParams();
 
+  const [actions, setActions] = useState([]);
   const [conditions, setConditions] = useState([]);
 
   useEffect(() => {
@@ -27,6 +29,7 @@ function EditServerEvent() {
       "<": "less_than",
       ">": "more_than",
       "=": "equal_to",
+      "!=": "not_equal_to",
     };
 
     if (id) {
@@ -46,7 +49,21 @@ function EditServerEvent() {
         .catch((err) => {
           console.error("Error fetching server:", err);
         });
+        axios
+        .get(`${API_BASE_URL}/action/group/${group_id}`)
+        .then((res) => {
+          console.log("Response actions data:", res.data);
+
+            setActions(res.data);
+          
+        })
+        .catch((err) => {
+          console.error("Error fetching server:", err);
+        });
+    
     }
+
+    
   }, [id]);
 
   const handleChange = (index, field, value) => {
@@ -80,6 +97,38 @@ function EditServerEvent() {
     );
   };
 
+  const addAction = (e) => {
+    e.preventDefault();
+    setActions((prev) => [
+      ...prev,
+      {
+      action: "webhook",
+      value: "google.com",
+    },
+    ]);
+  };
+
+  const removeAction = (actionId) => {
+    setActions((prev) =>
+      prev.map((c) =>
+        c.action_id === actionId ? { ...c, delete: true } : c
+      )
+    );
+  };
+
+  const handleChangeAction = (index, field, value) => {
+    setActions((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        [field]: value,
+      };
+
+      console.log(updated)
+      return updated;
+    });
+  };
+
   const submitData = (e) => {
     e.preventDefault();
 
@@ -87,6 +136,7 @@ function EditServerEvent() {
       less_than: "<",
       more_than: ">",
       equal_to: "=",
+      not_equal_to: "!="
     };
 
     // Get the first defined group_id from the array
@@ -113,6 +163,23 @@ function EditServerEvent() {
       });
 
     console.log("Payload sent:", payload);
+
+    const newpayload = actions.map((cond) => ({
+          action_id: cond.action_id || null,
+          group_id: Number(group_id),
+          action: cond.action,
+          value: cond.value,
+          delete: cond.delete || false,
+        }));
+
+        axios
+          .put(`${API_BASE_URL}/action/server/${id}`, newpayload)
+          .then(() => {
+            console.log("Server updated successfully:", newpayload);
+          })
+          .catch((err) => {
+            console.error("Error updating server:", err);
+          });
   };
 
   return (
@@ -124,43 +191,77 @@ function EditServerEvent() {
           </Card.Header>
           <Card.Body>
             <Form>
-              <Row className="mb-4">
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Action</Form.Label>
-                    <Form.Select aria-label="Action" defaultValue={"webhook"}>
-                      <option value="webhook">Webhook</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>URL</Form.Label>
-                    <InputGroup className="mb-3">
-                      <InputGroup.Text id="webhook-url">
-                        https://
-                      </InputGroup.Text>
-                      <Form.Control
-                        id="webhook-url"
-                        aria-describedby="webhook-url"
-                      />
-                    </InputGroup>
-                  </Form.Group>
-                </Col>
-                <div className="d-flex gap-2">
-                  <Button variant="secondary" onClick={(e) => addCondition(e)}>
-                    <AddBoxIcon></AddBoxIcon>
-                  </Button>
-                </div>
-              </Row>
-              <Row className="mb-4">
-                <h4 className="mb-0">Conditions</h4>
-                <div className="d-flex gap-2">
-                  <Button variant="secondary" onClick={(e) => addCondition(e)}>
-                    <AddBoxIcon></AddBoxIcon>
-                  </Button>
-                </div>
-              </Row>
+             <Row className="mb-4">
+                      <h4 className="mb-0">Actions</h4>
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="secondary"
+                          onClick={(e) => addAction(e)}
+                        >
+                          <AddBoxIcon></AddBoxIcon>
+                        </Button>
+                      </div>
+                    </Row>
+              {actions
+                .filter((c) => !c.delete)
+                .map((c, index) => (
+                  <>
+                    <Row className="mb-4">
+                      <Col md={3}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Action</Form.Label>
+                          <Form.Select
+                            aria-label="Action"
+                              value={c.action}
+
+                            onChange={(e) =>
+                            handleChangeAction(index, "action", e.target.value)
+                          }
+                          >
+                            <option value="webhook">Webhook</option>
+                          </Form.Select>
+                        </Form.Group>
+                      </Col>
+                      <Col md={3}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>URL</Form.Label>
+                          <InputGroup className="mb-3">
+                            <InputGroup.Text id="value">
+                              URL
+                            </InputGroup.Text>
+                            <Form.Control
+                              id="value"
+                              value={c.value}
+                              aria-describedby="value"
+                              onChange={(e) =>
+                            handleChangeAction(index, "value", e.target.value)
+                          }
+                            />
+                            <Button
+                            variant="danger"
+                            onClick={(e) => removeAction(c.action_id)}
+                          >
+                            <DeleteIcon />
+                          </Button>
+                          </InputGroup>
+                        </Form.Group>
+                      </Col>
+                      
+                    </Row>
+                    
+                  </>
+                ))}
+                <Row className="mb-4">
+                      <h4 className="mb-0">Conditions</h4>
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="secondary"
+                          onClick={(e) => addCondition(e)}
+                        >
+                          <AddBoxIcon></AddBoxIcon>
+                        </Button>
+                      </div>
+                    </Row>
               {conditions
                 .filter((c) => !c.delete) 
                 .map((c, index) => (
@@ -196,6 +297,7 @@ function EditServerEvent() {
                           <option value="more_than">More than</option>
                           <option value="less_than">Less than</option>
                           <option value="equal_to">Equal to</option>
+                          <option value="not_equal_to">Not Equal to</option>
                         </Form.Select>
                       </Form.Group>
                     </Col>
@@ -223,7 +325,7 @@ function EditServerEvent() {
                 ))}
 
               <Button variant={"primary"} onClick={(e) => submitData(e)}>
-                Add Condition
+                Save Event
               </Button>
             </Form>
           </Card.Body>

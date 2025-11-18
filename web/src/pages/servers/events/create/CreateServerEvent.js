@@ -99,6 +99,7 @@ function CreateServerEvent() {
           less_than: "<",
           more_than: ">",
           equal_to: "=",
+          not_equal_to: "!="
         };
 
         const payload = conditions.map((cond) => ({
@@ -126,7 +127,7 @@ function CreateServerEvent() {
           action_id: cond.action_id || null,
           group_id: res.data.group_id,
           action: cond.action,
-          value: "https://" + cond.value
+          value: cond.value
         }));
 
         axios
@@ -188,7 +189,7 @@ function CreateServerEvent() {
                           <Form.Label>URL</Form.Label>
                           <InputGroup className="mb-3">
                             <InputGroup.Text id="value">
-                              https://
+                              URL
                             </InputGroup.Text>
                             <Form.Control
                               id="value"
@@ -258,6 +259,7 @@ function CreateServerEvent() {
                           <option value="more_than">More than</option>
                           <option value="less_than">Less than</option>
                           <option value="equal_to">Equal to</option>
+                          <option value="not_equal_to">Not Equal to</option>
                         </Form.Select>
                       </Form.Group>
                     </Col>
@@ -285,7 +287,7 @@ function CreateServerEvent() {
                 ))}
 
               <Button variant={"primary"} onClick={(e) => submitData(e)}>
-                Add Condition
+                Create Event
               </Button>
             </Form>
           </Card.Body>

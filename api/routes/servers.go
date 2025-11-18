@@ -52,8 +52,7 @@ func GetServers() gin.HandlerFunc {
 		rows, err := database.Pool.Query(context.Background(),
 			`SELECT 
 				id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port, 
-				operating_system, environment, location, description, 
-				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold, last_ping, status, message, created_at, updated_at 
+				operating_system, environment, location, description, last_ping, status, message, created_at, updated_at 
 			FROM servers`)
 
 		if err != nil {
@@ -69,8 +68,7 @@ func GetServers() gin.HandlerFunc {
 			err := rows.Scan(
 				&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername, &server.SSHPrivateKey,
 				&server.SSHPort, &server.OperatingSystem, &server.Environment,
-				&server.Location, &server.Description, &server.MonitoringInterval,
-				&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold, &server.LastPing, &server.Status, &server.Message, &server.CreatedAt, &server.UpdatedAt,
+				&server.Location, &server.Description, &server.LastPing, &server.Status, &server.Message, &server.CreatedAt, &server.UpdatedAt,
 			)
 
 			if err != nil {
@@ -99,13 +97,11 @@ func GetServerByID() gin.HandlerFunc {
 
 			`SELECT 
 				id, server_name, ip_address, ssh_username, ssh_port, ssh_private_key, 
-				operating_system, environment, location, description,		
-				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold, last_ping, created_at, updated_at
+				operating_system, environment, location, description, last_ping, created_at, updated_at
 			FROM servers WHERE id=$1`, id).Scan(
 			&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername,
 			&server.SSHPort, &server.SSHPrivateKey, &server.OperatingSystem, &server.Environment,
-			&server.Location, &server.Description, &server.MonitoringInterval,
-			&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
+			&server.Location, &server.Description, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
 		)
 
 		if err != nil {
@@ -137,17 +133,12 @@ func UpdateServer() gin.HandlerFunc {
         environment = $7,
         location = $8,
         description = $9,
-        monitoring_interval = $10,
-        cpu_threshold = $11,
-        memory_threshold = $12,
-        disk_threshold = $13,
         updated_at = NOW()
-     WHERE id = $14
+     WHERE id = $10
      RETURNING id, created_at, updated_at`,
 			server.ServerName, server.IPAddress, server.SSHUsername, server.SSHPrivateKey,
 			server.SSHPort, server.OperatingSystem, server.Environment, server.Location,
-			server.Description, server.MonitoringInterval, server.CPUThreshold,
-			server.MemoryThreshold, server.DiskThreshold, server.ID,
+			server.Description, server.ID,
 		).Scan(&server.ID, &server.CreatedAt, &server.UpdatedAt)
 
 		if err != nil {
@@ -252,13 +243,11 @@ func GetServerStatus() gin.HandlerFunc {
 
 			`SELECT 
 				id, server_name, ip_address, ssh_username, ssh_port, ssh_private_key, 
-				operating_system, environment, location, description,		
-				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold, last_ping, created_at, updated_at
+				operating_system, environment, location, description, last_ping, created_at, updated_at
 			FROM servers WHERE id=$1`, id).Scan(
 			&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername,
 			&server.SSHPort, &server.SSHPrivateKey, &server.OperatingSystem, &server.Environment,
-			&server.Location, &server.Description, &server.MonitoringInterval,
-			&server.CPUThreshold, &server.MemoryThreshold, &server.DiskThreshold, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
+			&server.Location, &server.Description, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
 		)
 
 		if err != nil {

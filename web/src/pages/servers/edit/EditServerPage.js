@@ -27,10 +27,6 @@ function EditServerPage() {
     description: '',
     operating_system: '',
     environment: 'production',
-    monitoring_interval: '5',
-    cpu_threshold: '90',
-    memory_threshold: '90',
-    disk_threshold: '90',
     tags: ''
   });
 
@@ -43,10 +39,6 @@ function EditServerPage() {
             setFormData({
               ...res.data,
               ssh_port: res.data.ssh_port?.toString() || '22',
-              monitoring_interval: res.data.monitoring_interval?.toString() || '5',
-              cpu_threshold: res.data.cpu_threshold?.toString() || '90',
-              memory_threshold: res.data.memory_threshold?.toString() || '90',
-              disk_threshold: res.data.disk_threshold?.toString() || '90'
             });
           }
         })
@@ -76,10 +68,6 @@ function EditServerPage() {
     const submitData = {
       ...formData,
       ssh_port: parseInt(formData.ssh_port, 10),
-      monitoring_interval: parseInt(formData.monitoring_interval, 10),
-      cpu_threshold: parseInt(formData.cpu_threshold, 10),
-      memory_threshold: parseInt(formData.memory_threshold, 10),
-      disk_threshold: parseInt(formData.disk_threshold, 10)
     };
 
     axios.put(`${API_BASE_URL}/server/${id}`, submitData)
@@ -271,21 +259,7 @@ function EditServerPage() {
               </Col>
             </Row>
 
-            <h5 className="mb-3">Monitoring Settings</h5>
             <Row className="mb-4">
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Monitoring Interval (minutes)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="monitoring_interval"
-                    value={formData.monitoring_interval}
-                    onChange={handleInputChange}
-                    min="1"
-                    max="60"
-                  />
-                </Form.Group>
-              </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Description</Form.Label>
@@ -301,48 +275,6 @@ function EditServerPage() {
               </Col>
             </Row>
 
-            <h5 className="mb-3">Alert Thresholds (%)</h5>
-            <Row className="mb-4">
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>CPU Usage</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="cpu_threshold"
-                    value={formData.cpu_threshold}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="100"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Memory Usage</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="memory_threshold"
-                    value={formData.memory_threshold}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="100"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Disk Usage</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="disk_threshold"
-                    value={formData.disk_threshold}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="100"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
 
             <div className="d-flex gap-2">
               <Button 

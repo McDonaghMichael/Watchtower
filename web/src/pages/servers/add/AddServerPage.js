@@ -24,10 +24,6 @@ function AddServerPage() {
     description: '',
     operatingSystem: '',
     environment: 'production',
-    monitoring_interval: '5',
-    cpu_threshold: '90',
-    memory_threshold: '90',
-    disk_threshold: '90',
     tags: ''
   });
 
@@ -224,23 +220,7 @@ const handleSubmit = (event) => {
                 </Form.Group>
               </Col>
             </Row>
-
-
-            <h5 className="mb-3">Monitoring Settings</h5>
             <Row className="mb-4">
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Monitoring Interval (minutes)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="monitoring_interval"
-                    value={formData.monitoring_interval}
-                    onChange={handleInputChange}
-                    min="1"
-                    max="60"
-                  />
-                </Form.Group>
-              </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Description</Form.Label>
@@ -251,49 +231,6 @@ const handleSubmit = (event) => {
                     value={formData.description}
                     onChange={handleInputChange}
                     placeholder="Enter server description..."
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <h5 className="mb-3">Alert Thresholds (%)</h5>
-            <Row className="mb-4">
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>CPU Usage</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="cpu_threshold"
-                    value={formData.cpu_threshold}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="100"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Memory Usage</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="memory_threshold"
-                    value={formData.memory_threshold}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="100"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Disk Usage</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="disk_threshold"
-                    value={formData.disk_threshold}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="100"
                   />
                 </Form.Group>
               </Col>

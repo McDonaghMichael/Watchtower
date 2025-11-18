@@ -25,38 +25,37 @@ function ServerEventsPage() {
   const [groups, setGroups] = useState([]);
   const [errors, setErrors] = useState([]);
 
-  useEffect(() => {
-
-  const fetchData = async () => {
+ useEffect(() => {
+  const fetchGroupsData = async () => {
     try {
-      const groupResponse = await axios.get(
-        `${API_BASE_URL}/group/server/${id}`
-      );
-
+      const groupResponse = await axios.get(`${API_BASE_URL}/group/server/${id}`);
       const groups = groupResponse.data;
 
-      const groupsWithConditions = await Promise.all(
+      const groupsWithData = await Promise.all(
         groups.map(async (group) => {
-          const conditionResponse = await axios.get(
-            `${API_BASE_URL}/condition/group/${group.group_id}`
-          );
+          const [conditionResponse, actionResponse] = await Promise.all([
+            axios.get(`${API_BASE_URL}/condition/group/${group.group_id}`),
+            axios.get(`${API_BASE_URL}/action/group/${group.group_id}`)
+          ]);
 
           return {
             ...group,
-            conditions: conditionResponse.data
+            conditions: conditionResponse.data,
+            actions: actionResponse.data
           };
         })
       );
 
-      console.log(groupsWithConditions);
-      setGroups(groupsWithConditions)
+      console.log(groupsWithData);
+      setGroups(groupsWithData);
     } catch (err) {
       console.error(err);
     }
   };
 
-  fetchData();
-}, []);
+  fetchGroupsData();
+}, [id]);
+
 
   const columns = useMemo(
     () => [
@@ -68,6 +67,11 @@ function ServerEventsPage() {
       {
         header: "Conditions",
         accessorKey: "conditions",
+        Cell: ({ cell }) => ((cell.getValue().length > 0) ? <CustomBadge variant={"info"} text={cell.getValue().length} /> : <CustomBadge variant={"secondary"} text={"0"} />)
+      },
+      {
+        header: "Actions",
+        accessorKey: "actions",
         Cell: ({ cell }) => ((cell.getValue().length > 0) ? <CustomBadge variant={"info"} text={cell.getValue().length} /> : <CustomBadge variant={"secondary"} text={"0"} />)
       }
     ],
