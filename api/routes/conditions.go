@@ -21,6 +21,15 @@ type Condition struct {
 	Value       float64 `json:"value"`
 }
 
+type ConditionUpdate struct {
+	ConditionID *int   `json:"condition_id"`
+	GroupID     int    `json:"group_id"`
+	Metric      string `json:"metric"`
+	Operator    string `json:"operator"`
+	Value       int    `json:"value"`
+	Delete      bool   `json:"delete"`
+}
+
 func addGroup() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -45,6 +54,90 @@ func addGroup() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusCreated, group)
+	}
+}
+
+func GetGroupsByServerId() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var groups []Group
+
+		rows, err := database.Pool.Query(context.Background(),
+			`SELECT 
+                group_id,
+                server_id
+             FROM groups
+             WHERE server_id = $1`,
+			id,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var g Group
+			if err := rows.Scan(
+				&g.GroupID,
+				&g.ServerID,
+			); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			groups = append(groups, g)
+		}
+
+		if len(groups) == 0 {
+			c.JSON(http.StatusNotFound, gin.H{})
+			return
+		}
+
+		c.JSON(http.StatusOK, groups)
+	}
+}
+
+func GetConditionsByGroupId() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var conditions []Condition
+
+		rows, err := database.Pool.Query(context.Background(),
+			`SELECT group_id, condition_id, metric, operator, value FROM conditions WHERE group_id = $1 `, id,
+		)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			var con Condition
+			if err := rows.Scan(
+				&con.GroupID,
+				&con.ConditionID,
+				&con.Metric,
+				&con.Operator,
+				&con.Value,
+			); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"errror": err.Error()})
+				return
+			}
+
+			conditions = append(conditions, con)
+		}
+
+		if len(conditions) == 0 {
+			c.JSON(http.StatusOK, gin.H{})
+			return
+		}
+
+		c.JSON(http.StatusOK, conditions)
 	}
 }
 
@@ -110,15 +203,6 @@ func GetConditionsByServer() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, conditions)
 	}
-}
-
-type ConditionUpdate struct {
-	ConditionID *int   `json:"condition_id"`
-	GroupID     int    `json:"group_id"`
-	Metric      string `json:"metric"`
-	Operator    string `json:"operator"`
-	Value       int    `json:"value"`
-	Delete      bool   `json:"delete"`
 }
 
 func UpdateConditionsByServer() gin.HandlerFunc {

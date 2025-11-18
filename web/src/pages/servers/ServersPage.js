@@ -1,25 +1,24 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Container, Badge, Alert } from 'react-bootstrap';
-import axios from 'axios';
+import React, { useEffect, useMemo, useState } from "react";
+import { Container, Badge, Alert } from "react-bootstrap";
+import axios from "axios";
 import {
   MaterialReactTable,
   useMaterialReactTable,
-} from 'material-react-table';
+} from "material-react-table";
 import { ListItemIcon, MenuItem } from "@mui/material";
-import { useNavigate } from 'react-router-dom';
-
-import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import SettingsIcon from '@mui/icons-material/Settings';
-import AlertBadge from '../../components/notices/AlertBadge';
-import PingBadge from '../../components/badges/PingBadge';
-import CustomBadge from '../../components/badges/CustomBadge';
-import StatusBadge from '../../components/badges/StatusBadge';
+import { useNavigate } from "react-router-dom";
+import CelebrationIcon from "@mui/icons-material/Celebration";
+import SignalCellularAltIcon from "@mui/icons-material/SignalCellularAlt";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import SettingsIcon from "@mui/icons-material/Settings";
+import AlertBadge from "../../components/notices/AlertBadge";
+import PingBadge from "../../components/badges/PingBadge";
+import CustomBadge from "../../components/badges/CustomBadge";
+import StatusBadge from "../../components/badges/StatusBadge";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ServersPage() {
-
   var navigate = useNavigate();
 
   const [servers, setServers] = useState([]);
@@ -28,33 +27,32 @@ function ServersPage() {
 
   const [currentTime, setCurrentTime] = useState(Date.now());
 
-  const [errors, setErrors] = useState([
-    
-  ]);
+  const [errors, setErrors] = useState([]);
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/servers`)
-      .then(res => {
-        console.log('Response data:', res.data);
+    axios
+      .get(`${API_BASE_URL}/servers`)
+      .then((res) => {
+        console.log("Response data:", res.data);
 
-        var test = []
-        if(res.data){
-          for(const server of res.data){
-            if(server.status == "warning"){
+        var test = [];
+        if (res.data) {
+          for (const server of res.data) {
+            if (server.status == "warning") {
               test.push({
                 id: server.id,
                 status: server.status,
-                message: server.message || "No message provided"
-              })
+                message: server.message || "No message provided",
+              });
             }
           }
         }
-        setErrors(test)
+        setErrors(test);
         setServers(res.data || []);
         setLoading(false);
       })
-      .catch(err => {
-        console.error('Error fetching servers:', err);
+      .catch((err) => {
+        console.error("Error fetching servers:", err);
         setLoading(false);
       });
   }, []);
@@ -62,67 +60,63 @@ function ServersPage() {
   const columns = useMemo(
     () => [
       {
-        header: 'ID',
-        accessorKey: 'id',
+        header: "ID",
+        accessorKey: "id",
         size: 50,
       },
       {
-        header: 'Server Name',
-        accessorKey: 'server_name',
+        header: "Server Name",
+        accessorKey: "server_name",
       },
       {
-        header: 'IP Address',
-        accessorKey: 'ip_address',
+        header: "IP Address",
+        accessorKey: "ip_address",
       },
       {
-        header: 'Status',
-        accessorKey: 'status',
-        Cell: ({ cell }) => <StatusBadge status={cell.getValue()}/>,
-        
+        header: "Status",
+        accessorKey: "status",
+        Cell: ({ cell }) => <StatusBadge status={cell.getValue()} />,
       },
       {
-        header: 'Operating System',
-        accessorKey: 'operating_system',
-        Cell: ({ cell }) => <StatusBadge status={cell.getValue()}/>,
+        header: "Operating System",
+        accessorKey: "operating_system",
+        Cell: ({ cell }) => <StatusBadge status={cell.getValue()} />,
       },
       {
-        header: 'Environment',
-        accessorKey: 'environment',
+        header: "Environment",
+        accessorKey: "environment",
       },
       {
-        header: 'Location',
-        accessorKey: 'location',
+        header: "Location",
+        accessorKey: "location",
       },
       {
-        header: 'Last Ping',
-        accessorKey: 'last_ping',
+        header: "Last Ping",
+        accessorKey: "last_ping",
         Cell: ({ cell, row }) => {
           const value = cell.getValue();
 
-          if(row.original.status == "warning"){
-            return (
-              <CustomBadge variant={'warning'} text={"WARNING"}/>
-            )
+          if (row.original.status == "warning") {
+            return <CustomBadge variant={"warning"} text={"WARNING"} />;
           }
 
           const lastPingTime = new Date(value).getTime();
           const currentMsDifference = currentTime - lastPingTime;
           const seconds = currentMsDifference / 1000;
-          return <PingBadge seconds={Math.abs(Math.floor(seconds))}/>;
+          return <PingBadge seconds={Math.abs(Math.floor(seconds))} />;
         },
       },
     ],
     [currentTime]
   );
-  
-   useEffect(() => {
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
 
     return () => clearInterval(interval);
   }, []);
-
 
   const table = useMaterialReactTable({
     columns,
@@ -134,101 +128,101 @@ function ServersPage() {
     enableFacetedValues: true,
     enableRowActions: true,
     enableRowSelection: false,
-    enableGlobalFilter: true, 
+    enableGlobalFilter: true,
     initialState: {
       showColumnFilters: false,
       showGlobalFilter: false,
       columnPinning: {
-        left: ['mrt-row-expand', 'mrt-row-select'],
-        right: ['mrt-row-actions'],
+        left: ["mrt-row-expand", "mrt-row-select"],
+        right: ["mrt-row-actions"],
       },
     },
-    paginationDisplayMode: 'pages',
-    positionToolbarAlertBanner: 'bottom',
+    paginationDisplayMode: "pages",
+    positionToolbarAlertBanner: "bottom",
     muiSearchTextFieldProps: {
-      size: 'small',
-      variant: 'outlined',
+      size: "small",
+      variant: "outlined",
     },
     muiPaginationProps: {
-      color: 'primary',
+      color: "primary",
       rowsPerPageOptions: [25, 50, 100],
-      shape: 'rounded',
-      variant: 'outlined',
+      shape: "rounded",
+      variant: "outlined",
     },
     // Dark mode styling
     muiTablePaperProps: {
       sx: {
-        backgroundColor: '#1e1e1e',
-      }
+        backgroundColor: "#1e1e1e",
+      },
     },
     muiTableProps: {
       sx: {
-        backgroundColor: '#1e1e1e',
-      }
+        backgroundColor: "#1e1e1e",
+      },
     },
     muiTableHeadCellProps: {
       sx: {
-        backgroundColor: '#2d2d2d',
-        color: '#fff',
-        borderBottom: '1px solid #404040',
-      }
+        backgroundColor: "#2d2d2d",
+        color: "#fff",
+        borderBottom: "1px solid #404040",
+      },
     },
     muiTableBodyCellProps: {
       sx: {
-        backgroundColor: '#1e1e1e',
-        color: '#e0e0e0',
-        borderBottom: '1px solid #404040',
-      }
+        backgroundColor: "#1e1e1e",
+        color: "#e0e0e0",
+        borderBottom: "1px solid #404040",
+      },
     },
     muiTableBodyRowProps: {
       sx: {
-        '&:hover': {
-          backgroundColor: '#2d2d2d',
-        }
-      }
+        "&:hover": {
+          backgroundColor: "#2d2d2d",
+        },
+      },
     },
     muiTopToolbarProps: {
       sx: {
-        backgroundColor: '#2d2d2d',
-        color: '#fff',
-        '& .MuiIconButton-root': {
-          color: '#fff',
+        backgroundColor: "#2d2d2d",
+        color: "#fff",
+        "& .MuiIconButton-root": {
+          color: "#fff",
         },
-        '& .MuiButtonBase-root': {
-          color: '#fff',
+        "& .MuiButtonBase-root": {
+          color: "#fff",
         },
-      }
+      },
     },
     muiBottomToolbarProps: {
       sx: {
-        backgroundColor: '#2d2d2d',
-        color: '#fff',
-        '& .MuiTablePagination-root': {
-          color: '#fff',
+        backgroundColor: "#2d2d2d",
+        color: "#fff",
+        "& .MuiTablePagination-root": {
+          color: "#fff",
         },
-        '& .MuiTablePagination-selectLabel': {
-          color: '#fff',
+        "& .MuiTablePagination-selectLabel": {
+          color: "#fff",
         },
-        '& .MuiTablePagination-displayedRows': {
-          color: '#fff',
+        "& .MuiTablePagination-displayedRows": {
+          color: "#fff",
         },
-        '& .MuiTablePagination-select': {
-          color: '#fff',
+        "& .MuiTablePagination-select": {
+          color: "#fff",
         },
-        '& .MuiIconButton-root': {
-          color: '#fff',
+        "& .MuiIconButton-root": {
+          color: "#fff",
         },
-      }
+      },
     },
     muiTableBodyRowProps: {
       sx: {
-        '&:hover': {
-          backgroundColor: '#2d2d2d',
-        }
-      }
+        "&:hover": {
+          backgroundColor: "#2d2d2d",
+        },
+      },
     },
     mrtTheme: {
-      baseBackgroundColor: '#1e1e1e',
+      baseBackgroundColor: "#1e1e1e",
     },
     state: {
       isLoading: loading,
@@ -255,6 +249,16 @@ function ServersPage() {
         View Metrics
       </MenuItem>,
       <MenuItem
+        key="view_events"
+        onClick={() => navigate(`/server/events/${row.original.id}`)}
+        sx={{ m: 0 }}
+      >
+        <ListItemIcon>
+          <CelebrationIcon />
+        </ListItemIcon>
+        View Events
+      </MenuItem>,
+      <MenuItem
         key="edit_server"
         onClick={() => navigate(`/server/edit/${row.original.id}`)}
         sx={{ m: 0 }}
@@ -267,53 +271,57 @@ function ServersPage() {
     ],
   });
 
-
-
   const handlePing = (id) => {
-
-    axios.post(`${API_BASE_URL}/server/ping/` + id)
-    .then(res => {
-      console.log('Response data:', res.data);
-    setServers(prevServers => 
-      prevServers.map(server => 
-        server.id === id ? { ...server, last_ping: res.data.ping } : server
-      )
-    );
-    handleStatusCheck(id)
-    })
-    .catch(err => {
-      console.error('Error fetching servers:', err);
-    });
-  }
+    axios
+      .post(`${API_BASE_URL}/server/ping/` + id)
+      .then((res) => {
+        console.log("Response data:", res.data);
+        setServers((prevServers) =>
+          prevServers.map((server) =>
+            server.id === id ? { ...server, last_ping: res.data.ping } : server
+          )
+        );
+        handleStatusCheck(id);
+      })
+      .catch((err) => {
+        console.error("Error fetching servers:", err);
+      });
+  };
 
   const handleStatusCheck = (id) => {
-
-    setServers(prevServers => 
-      prevServers.map(server => 
-        server.id === id ? { ...server, status: 'loading'} : server
+    setServers((prevServers) =>
+      prevServers.map((server) =>
+        server.id === id ? { ...server, status: "loading" } : server
       )
     );
 
-    axios.get(`${API_BASE_URL}/server/status/` + id)
-    .then(res => {
-      console.log('Response data:', res.data);
-    setServers(prevServers => 
-      prevServers.map(server => 
-        server.id === id ? { ...server, status: res.data.status } : server
-      )
-    );
-    })
-    .catch(err => {
-      console.error('Error fetching servers:', err);
-    });
-  }
+    axios
+      .get(`${API_BASE_URL}/server/status/` + id)
+      .then((res) => {
+        console.log("Response data:", res.data);
+        setServers((prevServers) =>
+          prevServers.map((server) =>
+            server.id === id ? { ...server, status: res.data.status } : server
+          )
+        );
+      })
+      .catch((err) => {
+        console.error("Error fetching servers:", err);
+      });
+  };
 
   return (
     <Container fluid className="w-75 mt-5">
       <h2 className="mb-4">Server Monitoring</h2>
       {errors.map((err, index) => {
         return (
-          <AlertBadge key={index} status={err.status} message={err.message} id={err.id} index={index}></AlertBadge>
+          <AlertBadge
+            key={index}
+            status={err.status}
+            message={err.message}
+            id={err.id}
+            index={index}
+          ></AlertBadge>
         );
       })}
 

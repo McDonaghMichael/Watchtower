@@ -39,7 +39,11 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 
 	// ========== Group Routes ==========
 	r.POST("/group", addGroup())
+	r.GET("/group/server/:id", GetGroupsByServerId())
+
+	// ========== Conditions for Groups Routes ==========
 	r.POST("/condition", addCondition())
+	r.GET("/condition/group/:id", GetConditionsByGroupId())
 	r.GET("/condition/server/:id", GetConditionsByServer())
 	r.PUT("/condition/server/:id", UpdateConditionsByServer())
 }

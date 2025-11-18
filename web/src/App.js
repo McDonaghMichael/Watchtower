@@ -8,7 +8,9 @@ import EditServerPage from './pages/servers/edit/EditServerPage';
 import CreateAccountPage from './pages/accounts/create/CreateAccountPage';
 import EditAccountPage from './pages/accounts/edit/EditAccountPage';
 import ServerMetricsPage from './pages/servers/metrics/ServerMetricsPage';
-import ManageServerEvents from './pages/servers/events/ManageServerEvents';
+import CreateServerEvent from './pages/servers/events/create/CreateServerEvent';
+import ServerEventsPage from './pages/servers/events/ServerEventsPage';
+import EditServerEvent from './pages/servers/events/edit/EditServerEvent';
 
 function App() {
 
@@ -22,7 +24,9 @@ function App() {
           <Route path="/server/add" element={<AddServerPage />} />
           <Route path="/server/edit/:id" element={<EditServerPage />} />
           <Route path="/server/metrics/:id" element={<ServerMetricsPage />} />  
-          <Route path="/server/events/:id" element={<ManageServerEvents />} />  
+          <Route path="/server/events/:id/" element={<ServerEventsPage />} />  // Show all events for a server
+          <Route path="/server/events/:id/create" element={<CreateServerEvent />} /> // Create a new event conditional group for a server
+          <Route path="/server/events/:id/edit/:group_id" element={<EditServerEvent />} /> // Edit a conditional group for a server
 
           <Route path="/account/create" element={<CreateAccountPage />} />
           <Route path="/account/edit/:id" element={<EditAccountPage />} />

@@ -16,7 +16,7 @@ import AddBoxIcon from "@mui/icons-material/AddBox";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-function ManageServerEvents() {
+function EditServerEvent() {
   const { id } = useParams();
 
   const [conditions, setConditions] = useState([]);
@@ -234,4 +234,4 @@ function ManageServerEvents() {
   );
 }
 
-export default ManageServerEvents;
+export default EditServerEvent;
