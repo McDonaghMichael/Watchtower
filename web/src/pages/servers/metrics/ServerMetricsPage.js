@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams , useNavigate} from "react-router-dom";
 import axios from "axios";
 import AlertNotice from "../../../components/notices/AlertNotice";
 import { getTimestamp } from "../../../utils/timeUtils";
 import LoadingSpinner from "../../../components/misc/LoadingSpinner";
-import { Col, Row, Card } from "react-bootstrap";
+import { Col, Row, Card , Button} from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import DisplayCard from "../../../components/metrics/DisplayCard";
 import { LineChart } from "@mui/x-charts/LineChart";
@@ -18,6 +18,7 @@ function ServerMetricsPage() {
   
   const { id } = useParams();
 
+  var navigate = useNavigate();
   const [metrics, setMetrics] = useState([]);
   const [health, setHealth] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -172,6 +173,7 @@ function ServerMetricsPage() {
             </Col>
             
           </Row>
+          <Button variant="secondary" className="text-white mb-2" onClick={() => navigate(`/server/events/${id}/create`)}>Create Event</Button>
           <Card className="h-100 border-start border-4 border-secondary mb-4">
             <Card.Body className="py-3">
               <LineChart
