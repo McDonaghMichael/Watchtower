@@ -144,7 +144,7 @@ function ServersPage() {
       variant: "outlined",
     },
     muiPaginationProps: {
-      color: "primary",
+      color: "info",
       rowsPerPageOptions: [25, 50, 100],
       shape: "rounded",
       variant: "outlined",
@@ -166,18 +166,24 @@ function ServersPage() {
         color: "#fff",
         borderBottom: "1px solid #404040",
       },
+      
     },
     muiTableBodyCellProps: {
       sx: {
         backgroundColor: "#1e1e1e",
         color: "#e0e0e0",
         borderBottom: "1px solid #404040",
+        
       },
     },
     muiTableBodyRowProps: {
       sx: {
         "&:hover": {
           backgroundColor: "#2d2d2d",
+        },
+        "& .MuiSvgIcon-root": {
+          fill: "#fff",
+          color: "#fff",
         },
       },
     },
@@ -189,6 +195,10 @@ function ServersPage() {
           color: "#fff",
         },
         "& .MuiButtonBase-root": {
+          color: "#fff",
+        },
+"& .MuiSvgIcon-root": {
+          fill: "#fff",
           color: "#fff",
         },
       },
@@ -212,12 +222,26 @@ function ServersPage() {
         "& .MuiIconButton-root": {
           color: "#fff",
         },
+        "& .MuiFormLabel-root": {
+          color: "#fff",
+        },
+        "& .MuiSvgIcon-root": {
+          fill: "#fff",
+        },
+        "& .MuiSvgIcon-root": {
+          fill: "#fff",
+          color: "#fff",
+        },
       },
     },
     muiTableBodyRowProps: {
       sx: {
         "&:hover": {
           backgroundColor: "#2d2d2d",
+        },
+        "& .MuiSvgIcon-root": {
+          fill: "#fff",
+          color: "#fff",
         },
       },
     },

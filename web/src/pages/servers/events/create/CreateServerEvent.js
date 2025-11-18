@@ -19,8 +19,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL;
 function CreateServerEvent() {
   const { id } = useParams();
 
-  const [actions, setActions] = useState([
-  ]);
+  const [actions, setActions] = useState([]);
   const [conditions, setConditions] = useState([]);
 
 
@@ -29,7 +28,7 @@ function CreateServerEvent() {
     setActions((prev) => [
       ...prev,
       {
-      action: "webhook-url",
+      action: "webhook",
       value: "google.com",
     },
     ]);
@@ -122,6 +121,22 @@ function CreateServerEvent() {
           });
 
         console.log("Payload sent:", payload);
+
+        const newpayload = actions.map((cond) => ({
+          action_id: cond.action_id || null,
+          group_id: res.data.group_id,
+          action: cond.action,
+          value: "https://" + cond.value
+        }));
+
+        axios
+          .put(`${API_BASE_URL}/action/server/${id}`, newpayload)
+          .then((res) => {
+            console.log("Server updated successfully:", newpayload);
+          })
+          .catch((err) => {
+            console.error("Error updating server:", err);
+          });
       })
       .catch((err) => {
         console.error("Error updating server:", err);

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"watchtower/api/database"
 
@@ -28,6 +29,21 @@ type ConditionUpdate struct {
 	Operator    string `json:"operator"`
 	Value       int    `json:"value"`
 	Delete      bool   `json:"delete"`
+}
+
+type Action struct {
+	ActionID int    `json:"action_id"`
+	GroupID  int    `json:"group_id"`
+	Action   string `json:"action"`
+	Value    string `json:"value"`
+}
+
+type ActionUpdate struct {
+	ActionID int    `json:"action_id"`
+	GroupID  int    `json:"group_id"`
+	Action   string `json:"action"`
+	Value    string `json:"value"`
+	Delete   bool   `json:"delete"`
 }
 
 func addGroup() gin.HandlerFunc {
@@ -278,5 +294,166 @@ func UpdateConditionsByServer() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "Conditions upserted/deleted successfully"})
+	}
+}
+
+func addAction() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var action Action
+
+		if err := c.ShouldBindJSON(&action); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		err := database.Pool.QueryRow(
+			context.Background(),
+			`INSERT INTO actions (group_id, action, value)
+             VALUES ($1, $2, $3)
+             RETURNING action_id`,
+			action.GroupID,
+			action.Action,
+			action.Value,
+		).Scan(&action.ActionID)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, action)
+	}
+}
+
+func GetActionsByGroupId() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var actions []Action
+
+		rows, err := database.Pool.Query(context.Background(),
+			`SELECT group_id, action_id, action, value FROM actions WHERE group_id = $1 `, id,
+		)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			var acc Action
+			if err := rows.Scan(
+				&acc.GroupID,
+				&acc.ActionID,
+				&acc.Action,
+				&acc.Value,
+			); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"errror": err.Error()})
+				return
+			}
+
+			actions = append(actions, acc)
+		}
+
+		if len(actions) == 0 {
+			c.JSON(http.StatusOK, gin.H{})
+			return
+		}
+
+		c.JSON(http.StatusOK, actions)
+	}
+}
+
+func UpdateActionsByServer() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		serverID := c.Param("id")
+
+		var actions []ActionUpdate
+		if err := c.ShouldBindJSON(&actions); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		tx, err := database.Pool.Begin(context.Background())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer tx.Rollback(context.Background())
+
+		for _, act := range actions {
+			// DELETE
+			if act.ActionID != 0 && act.Delete {
+				cmd, err := tx.Exec(
+					context.Background(),
+					`DELETE FROM actions a
+					 USING groups g
+					 WHERE a.group_id = g.group_id
+					   AND g.server_id = $1
+					   AND a.action_id = $2`,
+					serverID, act.ActionID,
+				)
+
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				rows := cmd.RowsAffected()
+				fmt.Println("DELETE rows:", rows)
+				continue
+			}
+
+			// UPDATE
+			if act.ActionID != 0 && !act.Delete {
+				cmd, err := tx.Exec(
+					context.Background(),
+					`UPDATE actions a
+					 SET action = $1, value = $2
+					 FROM groups g
+					 WHERE a.group_id = g.group_id
+					   AND g.server_id = $3
+					   AND a.action_id = $4`,
+					act.Action, act.Value, serverID, act.ActionID,
+				)
+
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				rows := cmd.RowsAffected()
+				fmt.Println("UPDATE rows:", rows)
+				continue
+			}
+
+			// INSERT — must check EXISTS
+			if act.ActionID == 0 && !act.Delete {
+				cmd, err := tx.Exec(
+					context.Background(),
+					`INSERT INTO actions (group_id, action, value)
+                     SELECT $1, $2, $3
+                     WHERE EXISTS (SELECT 1 FROM groups g WHERE g.group_id = $1 AND g.server_id = $4)`,
+					act.GroupID, act.Action, act.Value, serverID,
+				)
+
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				rows := cmd.RowsAffected()
+				fmt.Println("INSERT rows:", rows)
+			}
+		}
+
+		if err := tx.Commit(context.Background()); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Actions upserted/deleted successfully"})
 	}
 }

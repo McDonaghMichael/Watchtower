@@ -71,3 +71,10 @@ CREATE TABLE IF NOT EXISTS conditions (
     operator VARCHAR(3) CHECK (operator IN ('>', '<', '>=', '<=', '=', '!=')),
     value DECIMAL(10,2)
 );
+
+CREATE TABLE IF NOT EXISTS actions (
+    action_id SERIAL PRIMARY KEY,
+    group_id INT NOT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
+    action VARCHAR(255),
+    value VARCHAR(255)
+);
