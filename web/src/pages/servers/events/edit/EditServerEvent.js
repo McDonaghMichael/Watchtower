@@ -18,6 +18,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function EditServerEvent() {
   const { id } = useParams();
+  const { group_id } = useParams();
 
   const [conditions, setConditions] = useState([]);
 
@@ -30,7 +31,7 @@ function EditServerEvent() {
 
     if (id) {
       axios
-        .get(`${API_BASE_URL}/condition/server/${id}`)
+        .get(`${API_BASE_URL}/condition/group/${group_id}`)
         .then((res) => {
           console.log("Response data:", res.data);
           if (res.data) {
@@ -89,13 +90,11 @@ function EditServerEvent() {
     };
 
     // Get the first defined group_id from the array
-    const defaultGroupId = conditions.find(
-      (c) => c.group_id !== undefined
-    )?.group_id;
+
 
     const payload = conditions.map((cond) => ({
       condition_id: cond.condition_id || null,
-      group_id: cond.group_id || defaultGroupId,
+      group_id: Number(group_id),
       metric: cond.metric,
       operator: operatorMap[cond.operation],
       value: parseInt(cond.value, 10),
@@ -121,7 +120,7 @@ function EditServerEvent() {
       <Container className="py-4">
         <Card className="shadow-sm">
           <Card.Header className="bg-primary text-white">
-            <h4 className="mb-0">Add Server Event</h4>
+            <h4 className="mb-0">Edit Server Event</h4>
           </Card.Header>
           <Card.Body>
             <Form>

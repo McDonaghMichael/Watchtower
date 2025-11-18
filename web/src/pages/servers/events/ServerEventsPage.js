@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Container, Badge, Alert } from "react-bootstrap";
+import { Container, Badge, Alert, Button } from "react-bootstrap";
 import axios from "axios";
 import {
   MaterialReactTable,
@@ -201,6 +201,7 @@ const table = useMaterialReactTable({
     <>
       <Container fluid className="w-75 mt-5">
         <h2 className="mb-4">Server Events</h2>
+        <Button variant="info" className="text-white mb-2" onClick={() => navigate(`/server/events/${id}/create`)}>Create Event</Button>
         {errors.map((err, index) => {
           return (
             <AlertBadge

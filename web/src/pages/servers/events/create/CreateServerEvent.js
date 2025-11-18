@@ -17,10 +17,44 @@ import AddBoxIcon from "@mui/icons-material/AddBox";
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function CreateServerEvent() {
-
   const { id } = useParams();
 
+  const [actions, setActions] = useState([
+  ]);
   const [conditions, setConditions] = useState([]);
+
+
+  const addAction = (e) => {
+    e.preventDefault();
+    setActions((prev) => [
+      ...prev,
+      {
+      action: "webhook-url",
+      value: "google.com",
+    },
+    ]);
+  };
+
+  const removeAction = (actionId) => {
+    setActions((prev) =>
+      prev.map((c) =>
+        c.action_id === actionId ? { ...c, delete: true } : c
+      )
+    );
+  };
+
+  const handleChangeAction = (index, field, value) => {
+    setActions((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        [field]: value,
+      };
+
+      console.log(updated)
+      return updated;
+    });
+  };
 
   const handleChange = (index, field, value) => {
     setConditions((prev) => {
@@ -57,48 +91,41 @@ function CreateServerEvent() {
     e.preventDefault();
 
     const response = await axios
-      .post(`${API_BASE_URL}/group`, { server_id: Number(id)})
+      .post(`${API_BASE_URL}/group`, { server_id: Number(id) })
       .then((res) => {
         console.log("Server updated successfully:", res.data);
         console.log("Server updated successfully:", conditions);
 
-
-
         const operatorMap = {
-      less_than: "<",
-      more_than: ">",
-      equal_to: "=",
-    };
+          less_than: "<",
+          more_than: ">",
+          equal_to: "=",
+        };
 
-    const payload = conditions.map((cond) => ({
-      condition_id: cond.condition_id || null,
-      group_id: res.data.group_id,
-      metric: cond.metric,
-      operator: operatorMap[cond.operation],
-      value: parseInt(cond.value, 10),
-    }));
+        const payload = conditions.map((cond) => ({
+          condition_id: cond.condition_id || null,
+          group_id: res.data.group_id,
+          metric: cond.metric,
+          operator: operatorMap[cond.operation],
+          value: parseInt(cond.value, 10),
+        }));
 
-    console.log("Payload sent:", payload);
+        console.log("Payload sent:", payload);
 
-    axios
-      .put(`${API_BASE_URL}/condition/server/${id}`, payload)
-      .then((res) => {
-        console.log("Server updated successfully:", res.data);
+        axios
+          .put(`${API_BASE_URL}/condition/server/${id}`, payload)
+          .then((res) => {
+            console.log("Server updated successfully:", res.data);
+          })
+          .catch((err) => {
+            console.error("Error updating server:", err);
+          });
+
+        console.log("Payload sent:", payload);
       })
       .catch((err) => {
         console.error("Error updating server:", err);
       });
-
-    console.log("Payload sent:", payload);
-
-
-
-
-      })
-      .catch((err) => {
-        console.error("Error updating server:", err);
-      });
-
   };
 
   return (
@@ -111,44 +138,78 @@ function CreateServerEvent() {
           <Card.Body>
             <Form>
               <Row className="mb-4">
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Action</Form.Label>
-                    <Form.Select aria-label="Action" defaultValue={"webhook"}>
-                      <option value="webhook">Webhook</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>URL</Form.Label>
-                    <InputGroup className="mb-3">
-                      <InputGroup.Text id="webhook-url">
-                        https://
-                      </InputGroup.Text>
-                      <Form.Control
-                        id="webhook-url"
-                        aria-describedby="webhook-url"
-                      />
-                    </InputGroup>
-                  </Form.Group>
-                </Col>
-                <div className="d-flex gap-2">
-                  <Button variant="secondary" onClick={(e) => addCondition(e)}>
-                    <AddBoxIcon></AddBoxIcon>
-                  </Button>
-                </div>
-              </Row>
-              <Row className="mb-4">
-                <h4 className="mb-0">Conditions</h4>
-                <div className="d-flex gap-2">
-                  <Button variant="secondary" onClick={(e) => addCondition(e)}>
-                    <AddBoxIcon></AddBoxIcon>
-                  </Button>
-                </div>
-              </Row>
+                      <h4 className="mb-0">Actions</h4>
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="secondary"
+                          onClick={(e) => addAction(e)}
+                        >
+                          <AddBoxIcon></AddBoxIcon>
+                        </Button>
+                      </div>
+                    </Row>
+              {actions
+                .filter((c) => !c.delete)
+                .map((c, index) => (
+                  <>
+                    <Row className="mb-4">
+                      <Col md={3}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Action</Form.Label>
+                          <Form.Select
+                            aria-label="Action"
+                              value={c.action}
+
+                            onChange={(e) =>
+                            handleChangeAction(index, "action", e.target.value)
+                          }
+                          >
+                            <option value="webhook">Webhook</option>
+                          </Form.Select>
+                        </Form.Group>
+                      </Col>
+                      <Col md={3}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>URL</Form.Label>
+                          <InputGroup className="mb-3">
+                            <InputGroup.Text id="value">
+                              https://
+                            </InputGroup.Text>
+                            <Form.Control
+                              id="value"
+                              value={c.value}
+                              aria-describedby="value"
+                              onChange={(e) =>
+                            handleChangeAction(index, "value", e.target.value)
+                          }
+                            />
+                            <Button
+                            variant="danger"
+                            onClick={(e) => removeAction(c.action_id)}
+                          >
+                            <DeleteIcon />
+                          </Button>
+                          </InputGroup>
+                        </Form.Group>
+                      </Col>
+                      
+                    </Row>
+                    
+                  </>
+                ))}
+                <Row className="mb-4">
+                      <h4 className="mb-0">Conditions</h4>
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="secondary"
+                          onClick={(e) => addCondition(e)}
+                        >
+                          <AddBoxIcon></AddBoxIcon>
+                        </Button>
+                      </div>
+                    </Row>
               {conditions
-                .filter((c) => !c.delete) 
+                .filter((c) => !c.delete)
                 .map((c, index) => (
                   <Row className="mb-4">
                     <Col md={3}>
