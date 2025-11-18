@@ -240,8 +240,23 @@ function CreateServerEvent() {
                           value={c.metric}
                         >
                           <option value="cpu_usage">CPU (%)</option>
+                          <option value="memory_allocated">Memory Allocated</option>
+                          <option value="memory_allocations">Memory Allocations</option>
                           <option value="memory_usage">Memory (%)</option>
+                          <option value="swap_used">Swap Used</option>
+                          <option value="swap_total">Swap Total</option>
+                          <option value="swap_free">Swap Free</option>
+                          <option value="cache_memory">Cache Memory</option>
+                          <option value="buffer_memory">Buffer Memory</option>
+                          <option value="disk_usage_total">Disk Total</option>
+                          <option value="disk_usage_used">Disk Used</option>
+                          <option value="disk_usage_free">Disk Used</option>
                           <option value="disk_usage">Disk Usage (%)</option>
+                          <option value="ssh_connections">SSH Connections</option>
+                          <option value="http_connections">HTTP Connections</option>
+                          <option value="https_connections">HTTPS Connections</option>
+                          <option value="connections">Connections</option>
+                          <option value="uptime_seconds">Uptime (s)</option>
                         </Form.Select>
                       </Form.Group>
                     </Col>
