@@ -28,14 +28,12 @@ func AddServer() gin.HandlerFunc {
 		err := database.Pool.QueryRow(context.Background(),
 			`INSERT INTO servers (
 				server_name, ip_address, ssh_username, ssh_private_key, ssh_port, 
-				operating_system, environment, location, description, 
-				monitoring_interval, cpu_threshold, memory_threshold, disk_threshold
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+				operating_system, environment, location, description,
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			RETURNING id, created_at, updated_at`,
 			server.ServerName, server.IPAddress, server.SSHUsername, server.SSHPrivateKey,
 			server.SSHPort, server.OperatingSystem, server.Environment, server.Location,
-			server.Description, server.MonitoringInterval, server.CPUThreshold,
-			server.MemoryThreshold, server.DiskThreshold,
+			server.Description,
 		).Scan(&server.ID, &server.CreatedAt, &server.UpdatedAt)
 
 		if err != nil {
