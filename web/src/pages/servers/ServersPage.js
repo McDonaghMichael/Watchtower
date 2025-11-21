@@ -30,32 +30,43 @@ function ServersPage() {
   const [errors, setErrors] = useState([]);
 
   useEffect(() => {
+  const fetchServers = () => {
     axios
       .get(`${API_BASE_URL}/servers`)
-      .then((res) => {
+      .then(async (res) => {
         console.log("Response data:", res.data);
 
-        var test = [];
-        if (res.data) {
-          for (const server of res.data) {
-            if (server.status == "warning") {
-              test.push({
-                id: server.id,
-                status: server.status,
-                message: server.message || "No message provided",
-              });
-            }
-          }
-        }
-        setErrors(test);
-        setServers(res.data || []);
+        // Fetch all health statuses
+        const healthResponse = await axios.get(`${API_BASE_URL}/health`);
+        const healthData = healthResponse.data || [];
+        
+        console.log("Health data:", healthData);
+
+        // Create a map of server_id to health status for quick lookup
+        const healthMap = {};
+        healthData.forEach(health => {
+          healthMap[health.id] = health;
+        });
+
+        // Add health status to each server
+        const serversWithHealth = (res.data || []).map(server => ({
+          ...server,
+          health: healthMap[server.id] || null
+        }));
+
+        console.log("Servers with health:", serversWithHealth);
+
+        setServers(serversWithHealth);
         setLoading(false);
       })
       .catch((err) => {
         console.error("Error fetching servers:", err);
         setLoading(false);
       });
-  }, []);
+  }
+
+  fetchServers();
+}, []);
 
   const columns = useMemo(
     () => [
@@ -74,8 +85,8 @@ function ServersPage() {
       },
       {
         header: "Status",
-        accessorKey: "status",
-        Cell: ({ cell }) => <StatusBadge status={cell.getValue()} />,
+        accessorKey: "health.status",
+        Cell: ({ cell }) => <StatusBadge status={(cell.getValue()? "ONLINE" : "OFFLINE" )} />,
       },
       {
         header: "Operating System",
