@@ -50,7 +50,7 @@ func GetServers() gin.HandlerFunc {
 		rows, err := database.Pool.Query(context.Background(),
 			`SELECT 
 				id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port, 
-				operating_system, environment, location, description, last_ping, status, created_at, updated_at 
+				operating_system, environment, location, description, last_ping, created_at, updated_at 
 			FROM servers`)
 
 		if err != nil {
@@ -66,7 +66,7 @@ func GetServers() gin.HandlerFunc {
 			err := rows.Scan(
 				&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername, &server.SSHPrivateKey,
 				&server.SSHPort, &server.OperatingSystem, &server.Environment,
-				&server.Location, &server.Description, &server.LastPing, &server.Status, &server.CreatedAt, &server.UpdatedAt,
+				&server.Location, &server.Description, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
 			)
 
 			if err != nil {
@@ -88,8 +88,6 @@ func GetServerByID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var server models.Server
-
-		server.Status = "online"
 
 		err := database.Pool.QueryRow(context.Background(),
 
@@ -225,43 +223,6 @@ func UpdateLastPingServer() gin.HandlerFunc {
 
 }
 
-func GetServerStatus() gin.HandlerFunc {
-	return func(c *gin.Context) {
-
-		id := c.Param("id")
-		var server models.Server
-
-		server.Status = "online"
-
-		err := database.Pool.QueryRow(context.Background(),
-
-			`SELECT 
-				id, server_name, ip_address, ssh_username, ssh_port, ssh_private_key, 
-				operating_system, environment, location, description, last_ping, created_at, updated_at
-			FROM servers WHERE id=$1`, id).Scan(
-			&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername,
-			&server.SSHPort, &server.SSHPrivateKey, &server.OperatingSystem, &server.Environment,
-			&server.Location, &server.Description, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
-		)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		client, err := EstablishSSHConnection(server)
-		if err != nil {
-			server.Status = "offline"
-			fmt.Printf("models.Server %s 3SSH connection failed: %v\n", server.ServerName, err)
-		} else {
-			client.Close()
-		}
-
-		c.JSON(http.StatusAccepted, gin.H{"status": server.Status})
-	}
-
-}
-
 func EstablishSSHConnection(server models.Server) (*ssh.Client, error) {
 	if server.SSHPrivateKey == "" {
 		return nil, fmt.Errorf("no SSH private key provided")
@@ -381,7 +342,7 @@ func PingAllServers() {
 func GetAllServers() ([]models.Server, error) {
 	rows, err := database.Pool.Query(
 		context.Background(),
-		`SELECT id, ip_address, status, last_ping FROM servers`,
+		`SELECT id, ip_address, last_ping FROM servers`,
 	)
 	if err != nil {
 		return nil, err
@@ -392,7 +353,7 @@ func GetAllServers() ([]models.Server, error) {
 
 	for rows.Next() {
 		var s models.Server
-		err := rows.Scan(&s.ID, &s.IPAddress, &s.Status, &s.LastPing)
+		err := rows.Scan(&s.ID, &s.IPAddress, &s.LastPing)
 		if err != nil {
 			return nil, err
 		}
