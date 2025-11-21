@@ -24,7 +24,7 @@ function CreateServerEvent() {
 
   const valueTypes = {
     "webhook": "URL",
-    "slack_webhook": "URL",
+    "slack_webhook": "URL", 
     "discord_webhook": "URL",
     "exec_command": "CMD"
   }
@@ -34,18 +34,14 @@ function CreateServerEvent() {
     setActions((prev) => [
       ...prev,
       {
-      action: "webhook",
-      value: "",
-    },
+        action: "webhook",
+        value: "",
+      },
     ]);
   };
 
-  const removeAction = (actionId) => {
-    setActions((prev) =>
-      prev.map((c) =>
-        c.action_id === actionId ? { ...c, delete: true } : c
-      )
-    );
+  const removeAction = (index) => {
+    setActions((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleChangeAction = (index, field, value) => {
@@ -160,86 +156,90 @@ function CreateServerEvent() {
           <Card.Body>
             <Form>
               <Row className="mb-4">
-                      <h4 className="mb-0">Actions</h4>
-                      <div className="d-flex gap-2">
-                        <Button
-                          variant="secondary"
-                          onClick={(e) => addAction(e)}
-                        >
-                          <AddBoxIcon></AddBoxIcon>
-                        </Button>
-                      </div>
-                    </Row>
-              {actions
-                .filter((c) => !c.delete)
-                .map((c, index) => (
-                  <>
-                    <Row className="mb-4">
-                      <Col md={3}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Action</Form.Label>
-                          <Form.Select
-                            aria-label="Action"
-                              value={c.action}
+                <h4 className="mb-0">Actions</h4>
+                <div className="d-flex gap-2">
+                  <Button variant="secondary" onClick={addAction}>
+                    <AddBoxIcon />
+                  </Button>
+                </div>
+              </Row>
+              
+              {actions.map((action, index) => (
+                <Row key={`action-${index}`} className="mb-4">
+                  <Col md={action.action === "reboot" ? 6 : 3}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Action</Form.Label>
+                      <Form.Select
+                        aria-label="Action"
+                        value={action.action}
+                        onChange={(e) =>
+                          handleChangeAction(index, "action", e.target.value)
+                        }
+                      >
+                        <option value="webhook">Custom Webhook</option>
+                        <option value="slack_webhook">Slack Webhook</option>
+                        <option value="discord_webhook">Discord Webhook</option>
+                        <hr/>
+                        <option value="reboot">Reboot Server</option>
+                        <option value="exec_command">Execute Command</option>
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
 
+                  {action.action !== "reboot" && (
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>{valueTypes[action.action] || "Value"}</Form.Label>
+                        <InputGroup className="mb-3">
+                          <InputGroup.Text id="value">
+                            {valueTypes[action.action] || "Value"}
+                          </InputGroup.Text>
+                          <Form.Control
+                            id="value"
+                            value={action.value}
+                            aria-describedby="value"
                             onChange={(e) =>
-                            handleChangeAction(index, "action", e.target.value)
-                          }
+                              handleChangeAction(index, "value", e.target.value)
+                            }
+                            placeholder={`Enter ${valueTypes[action.action] || "value"}`}
+                          />
+                          <Button
+                            variant="danger"
+                            onClick={() => removeAction(index)}
                           >
-                            <option value="webhook">Custom Webhook</option>
-                            <option value="slack_webhook">Slack Webhook</option>
-                            <option value="discord_webhook">Discord Webhook</option>
-                            <hr/>
-                            <option value="reboot">Reboot Server</option>
-                            <option value="exec_command">Execute Command</option>
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-
-                     {c.action !== "reboot" && 
-                      <Col md={3}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>{valueTypes[c.action] || "N/A"}</Form.Label>
-                          <InputGroup className="mb-3">
-                            <InputGroup.Text id="value">{valueTypes[c.action] || "N/A"}</InputGroup.Text>
-                            <Form.Control
-                              id="value"
-                              value={c.value}
-                              aria-describedby="value"
-                              onChange={(e) =>
-                                handleChangeAction(
-                                  index,
-                                  "value",
-                                  e.target.value
-                                )
-                              }
-                            />
-                            <Button
-                              variant="danger"
-                              onClick={(e) => removeAction(c.action_id)}
-                            >
-                              <DeleteIcon />
-                            </Button>
-                          </InputGroup>
-                        </Form.Group>
-                      </Col>
-                    }
-                      
-                    </Row>
-                    
-                  </>
-                ))}
-                <Row className="mb-4">
-                      <h4 className="mb-0">Conditions</h4>
-                      <div className="d-flex gap-2">
-                        <Button
-                          variant="secondary"
-                          onClick={(e) => addCondition(e)}
-                        >
-                          <AddBoxIcon></AddBoxIcon>
-                        </Button>
-                      </div>
-                    </Row>
+                            <DeleteIcon />
+                          </Button>
+                        </InputGroup>
+                      </Form.Group>
+                    </Col>
+                  )}
+                  
+                  {action.action === "reboot" && (
+                    <Col md={3}>
+                      <Form.Group className="mb-3">
+                        <Form.Label> </Form.Label>
+                        <div>
+                          <Button
+                            variant="danger"
+                            onClick={() => removeAction(index)}
+                          >
+                            <DeleteIcon />
+                          </Button>
+                        </div>
+                      </Form.Group>
+                    </Col>
+                  )}
+                </Row>
+              ))}
+              
+              <Row className="mb-4">
+                <h4 className="mb-0">Conditions</h4>
+                <div className="d-flex gap-2">
+                  <Button variant="secondary" onClick={addCondition}>
+                    <AddBoxIcon />
+                  </Button>
+                </div>
+              </Row>
               {conditions
                 .filter((c) => !c.delete)
                 .map((c, index) => (
