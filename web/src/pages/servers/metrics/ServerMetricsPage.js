@@ -217,6 +217,7 @@ function ServerMetricsPage() {
             
           </Row>
           <Button variant="secondary" className="text-white mb-2" onClick={() => navigate(`/server/events/${id}/create`)}>Create Event</Button>
+          <Button variant="secondary" className="text-white mb-2" onClick={() => navigate(`/server/events/${id}`)}>Events</Button>
           <Card className="h-100 border-start border-4 border-secondary mb-4">
             <Card.Body className="py-3">
               <LineChart

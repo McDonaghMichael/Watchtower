@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 	"watchtower/api/database"
 	"watchtower/api/models"
 	"watchtower/api/routes"
@@ -32,13 +33,23 @@ type MetricConditionalLog struct {
 func StartHandlingActions() {
 	fmt.Println("ACTION HANDLER STARTED")
 
+	for true {
+		fmt.Println("EXECUTION HANDLER STARTED")
+
+		go ExecuteActions()
+		time.Sleep(6 * time.Second)
+	}
+}
+
+func ExecuteActions() {
+
 	var serverMetrics []models.Metrics
 
 	rows, err := database.Pool.Query(context.Background(),
 		`SELECT DISTINCT ON (server_id) server_id, cpu_usage, timestamp 
          FROM metrics 
          ORDER BY server_id, timestamp DESC 
-         LIMIT 2`,
+         LIMIT 1`,
 	)
 
 	if err != nil {
@@ -116,6 +127,25 @@ func executeAction(server models.Server, action string, value string) {
 	switch action {
 	case "webhook":
 		sendDiscordWebhook(value, "server has err")
+	case "reboot":
+		client, err := routes.EstablishSSHConnection(server)
+		if err != nil {
+			fmt.Printf("SSH connection failed: %v\n", err.Error())
+			return
+		}
+		defer client.Close()
+
+		// Debug: Print the command before executing
+		fmt.Printf("Executing command: %s\n", "reboot")
+
+		// Execute the command and capture output/error
+		output, err := routes.ExecuteSSHCommand(client, "reboot")
+		if err != nil {
+			fmt.Printf("Command execution failed: %v\n", err)
+			fmt.Printf("Command output: %s\n", output)
+		} else {
+			fmt.Printf("Command executed successfully. Output: %s\n", output)
+		}
 	case "exec_command":
 		client, err := routes.EstablishSSHConnection(server)
 		if err != nil {
@@ -141,13 +171,12 @@ func executeAction(server models.Server, action string, value string) {
 func IsConditionCorrect(serverID int, metric string, value int, conditionID int, operation string) bool {
 	ser, _ := getMetricsById(serverID)
 
-	/*	isLogged, _ := hasMetricBeenCondition(conditionID, ser.ID)
-		if isLogged {
-			fmt.Println("ALREADY LOGGED METRIC:", ser.ID)
-			return false
-		}
-
-		logMetricConditional(conditionID, ser.ID)*/
+	isLogged, _ := hasMetricBeenCondition(conditionID, ser.ID)
+	if isLogged {
+		fmt.Println("ALREADY LOGGED METRIC:", ser.ID)
+		return false
+	}
+	logMetricConditional(conditionID, ser.ID)
 
 	switch metric {
 	case "cpu_usage":

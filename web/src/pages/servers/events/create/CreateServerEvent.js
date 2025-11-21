@@ -22,6 +22,12 @@ function CreateServerEvent() {
   const [actions, setActions] = useState([]);
   const [conditions, setConditions] = useState([]);
 
+  const valueTypes = {
+    "webhook": "URL",
+    "slack_webhook": "URL",
+    "discord_webhook": "URL",
+    "exec_command": "CMD"
+  }
 
   const addAction = (e) => {
     e.preventDefault();
@@ -29,7 +35,7 @@ function CreateServerEvent() {
       ...prev,
       {
       action: "webhook",
-      value: "google.com",
+      value: "",
     },
     ]);
   };
@@ -180,36 +186,44 @@ function CreateServerEvent() {
                             handleChangeAction(index, "action", e.target.value)
                           }
                           >
-                            <option value="webhook">Webhook</option>
+                            <option value="webhook">Custom Webhook</option>
+                            <option value="slack_webhook">Slack Webhook</option>
+                            <option value="discord_webhook">Discord Webhook</option>
+                            <hr/>
                             <option value="reboot">Reboot Server</option>
                             <option value="exec_command">Execute Command</option>
                           </Form.Select>
                         </Form.Group>
                       </Col>
+
+                     {c.action !== "reboot" && 
                       <Col md={3}>
                         <Form.Group className="mb-3">
-                          <Form.Label>URL</Form.Label>
+                          <Form.Label>{valueTypes[c.action] || "N/A"}</Form.Label>
                           <InputGroup className="mb-3">
-                            <InputGroup.Text id="value">
-                              URL
-                            </InputGroup.Text>
+                            <InputGroup.Text id="value">{valueTypes[c.action] || "N/A"}</InputGroup.Text>
                             <Form.Control
                               id="value"
                               value={c.value}
                               aria-describedby="value"
                               onChange={(e) =>
-                            handleChangeAction(index, "value", e.target.value)
-                          }
+                                handleChangeAction(
+                                  index,
+                                  "value",
+                                  e.target.value
+                                )
+                              }
                             />
                             <Button
-                            variant="danger"
-                            onClick={(e) => removeAction(c.action_id)}
-                          >
-                            <DeleteIcon />
-                          </Button>
+                              variant="danger"
+                              onClick={(e) => removeAction(c.action_id)}
+                            >
+                              <DeleteIcon />
+                            </Button>
                           </InputGroup>
                         </Form.Group>
                       </Col>
+                    }
                       
                     </Row>
                     

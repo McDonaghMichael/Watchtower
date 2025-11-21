@@ -17,11 +17,19 @@ import AddBoxIcon from "@mui/icons-material/AddBox";
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function EditServerEvent() {
+
   const { id } = useParams();
   const { group_id } = useParams();
 
   const [actions, setActions] = useState([]);
   const [conditions, setConditions] = useState([]);
+
+  const valueTypes = {
+    "webhook": "URL",
+    "slack_webhook": "URL",
+    "discord_webhook": "URL",
+    "exec_command": "CMD"
+  }
 
   useEffect(() => {
     const symbolToOperation = {
@@ -98,7 +106,7 @@ function EditServerEvent() {
       ...prev,
       {
         action: "webhook",
-        value: "google.com",
+        value: "",
       },
     ]);
   };
@@ -210,17 +218,21 @@ function EditServerEvent() {
                               )
                             }
                           >
-                            <option value="webhook">Webhook</option>
+                            <option value="webhook">Custom Webhook</option>
+                            <option value="slack_webhook">Slack Webhook</option>
+                            <option value="discord_webhook">Discord Webhook</option>
+                            <hr/>
                             <option value="reboot">Reboot Server</option>
                             <option value="exec_command">Execute Command</option>
                           </Form.Select>
                         </Form.Group>
                       </Col>
+                      {c.action !== "reboot" && 
                       <Col md={3}>
                         <Form.Group className="mb-3">
-                          <Form.Label>URL</Form.Label>
+                          <Form.Label>{valueTypes[c.action] || "N/A"}</Form.Label>
                           <InputGroup className="mb-3">
-                            <InputGroup.Text id="value">URL</InputGroup.Text>
+                            <InputGroup.Text id="value">{valueTypes[c.action] || "N/A"}</InputGroup.Text>
                             <Form.Control
                               id="value"
                               value={c.value}
@@ -242,6 +254,8 @@ function EditServerEvent() {
                           </InputGroup>
                         </Form.Group>
                       </Col>
+                    }
+                      
                     </Row>
                   </>
                 ))}

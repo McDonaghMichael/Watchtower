@@ -40,7 +40,7 @@ func main() {
 	}()
 
 	StartHealthChecker()
-	actions.StartHandlingActions()
+	go actions.StartHandlingActions()
 
 	redis.Init()
 	redis.ExampleClient()
