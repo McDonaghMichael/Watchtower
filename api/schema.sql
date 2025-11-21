@@ -78,3 +78,9 @@ CREATE TABLE IF NOT EXISTS actions (
     action VARCHAR(255),
     value VARCHAR(255)
 );
+
+CREATE TABLE IF NOT EXISTS metrics_used_for_condtionals (
+  id SERIAL PRIMARY KEY,
+  condition_id SERIAL NOT NULL REFERENCES conditions(condition_id) ON DELETE CASCADE,
+  metric_id SERIAL NOT NULL REFERENCES metrics(id) ON DELETE CASCADE
+)

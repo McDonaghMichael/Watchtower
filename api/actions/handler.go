@@ -17,6 +17,12 @@ type Conditionals struct {
 	Action        string `json:"action"`
 }
 
+type MetricConditionalLog struct {
+	ID         int `json:"id"`
+	ConditonID int `json:"condition_id"`
+	MetricID   int `json:"metric_id"`
+}
+
 func StartHandlingActions() {
 	fmt.Println("ACTION HANDLER STARTED")
 
@@ -91,8 +97,9 @@ func StartHandlingActions() {
 		fmt.Printf("%v : Server: %v,Condition: %v, Group: %v, Metric: %v, Value: %v, Action: %v\n\n", index,
 			value.ServerID, value.ConditionalID, value.GroupID, value.Metric, value.Value, value.Action)
 
-		if IsConditionCorrect(value.ServerID, value.Metric, value.Value) {
+		if IsConditionCorrect(value.ServerID, value.Metric, value.Value, value.ConditionalID) {
 			executeAction(value.Action)
+
 		}
 	}
 
@@ -107,8 +114,17 @@ func executeAction(action string) {
 	}
 }
 
-func IsConditionCorrect(serverID int, metric string, value int) bool {
+func IsConditionCorrect(serverID int, metric string, value int, conditionID int) bool {
 	ser, _ := getServerByID(serverID)
+
+	isLogged, _ := hasMetricBeenCondition(conditionID, ser.ID)
+	if isLogged {
+		fmt.Println("ALREADY LOGGED METRIC:", ser.ID)
+		return false
+	}
+
+	logMetricConditional(conditionID, ser.ID)
+
 	switch metric {
 	case "cpu_usage":
 		fmt.Println("CPU USAGE: ", ser.CPUUsage)
@@ -174,4 +190,47 @@ func getServerByID(id int) (models.Metrics, error) {
 	}
 
 	return metrics, nil
+}
+
+/*
+*
+When a conditions actions are executed, the metrics id gets stored as to not execute due to that same metric
+*/
+func logMetricConditional(conditionID int, metricID int) error {
+	var id int
+	err := database.Pool.QueryRow(context.Background(),
+		`INSERT INTO metrics_used_for_condtionals (
+            condition_id,
+            metric_id
+        ) VALUES ($1, $2) RETURNING id`,
+		conditionID, metricID,
+	).Scan(&id)
+
+	if err != nil {
+		log.Printf("Failed to log metric conditional: %v", err)
+		return err
+	}
+
+	log.Printf("Logged metric conditional: condition=%d, metric=%d, id=%d",
+		conditionID, metricID, id)
+	return nil
+}
+
+func hasMetricBeenCondition(conditionID int, metricID int) (bool, error) {
+	var exists bool
+	err := database.Pool.QueryRow(context.Background(),
+		`SELECT EXISTS(
+            SELECT 1 
+            FROM metrics_used_for_condtionals 
+            WHERE condition_id = $1 AND metric_id = $2
+        )`,
+		conditionID, metricID,
+	).Scan(&exists)
+
+	if err != nil {
+		log.Printf("Failed to check metric conditional: %v", err)
+		return false, err
+	}
+
+	return exists, nil
 }
