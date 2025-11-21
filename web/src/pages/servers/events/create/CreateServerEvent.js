@@ -252,7 +252,7 @@ function CreateServerEvent() {
                           <option value="buffer_memory">Buffer Memory</option>
                           <option value="disk_usage_total">Disk Total</option>
                           <option value="disk_usage_used">Disk Used</option>
-                          <option value="disk_usage_free">Disk Used</option>
+                          <option value="disk_usage_free">Disk Free</option>
                           <option value="disk_usage">Disk Usage (%)</option>
                           <option value="ssh_connections">SSH Connections</option>
                           <option value="http_connections">HTTP Connections</option>

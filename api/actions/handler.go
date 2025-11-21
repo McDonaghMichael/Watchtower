@@ -9,6 +9,7 @@ import (
 )
 
 type Conditionals struct {
+	ServerID      int    `json:"server_id"`
 	ConditionalID int    `json:"condition_id"`
 	GroupID       int    `json:"group_id"`
 	Metric        string `json:"metric"`
@@ -59,7 +60,7 @@ func StartHandlingActions() {
 	var conditionals []Conditionals
 
 	rows, err = database.Pool.Query(context.Background(),
-		`SELECT c.condition_id, c.metric, g.group_id,c.value, a.action
+		`SELECT g.server_id, c.condition_id, c.metric, g.group_id,c.value, a.action
          FROM conditions c
          INNER JOIN actions a ON c.group_id = a.group_id
          INNER JOIN groups g ON c.group_id = g.group_id`,
@@ -75,7 +76,7 @@ func StartHandlingActions() {
 	for rows.Next() {
 		var cond Conditionals
 
-		err := rows.Scan(&cond.ConditionalID, &cond.Metric, &cond.GroupID, &cond.Value, &cond.Action)
+		err := rows.Scan(&cond.ServerID, &cond.ConditionalID, &cond.Metric, &cond.GroupID, &cond.Value, &cond.Action)
 
 		if err != nil {
 			log.Printf("Query error: %v", err)
@@ -87,10 +88,12 @@ func StartHandlingActions() {
 	}
 
 	for index, value := range conditionals {
-		fmt.Printf("%v : Condition: %v, Group: %v, Metric: %v, Value: %v, Action: %v\n\n", index,
-			value.ConditionalID, value.GroupID, value.Metric, value.Value, value.Action)
+		fmt.Printf("%v : Server: %v,Condition: %v, Group: %v, Metric: %v, Value: %v, Action: %v\n\n", index,
+			value.ServerID, value.ConditionalID, value.GroupID, value.Metric, value.Value, value.Action)
 
-		fmt.Println(IsConditionCorrect(10, "cpu_usage", value.Value))
+		if IsConditionCorrect(value.ServerID, value.Metric, value.Value) {
+			executeAction(value.Action)
+		}
 	}
 
 }
@@ -111,6 +114,17 @@ func IsConditionCorrect(serverID int, metric string, value int) bool {
 		fmt.Println("CPU USAGE: ", ser.CPUUsage)
 		fmt.Println("VALUE USAGE: ", value)
 		if ser.CPUUsage > float64(value) {
+			return true
+		}
+	case "disk_usage":
+		total := float64(ser.DiskUsageTotal)
+		used := float64(ser.DiskUsageUsed)
+
+		usedPercentage := (used / total) * 100
+
+		fmt.Println("DISK USAGE: ", usedPercentage)
+		fmt.Println("VALUE USAGE: ", value)
+		if float64(usedPercentage) > float64(value) {
 			return true
 		}
 	}
