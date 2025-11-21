@@ -14,13 +14,35 @@ import Tabs from 'react-bootstrap/Tabs';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
+// Default empty metric object
+const DEFAULT_METRIC = {
+  id: 0,
+  num_of_cpu: 0,
+  cpu_usage: 0,
+  memory_usage: 0,
+  memory_allocated: 0,
+  memory_usage_percent: 0,
+  disk_usage_used: 0,
+  disk_usage_total: 1, // Prevent division by zero
+  swap_used: 0,
+  swap_total: 1, // Prevent division by zero
+  connections: 0,
+  timestamp: new Date().toISOString()
+};
+
+const DEFAULT_HEALTH = {
+  id: 0,
+  status: false,
+  timestamp: new Date().toISOString()
+};
+
 function ServerMetricsPage() {
   
   const { id } = useParams();
 
   var navigate = useNavigate();
-  const [metrics, setMetrics] = useState([]);
-  const [health, setHealth] = useState([]);
+  const [metrics, setMetrics] = useState([DEFAULT_METRIC]);
+  const [health, setHealth] = useState([DEFAULT_HEALTH]);
   const [searchTerm, setSearchTerm] = useState("");
   const [queryLimit, setQueryLimit] = useState(10);
   const [error, setError] = useState(null);
@@ -41,11 +63,20 @@ function ServerMetricsPage() {
           `${API_BASE_URL}/metrics/server/${id}?limit=${queryLimit}`
         );
         const data = Array.isArray(res.data) ? res.data : [res.data];
-        setMetrics(data);
+        
+        // If no metrics returned, use default
+        if (data.length === 0 || !data[0]) {
+          setMetrics([DEFAULT_METRIC]);
+        } else {
+          setMetrics(data);
+        }
+        
         setError(null);
         setLoading(false);
       } catch (err) {
         console.error(err);
+        // On error, use default metrics instead of showing error
+        setMetrics([DEFAULT_METRIC]);
         setError({
           status: err.response?.status,
           message: err.message,
@@ -73,11 +104,20 @@ function ServerMetricsPage() {
           `${API_BASE_URL}/health/server/${id}?limit=${queryLimit}`
         );
         const data = Array.isArray(res.data) ? res.data : [res.data];
-        setHealth(data);
+        
+        // If no health data returned, use default
+        if (data.length === 0 || !data[0]) {
+          setHealth([DEFAULT_HEALTH]);
+        } else {
+          setHealth(data);
+        }
+        
         setError(null);
         setLoading(false);
       } catch (err) {
         console.error(err);
+        // On error, use default health instead of showing error
+        setHealth([DEFAULT_HEALTH]);
         setError({
           status: err.response?.status,
           message: err.message,
@@ -92,8 +132,7 @@ function ServerMetricsPage() {
   }, [id, queryLimit]);
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <AlertDefaultNotice idtitle={id} message={error.message} />;
-  if (!metrics.length) return <AlertDefaultNotice title="No Data" message="No metrics available" />;
+  
 
   const filteredMetrics = metrics.filter((metric) => {
     if (!searchTerm) return true;
@@ -110,14 +149,14 @@ function ServerMetricsPage() {
   
   const chartData = {
     xData: latest10Metrics.map((m, idx) => idx + 1), 
-    connections: latest10Metrics.map((m) => m.connections || 0),
-    cpuUsage: latest10Metrics.map((m) => parseFloat(m.cpu_usage) || 0),
-    memoryUsage: latest10Metrics.map((m) => parseFloat(m.memory_usage_percent) || 0),
+    connections: latest10Metrics.map((m) => m?.connections || 0),
+    cpuUsage: latest10Metrics.map((m) => parseFloat(m?.cpu_usage) || 0),
+    memoryUsage: latest10Metrics.map((m) => parseFloat(m?.memory_usage_percent) || 0),
     diskUsage: latest10Metrics.map((m) => 
-      Math.round((m.disk_usage_used / m.disk_usage_total) * 100) || 0
+      m?.disk_usage_total ? Math.round((m.disk_usage_used / m.disk_usage_total) * 100) : 0
     ),
     swapUsage: latest10Metrics.map((m) => 
-      Math.round((m.swap_used / m.swap_total) * 100) || 0
+      m?.swap_total ? Math.round((m.swap_used / m.swap_total) * 100) : 0
     ),
   };
 
@@ -127,6 +166,10 @@ function ServerMetricsPage() {
     return "#ff3b30ff";                    
   }
 
+  // Safe accessors for current metrics
+  const currentMetric = metrics[0] || DEFAULT_METRIC;
+  const currentHealth = health[0] || DEFAULT_HEALTH;
+
   return (
     <>
       <div>
@@ -134,42 +177,42 @@ function ServerMetricsPage() {
           <Row className="mb-4 g-3">
             <Col md={2}>
               <DisplayCard 
-                value={(health[0].status ? "ONLINE" : "OFFLINE")} 
-                color={health[0].status ? "#37fc47ff" : "#ff7349ff"}
+                value={(currentHealth.status ? "ONLINE" : "OFFLINE")} 
+                color={currentHealth.status ? "#37fc47ff" : "#ff7349ff"}
                 message={"STATUS"} 
               />
             </Col>
             <Col md={2}>
                 
               <DisplayCard
-              value={metrics[0].cpu_usage + "%"}
-              color={getMetricColor((Math.round((metrics[0].cpu_usage))))}
+              value={(currentMetric.cpu_usage || 0) + "%"}
+              color={getMetricColor((Math.round((currentMetric.cpu_usage || 0))))}
               message={"CPU USAGE"} />
 
             </Col>
             <Col md={2}>
               <DisplayCard 
-                value={(Math.round(metrics[0].memory_usage_percent * 100) / 100) + "%"} 
-                color={getMetricColor((Math.round(metrics[0].memory_usage_percent * 100) / 100))}
+                value={(Math.round((currentMetric.memory_usage_percent || 0) * 100) / 100) + "%"} 
+                color={getMetricColor((Math.round((currentMetric.memory_usage_percent || 0) * 100) / 100))}
                 message={"MEMORY USAGE"} 
               />
             </Col>
             <Col md={2}>
               <DisplayCard 
-                value={Math.round((metrics[0].disk_usage_used / metrics[0].disk_usage_total) * 100) + "%"} 
-                color={getMetricColor((Math.round((metrics[0].disk_usage_used / metrics[0].disk_usage_total) * 100)))}
+                value={Math.round(((currentMetric.disk_usage_used || 0) / (currentMetric.disk_usage_total || 1)) * 100) + "%"} 
+                color={getMetricColor((Math.round(((currentMetric.disk_usage_used || 0) / (currentMetric.disk_usage_total || 1)) * 100)))}
                 message={"DISK USAGE"} 
               />
             </Col>
             <Col md={2}>
               <DisplayCard 
-                value={Math.round((metrics[0].swap_used / metrics[0].swap_total) * 100) + "%"} 
-                color={getMetricColor((Math.round((metrics[0].swap_used / metrics[0].swap_total) * 100)))}
+                value={Math.round(((currentMetric.swap_used || 0) / (currentMetric.swap_total || 1)) * 100) + "%"} 
+                color={getMetricColor((Math.round(((currentMetric.swap_used || 0) / (currentMetric.swap_total || 1)) * 100)))}
                 message={"SWAP USAGE"} 
               />
             </Col>
             <Col md={2}>
-              <DisplayCard value={metrics[0].connections} message={"CONN"} />
+              <DisplayCard value={currentMetric.connections || 0} message={"CONN"} />
             </Col>
             
           </Row>
@@ -309,7 +352,7 @@ function ServerMetricsPage() {
                   >
                     {filteredMetrics.map((metric, index) => (
                       <div
-                        key={metric.id || index}
+                        key={metric?.id || index}
                         style={{
                           display: "flex",
                           flexWrap: "wrap",
@@ -324,22 +367,22 @@ function ServerMetricsPage() {
                         }}
                       >
                         <span style={{ color: "#8b949e", minWidth: "160px" }}>
-                          [{metric.timestamp || getTimestamp()}]
+                          [{metric?.timestamp || getTimestamp()}]
                         </span>
                         <span style={{ color: "#7ee787" }}>
-                          ID: {metric.id || "N/A"}
+                          ID: {metric?.id || "N/A"}
                         </span>
                         <span style={{ color: "#ffa657" }}>
-                          CPU Count: {metric.num_of_cpu || "N/A"} ({metric.cpu_usage + "%" || "N/A"})
+                          CPU Count: {metric?.num_of_cpu || "N/A"} ({(metric?.cpu_usage || 0) + "%" || "N/A"})
                         </span>
                         <span style={{ color: "#d2a8ff" }}>
-                          Memory Usage: {metric.memory_usage || "N/A"} / {metric.memory_allocated || "N/A"} ({Math.round(metric.memory_usage_percent * 100) / 100 + "%" || "N/A"})
+                          Memory Usage: {metric?.memory_usage || "N/A"} / {metric?.memory_allocated || "N/A"} ({Math.round((metric?.memory_usage_percent || 0) * 100) / 100 + "%" || "N/A"})
                         </span>
                         <span style={{ color: "#f85149" }}>
-                          Disk Usage: {metric.disk_usage_used || "N/A"} / {metric.disk_usage_total || "N/A"}
+                          Disk Usage: {metric?.disk_usage_used || "N/A"} / {metric?.disk_usage_total || "N/A"}
                         </span>
                         <span style={{ color: "#799eafff" }}>
-                          CONN: {metric.connections || "0"}
+                          CONN: {metric?.connections || "0"}
                         </span>
                       </div>
                     ))}
@@ -347,7 +390,7 @@ function ServerMetricsPage() {
                 )}
                 </Tab>
                 <Tab eventKey="health" title="Health">
-                  {filteredMetrics.length === 0 ? (
+                  {health.length === 0 ? (
                   <AlertDefaultNotice 
                     title="0 Health Logs" 
                     message={`There is no health logs found for the query "${searchTerm}"`} 
@@ -361,7 +404,7 @@ function ServerMetricsPage() {
                   >
                     {health.map((h, index) => (
                       <div
-                        key={h.id || index}
+                        key={h?.id || index}
                         style={{
                           display: "flex",
                           flexWrap: "wrap",
@@ -376,13 +419,13 @@ function ServerMetricsPage() {
                         }}
                       >
                         <span style={{ color: "#8b949e", minWidth: "160px" }}>
-                          [{h.timestamp || getTimestamp()}]
+                          [{h?.timestamp || getTimestamp()}]
                         </span>
                         <span style={{ color: "#7ee787" }}>
-                          ID: {h.id || "N/A"}
+                          ID: {h?.id || "N/A"}
                         </span>
-                        <span style={{ color: h.status ? "#37fc47ff" : "#ff7349ff" }}>
-                          ID: {(h.status ? "ONLINE" : "OFFLINE")}
+                        <span style={{ color: h?.status ? "#37fc47ff" : "#ff7349ff" }}>
+                          STATUS: {(h?.status ? "ONLINE" : "OFFLINE")}
                         </span>
                       </div>
                     ))}
