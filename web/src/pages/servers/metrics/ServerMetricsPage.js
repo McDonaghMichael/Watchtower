@@ -185,7 +185,7 @@ function ServerMetricsPage() {
             <Col md={2}>
                 
               <DisplayCard
-              value={(currentMetric.cpu_usage || 0) + "%"}
+              value={(Math.round(currentMetric.cpu_usage, 2) || 0) + "%"}
               color={getMetricColor((Math.round((currentMetric.cpu_usage || 0))))}
               message={"CPU USAGE"} />
 

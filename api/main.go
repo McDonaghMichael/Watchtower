@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"watchtower/api/actions"
 	"watchtower/api/database"
 	"watchtower/api/redis"
 	"watchtower/api/routes"
@@ -39,6 +40,7 @@ func main() {
 	}()
 
 	StartHealthChecker()
+	actions.StartHandlingActions()
 
 	redis.Init()
 	redis.ExampleClient()

@@ -181,6 +181,8 @@ function CreateServerEvent() {
                           }
                           >
                             <option value="webhook">Webhook</option>
+                            <option value="reboot">Reboot Server</option>
+                            <option value="exec_command">Execute Command</option>
                           </Form.Select>
                         </Form.Group>
                       </Col>
