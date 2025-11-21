@@ -1,11 +1,15 @@
 package actions
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"watchtower/api/database"
 	"watchtower/api/models"
+	"watchtower/api/routes"
 )
 
 type Conditionals struct {
@@ -15,6 +19,8 @@ type Conditionals struct {
 	Metric        string `json:"metric"`
 	Value         int    `json:"value"`
 	Action        string `json:"action"`
+	ActionValue   string `json:"action_value"`
+	Operation     string `json:"operation"`
 }
 
 type MetricConditionalLog struct {
@@ -66,7 +72,7 @@ func StartHandlingActions() {
 	var conditionals []Conditionals
 
 	rows, err = database.Pool.Query(context.Background(),
-		`SELECT g.server_id, c.condition_id, c.metric, g.group_id,c.value, a.action
+		`SELECT g.server_id, c.condition_id, c.metric, g.group_id,c.value, a.action, a.value, c.operator
          FROM conditions c
          INNER JOIN actions a ON c.group_id = a.group_id
          INNER JOIN groups g ON c.group_id = g.group_id`,
@@ -82,7 +88,7 @@ func StartHandlingActions() {
 	for rows.Next() {
 		var cond Conditionals
 
-		err := rows.Scan(&cond.ServerID, &cond.ConditionalID, &cond.Metric, &cond.GroupID, &cond.Value, &cond.Action)
+		err := rows.Scan(&cond.ServerID, &cond.ConditionalID, &cond.Metric, &cond.GroupID, &cond.Value, &cond.Action, &cond.ActionValue, &cond.Operation)
 
 		if err != nil {
 			log.Printf("Query error: %v", err)
@@ -97,58 +103,71 @@ func StartHandlingActions() {
 		fmt.Printf("%v : Server: %v,Condition: %v, Group: %v, Metric: %v, Value: %v, Action: %v\n\n", index,
 			value.ServerID, value.ConditionalID, value.GroupID, value.Metric, value.Value, value.Action)
 
-		if IsConditionCorrect(value.ServerID, value.Metric, value.Value, value.ConditionalID) {
-			executeAction(value.Action)
+		var server models.Server = GetServerByID(value.ServerID)
+		if IsConditionCorrect(value.ServerID, value.Metric, value.Value, value.ConditionalID, value.Operation) {
+			executeAction(server, value.Action, value.ActionValue)
 
 		}
 	}
 
 }
 
-func executeAction(action string) {
+func executeAction(server models.Server, action string, value string) {
 	switch action {
 	case "webhook":
-		fmt.Println("SENDS WEBHOOK")
-	case "reboot":
-		fmt.Println("REBOOTS SERVER")
+		sendDiscordWebhook(value, "server has err")
+	case "exec_command":
+		client, err := routes.EstablishSSHConnection(server)
+		if err != nil {
+			fmt.Printf("SSH connection failed: %v\n", err.Error())
+			return
+		}
+		defer client.Close()
+
+		// Debug: Print the command before executing
+		fmt.Printf("Executing command: %s\n", value)
+
+		// Execute the command and capture output/error
+		output, err := routes.ExecuteSSHCommand(client, value)
+		if err != nil {
+			fmt.Printf("Command execution failed: %v\n", err)
+			fmt.Printf("Command output: %s\n", output)
+		} else {
+			fmt.Printf("Command executed successfully. Output: %s\n", output)
+		}
 	}
 }
 
-func IsConditionCorrect(serverID int, metric string, value int, conditionID int) bool {
-	ser, _ := getServerByID(serverID)
+func IsConditionCorrect(serverID int, metric string, value int, conditionID int, operation string) bool {
+	ser, _ := getMetricsById(serverID)
 
-	isLogged, _ := hasMetricBeenCondition(conditionID, ser.ID)
-	if isLogged {
-		fmt.Println("ALREADY LOGGED METRIC:", ser.ID)
-		return false
-	}
+	/*	isLogged, _ := hasMetricBeenCondition(conditionID, ser.ID)
+		if isLogged {
+			fmt.Println("ALREADY LOGGED METRIC:", ser.ID)
+			return false
+		}
 
-	logMetricConditional(conditionID, ser.ID)
+		logMetricConditional(conditionID, ser.ID)*/
 
 	switch metric {
 	case "cpu_usage":
 		fmt.Println("CPU USAGE: ", ser.CPUUsage)
 		fmt.Println("VALUE USAGE: ", value)
-		if ser.CPUUsage > float64(value) {
-			return true
-		}
-	case "disk_usage":
-		total := float64(ser.DiskUsageTotal)
-		used := float64(ser.DiskUsageUsed)
 
-		usedPercentage := (used / total) * 100
+		return performOperation(ser.CPUUsage, float64(value), operation)
+	case "disk_usage":
+		usedPercentage := (float64(ser.DiskUsageUsed) / float64(ser.DiskUsageTotal)) * 100
 
 		fmt.Println("DISK USAGE: ", usedPercentage)
 		fmt.Println("VALUE USAGE: ", value)
-		if float64(usedPercentage) > float64(value) {
-			return true
-		}
+
+		return performOperation(float64(usedPercentage), float64(value), operation)
 	}
 
 	return false
 }
 
-func getServerByID(id int) (models.Metrics, error) {
+func getMetricsById(id int) (models.Metrics, error) {
 	var metrics models.Metrics
 
 	rows, err := database.Pool.Query(context.Background(),
@@ -192,6 +211,27 @@ func getServerByID(id int) (models.Metrics, error) {
 	return metrics, nil
 }
 
+func GetServerByID(id int) models.Server {
+	var server models.Server
+
+	err := database.Pool.QueryRow(context.Background(),
+
+		`SELECT 
+				id, server_name, ip_address, ssh_username, ssh_port, ssh_private_key, 
+				operating_system, environment, location, description, last_ping, created_at, updated_at
+			FROM servers WHERE id=$1`, id).Scan(
+		&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername,
+		&server.SSHPort, &server.SSHPrivateKey, &server.OperatingSystem, &server.Environment,
+		&server.Location, &server.Description, &server.LastPing, &server.CreatedAt, &server.UpdatedAt,
+	)
+
+	if err != nil {
+
+	}
+
+	return server
+}
+
 /*
 *
 When a conditions actions are executed, the metrics id gets stored as to not execute due to that same metric
@@ -233,4 +273,55 @@ func hasMetricBeenCondition(conditionID int, metricID int) (bool, error) {
 	}
 
 	return exists, nil
+}
+
+type DiscordWebhook struct {
+	Content string `json:"content"`
+}
+
+func sendDiscordWebhook(webhookURL string, message string) error {
+	// Create the webhook payload
+	payload := DiscordWebhook{
+		Content: message,
+	}
+
+	// Convert to JSON
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %v", err)
+	}
+
+	// Send HTTP POST request
+	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to send webhook: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("webhook returned status: %s", resp.Status)
+	}
+
+	fmt.Println("Discord webhook sent successfully!")
+	return nil
+}
+
+func performOperation(x float64, y float64, operation string) bool {
+	switch operation {
+	case ">":
+		return x > y
+	case "<":
+		return x < y
+	case ">=":
+		return x >= y
+	case "<=":
+		return x <= y
+	case "==":
+		return x == y
+	case "!=":
+		return x != y
+	default:
+		return false // or handle unknown operation
+	}
 }

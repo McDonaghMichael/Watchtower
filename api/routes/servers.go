@@ -362,3 +362,19 @@ func GetAllServers() ([]models.Server, error) {
 
 	return servers, nil
 }
+
+func ExecuteSSHCommand(client *ssh.Client, command string) (string, error) {
+
+	session, err := client.NewSession()
+	if err != nil {
+		return "", fmt.Errorf("failed to create SSH session: %w", err)
+	}
+	defer session.Close()
+
+	output, err := session.CombinedOutput(command)
+	if err != nil {
+		return string(output), fmt.Errorf("command execution failed: %w", err)
+	}
+
+	return string(output), nil
+}
