@@ -144,3 +144,43 @@ func CheckAllServersHealth() error {
 	wg.Wait()
 	return nil
 }
+
+func GetLatestHealthStatusAllServers() gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+
+		var serverHealth []Health
+
+		rows, err := database.Pool.Query(context.Background(),
+			`SELECT DISTINCT ON (server_id) server_id, status, timestamp FROM health_status ORDER BY server_id, timestamp DESC`)
+
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			var s Health
+			if err := rows.Scan(
+				&s.ID,
+				&s.Status,
+				&s.Timestamp,
+			); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			serverHealth = append(serverHealth, s)
+		}
+
+		if len(serverHealth) == 0 {
+			c.JSON(http.StatusNotFound, gin.H{})
+			return
+		}
+
+		c.JSON(http.StatusOK, serverHealth)
+	}
+
+}

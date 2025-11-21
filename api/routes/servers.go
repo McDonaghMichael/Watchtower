@@ -28,7 +28,7 @@ func AddServer() gin.HandlerFunc {
 		err := database.Pool.QueryRow(context.Background(),
 			`INSERT INTO servers (
 				server_name, ip_address, ssh_username, ssh_private_key, ssh_port, 
-				operating_system, environment, location, description,
+				operating_system, environment, location, description
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			RETURNING id, created_at, updated_at`,
 			server.ServerName, server.IPAddress, server.SSHUsername, server.SSHPrivateKey,
@@ -50,7 +50,7 @@ func GetServers() gin.HandlerFunc {
 		rows, err := database.Pool.Query(context.Background(),
 			`SELECT 
 				id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port, 
-				operating_system, environment, location, description, last_ping, status, message, created_at, updated_at 
+				operating_system, environment, location, description, last_ping, status, created_at, updated_at 
 			FROM servers`)
 
 		if err != nil {
@@ -66,7 +66,7 @@ func GetServers() gin.HandlerFunc {
 			err := rows.Scan(
 				&server.ID, &server.ServerName, &server.IPAddress, &server.SSHUsername, &server.SSHPrivateKey,
 				&server.SSHPort, &server.OperatingSystem, &server.Environment,
-				&server.Location, &server.Description, &server.LastPing, &server.Status, &server.Message, &server.CreatedAt, &server.UpdatedAt,
+				&server.Location, &server.Description, &server.LastPing, &server.Status, &server.CreatedAt, &server.UpdatedAt,
 			)
 
 			if err != nil {
@@ -183,8 +183,6 @@ func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
 
 		fmt.Printf("Pinging server error: %v\n", err)
 
-		database.UpdateServerWarningStatus(err, serverID)
-
 		if err != nil {
 			fmt.Printf("Error updating database: %v\n", err)
 			return
@@ -211,8 +209,6 @@ func UpdateLastPingServer() gin.HandlerFunc {
 		if err != nil {
 
 			fmt.Printf("Pinging server error: %v\n", err)
-
-			database.UpdateServerWarningStatus(err, serverID)
 
 			if err != nil {
 				fmt.Printf("Error updating database: %v\n", err)
@@ -274,14 +270,35 @@ func EstablishSSHConnection(server models.Server) (*ssh.Client, error) {
 	fmt.Printf("Attempting SSH to %s:%d as %s\n", server.IPAddress, server.SSHPort, server.SSHUsername)
 	fmt.Printf("Key length: %d characters\n", len(server.SSHPrivateKey))
 
-	if !strings.HasPrefix(server.SSHPrivateKey, "-----BEGIN") {
-		return nil, fmt.Errorf("private key format invalid - missing BEGIN header")
+	// Log the first and last parts of the key for debugging
+	keyPreview := strings.TrimSpace(server.SSHPrivateKey)
+	if len(keyPreview) > 100 {
+		fmt.Printf("Key preview (first 100 chars): %s...\n", keyPreview[:100])
+		fmt.Printf("Key preview (last 50 chars): ...%s\n", keyPreview[len(keyPreview)-50:])
 	}
 
-	signer, err := ssh.ParsePrivateKey([]byte(server.SSHPrivateKey))
+	if !strings.HasPrefix(keyPreview, "-----BEGIN") {
+		return nil, fmt.Errorf("private key format invalid - missing BEGIN header. Starts with: %s", keyPreview[:50])
+	}
+
+	// Try different parsing methods
+	var signer ssh.Signer
+	var err error
+
+	// Method 1: Standard parsing
+	signer, err = ssh.ParsePrivateKey([]byte(keyPreview))
 	if err != nil {
-		fmt.Printf("Key parsing error: %v\n", err)
-		return nil, fmt.Errorf("unable to parse private key: %w", err)
+		fmt.Printf("Standard parse failed: %v\n", err)
+
+		// Method 2: Try with empty passphrase
+		signer, err = ssh.ParsePrivateKeyWithPassphrase([]byte(keyPreview), []byte(""))
+		if err != nil {
+			fmt.Printf("Parse with empty passphrase failed: %v\n", err)
+			return nil, fmt.Errorf("unable to parse private key: %w", err)
+		}
+		fmt.Println("Key parsed successfully with empty passphrase")
+	} else {
+		fmt.Println("Key parsed successfully without passphrase")
 	}
 
 	config := &ssh.ClientConfig{
@@ -294,9 +311,11 @@ func EstablishSSHConnection(server models.Server) (*ssh.Client, error) {
 	}
 
 	address := fmt.Sprintf("%s:%d", server.IPAddress, server.SSHPort)
+	fmt.Printf("Dialing SSH connection to: %s\n", address)
+
 	client, err := ssh.Dial("tcp", address, config)
 	if err != nil {
-		database.UpdateServerWarningStatus(err, server.ID)
+		fmt.Printf("SSH dial error: %v\n", err)
 		return nil, fmt.Errorf("SSH connection failed: %w", err)
 	}
 
@@ -330,25 +349,21 @@ func PingAllServers() {
 		)
 		if err != nil {
 			fmt.Printf("Error scanning server: %v\n", err)
-			database.UpdateServerWarningStatus(fmt.Errorf("Error scanning server: %v\n", err), server.ID)
 			continue
 		}
 
 		if server.SSHPrivateKey == "" {
 			fmt.Printf("models.Server %s: No SSH key provided\n", server.ServerName)
-			database.UpdateServerWarningStatus(fmt.Errorf("models.Server %s: No SSH key provided\n", server.ServerName), server.ID)
 			continue
 		}
 
 		_, err = utils.Ping(server.IPAddress)
 		if err != nil {
-			database.UpdateServerWarningStatus(fmt.Errorf("models.Server %s could not be pinged: %v\n", server.ServerName, err), server.ID)
 			continue
 		}
 
 		client, err := EstablishSSHConnection(server)
 		if err != nil {
-			database.UpdateServerWarningStatus(fmt.Errorf("models.Server %s SSH connection failed: %v\n", server.ServerName, err), server.ID)
 			continue
 		}
 

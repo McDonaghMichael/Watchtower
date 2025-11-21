@@ -8,8 +8,6 @@ import (
 
 func SetupAPIRoutes(r *gin.RouterGroup) {
 
-	r.GET("/health", getHealth())
-
 	// ========== Account Routes ==========
 	r.GET("/accounts", getDefault())       // List all accounts
 	r.GET("/account/:id", getDefault())    // Find account given the ID
@@ -36,6 +34,7 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	// ========== Health Routes ==========
 	r.POST("/health", addHealthStatus())
 	r.GET("/health/server/:id", GetHealthStatusByServerID())
+	r.GET("/health/", GetLatestHealthStatusAllServers())
 
 	// ========== Group Routes ==========
 	r.POST("/group", addGroup())

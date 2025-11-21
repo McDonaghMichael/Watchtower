@@ -109,4 +109,8 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 docker run -d --name watchtower-web -p 80:80 ghcr.io/mcdonaghmichael/watchtower-web:latest
 ```
 
+
+command to generate private key pair on the server 
+ssh-keygen -t rsa -b 4096 -C "server-access" -f ~/.ssh/server_key -N ""
+
 ---

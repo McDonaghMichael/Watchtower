@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Container, Badge, Alert } from "react-bootstrap";
+import { Container, Button, Alert } from "react-bootstrap";
 import axios from "axios";
 import {
   MaterialReactTable,
@@ -337,6 +337,8 @@ function ServersPage() {
   return (
     <Container fluid className="w-75 mt-5">
       <h2 className="mb-4">Server Monitoring</h2>
+      
+      <Button variant="secondary" className="text-white mb-2" onClick={() => navigate(`/server/add`)}>Add Server</Button>
       {errors.map((err, index) => {
         return (
           <AlertBadge

@@ -17,5 +17,4 @@ type Server struct {
 	LastPing        *time.Time `json:"last_ping"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
-	Message         *string    `json:"message"`
 }
