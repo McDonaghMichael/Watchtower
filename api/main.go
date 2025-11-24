@@ -47,6 +47,7 @@ func main() {
 	port := "8080"
 	log.Printf("🚀 API server running on http://localhost:%s/api/v1\n", port)
 	log.Fatal(r.Run(":" + port))
+
 }
 
 func corsMiddleware() gin.HandlerFunc {

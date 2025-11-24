@@ -92,22 +92,36 @@ func GetMetricsByServerID() gin.HandlerFunc {
 		key := fmt.Sprintf("server:%s:metrics", id)
 		vals, err := redis.Rdb.LRange(ctx, key, 0, int64(limit-1)).Result()
 		if err == nil && len(vals) > 0 {
+			validMetricsFound := false
 			for _, v := range vals {
 				var m models.Metrics
 				if err := json.Unmarshal([]byte(v), &m); err != nil {
 					fmt.Println("JSON unmarshal error:", err)
 					continue
 				}
+
+				// ✅ ADD THIS VALIDATION: Skip metrics with invalid timestamps
+				if m.Timestamp.IsZero() || m.Timestamp.Year() < 2020 {
+					fmt.Printf("Skipping metric with invalid timestamp: %s\n", m.Timestamp)
+					continue
+				}
+
 				m.Connections = m.HTTPConnections + m.SSHConnections + m.HTTPSConnections
 				metricsList = append(metricsList, m)
+				validMetricsFound = true
 			}
 
-			fmt.Print("YES!!")
-			c.JSON(http.StatusOK, metricsList)
-			return
+			if validMetricsFound {
+				fmt.Print("YES!! Serving from Redis (with filtered data)")
+				c.JSON(http.StatusOK, metricsList)
+				return
+			}
+			// If no valid metrics found in Redis, fall through to PostgreSQL
+			fmt.Print("Redis data had invalid timestamps, falling back to PostgreSQL")
+			metricsList = []models.Metrics{} // Reset for PostgreSQL query
 		}
 
-		// 2️⃣ Fallback to PostgreSQL if Redis is empty or error
+		// 2️⃣ Fallback to PostgreSQL if Redis is empty or has invalid data
 		rows, err := database.Pool.Query(context.Background(),
 			`SELECT 
 			id, server_id, num_of_cpu, cpu_usage,

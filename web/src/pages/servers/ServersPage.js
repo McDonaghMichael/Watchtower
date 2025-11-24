@@ -15,6 +15,7 @@ import AlertBadge from "../../components/notices/AlertBadge";
 import PingBadge from "../../components/badges/PingBadge";
 import CustomBadge from "../../components/badges/CustomBadge";
 import StatusBadge from "../../components/badges/StatusBadge";
+import PageHeader from "../../components/PageHeader";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -347,7 +348,7 @@ function ServersPage() {
 
   return (
     <Container fluid className="w-75 mt-5">
-      <h2 className="mb-4">Server Monitoring</h2>
+      <PageHeader header={"Server Monitoring"}/>
       
       <Button variant="secondary" className="text-white mb-2" onClick={() => navigate(`/server/add`)}>Add Server</Button>
       {errors.map((err, index) => {

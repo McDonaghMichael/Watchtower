@@ -4,86 +4,63 @@ import torch.nn as nn
 import sklearn
 import openpyxl
 from sklearn.preprocessing import StandardScaler
+from datetime import datetime
+import metric_training_data
+import health_status
 
-import requests
+from datetime import datetime, timezone
 
 def get_metric_training_data():
-    data = requests.get("http://80.208.227.58:8080/api/v1/metrics/server/2")
-    jsonData = data.json()
+    health_status_timestamps = health_status.get_health_status_timestamps()
+    metric_data = metric_training_data.get_metric_training_data()
 
-    dataArray = []
+    # Sort both arrays by timestamp with proper timezone-aware parsing
+    health_status_timestamps.sort(key=lambda x: datetime.fromisoformat(x["timestamp"].replace('Z', '+00:00')))
+    metric_data.sort(key=lambda x: datetime.fromisoformat(x["timestamp"].replace('Z', '+00:00')))
 
-    for x in jsonData:
-        dataObj = {
-            "id": x["id"],
-            "num_of_cpu": x["num_of_cpu"],
-            "memory_allocated": x["memory_allocated"],
-            "memory_allocations": x["memory_allocations"],
-            "disk_usage_total": x["disk_usage_total"],
-            "disk_usage_used": x["disk_usage_used"],
-            "disk_usage_free": x["disk_usage_free"],
-            "ssh_connections": x["ssh_connections"],
-            "http_connections": x["http_connections"],
-            "https_connections": x["https_connections"],
-        }
+    # Convert to timezone-aware datetime objects
+    health_times = [datetime.fromisoformat(hs["timestamp"].replace('Z', '+00:00')) for hs in health_status_timestamps]
+    metric_times = [datetime.fromisoformat(m["timestamp"].replace('Z', '+00:00')) for m in metric_data]
 
-        dataArray.append(dataObj)
-    
-    return dataArray
+    results = []
 
-df = pd.DataFrame(get_metric_training_data())
+    metrics_to_train = []
 
-input_values = ['memory_allocated', 'memory_allocations']
-output_values= ['memory_allocated', 'memory_allocations', 'disk_usage_total','disk_usage_used','disk_usage_free']
+    for i, health_time in enumerate(health_times):
+        # Define the time window for this health check (make start_time timezone-aware)
+        if i == 0:
+            # Use the earliest metric time or a very early timezone-aware datetime
+            start_time = metric_times[0].replace(tzinfo=timezone.utc) if metric_times else datetime.min.replace(tzinfo=timezone.utc)
+        else:
+            start_time = health_times[i-1]
+        
+        # Find metrics that fall in this specific window
+        metrics_in_window = [
+            metric_data[j] for j, metric_time in enumerate(metric_times)
+            if start_time <= metric_time < health_time
+        ]
+        
+        results.append({
+            'health_check_index': i,
+            'health_check_time': health_time,
+            'health_check_data': health_status_timestamps[i],
+            'metrics_count': len(metrics_in_window),
+            'metrics': metrics_in_window,
+            'time_window_start': start_time,
+            'time_window_end': health_time
+        })
+        
+        print(f"Health check {i} at {health_time}: {len(metrics_in_window)} metrics")
+        print(f"  Time window: {start_time} to {health_time}")
 
-x = df[input_values].values
-y = df[output_values].values
+    # Process each health check's metrics independently
+    for result in results:
+        print(f"\n--- Processing health check {result['health_check_index']} ---")
+        print(f"Health status: {result['health_check_data']['status']} at {result['health_check_time']}")
+        print(f"Metrics found: {result['metrics_count']}")
+        
+        for metric in result['metrics']:
+            metrics_to_train.append(metric)
+    return metrics_to_train
 
-x_scaler = StandardScaler()
-y_scaler = StandardScaler()
-x_scaled = x_scaler.fit_transform(x)
-y_scaled = y_scaler.fit_transform(y)
-
-x_tensor = torch.tensor(x_scaled, dtype=torch.float32)
-y_tensor = torch.tensor(y_scaled, dtype=torch.float32)
-
-model = nn.Sequential(
-    nn.Linear(2,4),
-    nn.ReLU(),
-    nn.Linear(4,5)
-)
-
-# Using the Mean Squared Error Loss function for regression tasks
-criterion = nn.MSELoss()  
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-
-for epoch in range(2000):
-    optimizer.zero_grad()
-    y_pred = model(x_tensor)
-    loss = criterion(y_pred, y_tensor)
-    loss.backward()
-    optimizer.step()
-
-    if (epoch + 1) % 100 == 0:
-        print(f'Epoch {epoch+1}, Loss: {loss.item():.4f}')
-
-test_input = torch.tensor([[730288, 1008803]], dtype=torch.float32)
-test_scaled = torch.tensor(x_scaler.transform([[730288, 1008803]]), dtype=torch.float32)
-pred = model(test_scaled)
-predictions = y_scaler.inverse_transform(pred.detach().numpy())
-
-print("=== OUTCOME FROM TRAINING MODEL ===")
-print("\n-> MEMORY")
-print(f"Memory Allocated: {predictions[0][0]}")
-print(f"Mmeory Allocations: {predictions[0][1]}")
-
-print("\n-> DISK")
-print(f"Disk Total: {predictions[0][2]}")
-print(f"Disk Used: {predictions[0][3]}")
-print(f"Disk Free: {predictions[0][4]}")
-
-print("\n=== OUTCOME FROM TRAINING MODEL ===\n\n")
-
-
-
-
+print(get_metric_training_data()[0])

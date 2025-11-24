@@ -67,8 +67,7 @@ func GetHealthStatusByServerID() gin.HandlerFunc {
                 timestamp
              FROM health_status
              WHERE server_id = $1
-             ORDER BY timestamp DESC
-             LIMIT $2`,
+             ORDER BY timestamp DESC LIMIT $2`,
 			id, limit,
 		)
 		if err != nil {
