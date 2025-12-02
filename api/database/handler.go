@@ -19,11 +19,11 @@ func Connect() {
 	}
 	dbUser := os.Getenv("DB_USER")
 	if dbUser == "" {
-		dbUser = "sysadmin"
+		dbUser = "postgres"
 	}
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
-		dbPassword = "sysadmin123"
+		dbPassword = "Galway123"
 	}
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {

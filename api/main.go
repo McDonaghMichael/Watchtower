@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 	"watchtower/api/actions"
 	"watchtower/api/database"
@@ -51,9 +52,11 @@ func main() {
 }
 
 func corsMiddleware() gin.HandlerFunc {
+
+	var allowedOriginIP string = os.Getenv("ALLOWED_ORIGIN")
 	allowedOrigins := []string{
 		"http://localhost:3000",
-		"http://80.208.227.58:3000",
+		allowedOriginIP,
 	}
 
 	return func(c *gin.Context) {

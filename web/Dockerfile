@@ -4,7 +4,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 # Set the environment variable BEFORE building
-ENV REACT_APP_API_URL=http://80.208.227.58:8080/api/v1
+ENV REACT_APP_API_URL=/api/v1
 RUN npm run build
 
 FROM nginx:alpine

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 	"watchtower/api/models"
 
@@ -15,13 +16,27 @@ var ctx = context.Background()
 var Rdb *redis.Client
 
 func Init() {
+	host := os.Getenv("REDIS_HOST")
+	if host == "" {
+		host = "localhost" // fallback for local dev
+	}
+
+	port := os.Getenv("REDIS_PORT")
+	if port == "" {
+		port = "6379"
+	}
+
+	addr := fmt.Sprintf("%s:%s", host, port)
+
 	Rdb = redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: addr,
 	})
+
 	_, err := Rdb.Ping(ctx).Result()
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Println("Connected to Redis!")
 }
 
