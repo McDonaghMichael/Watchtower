@@ -28,6 +28,8 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	r.POST("/metric", AddMetric())
 	r.GET("/metrics/server/:id", GetMetricsByServerID()) // Gets metrics by server ID
 
+	r.GET("/risk/server/:id", GetRiskScoreByServerId()) // Gets risk score by server ID
+
 	// ========== Health Routes ==========
 	r.POST("/health", addHealthStatus())
 	r.GET("/health/server/:id", GetHealthStatusByServerID())
