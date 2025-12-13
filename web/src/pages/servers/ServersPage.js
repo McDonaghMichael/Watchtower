@@ -257,6 +257,14 @@ function ServersPage() {
         },
       },
     },
+    muiRowActionMenuProps: {
+      PaperProps: {
+        sx: {
+          backgroundColor: "#2d2d2d",
+          color: "#fff",
+        },
+      },
+    },
     mrtTheme: {
       baseBackgroundColor: "#1e1e1e",
     },
@@ -267,40 +275,40 @@ function ServersPage() {
       <MenuItem
         key="ping"
         onClick={() => handlePing(row.original.id)}
-        sx={{ m: 0 }}
+        sx={{ m: 0, color: "#fff" }}
       >
         <ListItemIcon>
-          <SignalCellularAltIcon />
+          <SignalCellularAltIcon sx={{ color: "#4dd0e1" }} />
         </ListItemIcon>
         Ping
       </MenuItem>,
       <MenuItem
         key="view_metrics"
         onClick={() => navigate(`/server/metrics/${row.original.id}`)}
-        sx={{ m: 0 }}
+        sx={{ m: 0, color: "#fff" }}
       >
         <ListItemIcon>
-          <AssessmentIcon />
+          <AssessmentIcon sx={{ color: "#ffb74d" }} />
         </ListItemIcon>
         View Metrics
       </MenuItem>,
       <MenuItem
         key="view_events"
         onClick={() => navigate(`/server/events/${row.original.id}`)}
-        sx={{ m: 0 }}
+        sx={{ m: 0, color: "#fff" }}
       >
         <ListItemIcon>
-          <CelebrationIcon />
+          <CelebrationIcon sx={{ color: "#ce93d8" }} />
         </ListItemIcon>
         View Events
       </MenuItem>,
       <MenuItem
         key="edit_server"
         onClick={() => navigate(`/server/edit/${row.original.id}`)}
-        sx={{ m: 0 }}
+        sx={{ m: 0, color: "#fff" }}
       >
         <ListItemIcon>
-          <SettingsIcon />
+          <SettingsIcon sx={{ color: "#9e9e9e" }} />
         </ListItemIcon>
         Edit Server
       </MenuItem>,

@@ -18,8 +18,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function EditServerEvent() {
 
-  const { id } = useParams();
-  const { group_id } = useParams();
+  const { id, group_id } = useParams();
 
   const [actions, setActions] = useState([]);
   const [conditions, setConditions] = useState([]);
@@ -30,6 +29,13 @@ function EditServerEvent() {
     "discord_webhook": "URL",
     "exec_command": "CMD"
   }
+
+  const newConditionTemplate = {
+    metric: "cpu_usage",
+    operation: "more_than",
+    value: 20,
+    connector: "AND",
+  };
 
   const addAction = (e) => {
     e.preventDefault();
@@ -60,9 +66,10 @@ function EditServerEvent() {
         .then((res) => {
           console.log("Response data:", res.data);
           if (res.data) {
-            const mappedConditions = res.data.map((cond) => ({
+            const mappedConditions = res.data.map((cond, idx) => ({
               ...cond,
               operation: symbolToOperation[cond.operator] || cond.operator,
+              connector: idx === 0 ? "AND" : "AND",
             }));
 
             setConditions(mappedConditions);
@@ -99,22 +106,28 @@ function EditServerEvent() {
     e.preventDefault();
     setConditions((prev) => [
       ...prev,
-      {
-        metric: "cpu_usage",
-        operation: "more_than",
-        value: 20,
-      },
+      { ...newConditionTemplate },
     ]);
   };
 
-  const removeCondition = (conditionId) => {
-    setConditions((prev) =>
-      prev.map((c) =>
-        c.condition_id === conditionId ? { ...c, delete: true } : c
-      )
-    );
+  const removeCondition = (conditionId, index) => {
+    setConditions((prev) => {
+      if (conditionId) {
+        return prev.map((c) =>
+          c.condition_id === conditionId ? { ...c, delete: true } : c
+        );
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
+  const handleConnectorChange = (index, connector) => {
+    setConditions((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], connector };
+      return updated;
+    });
+  };
 
 
   const handleChangeAction = (index, field, value) => {
@@ -149,6 +162,7 @@ function EditServerEvent() {
       operator: operatorMap[cond.operation],
       value: parseInt(cond.value, 10),
       delete: cond.delete || false,
+      connector: cond.connector || "AND",
     }));
 
     console.log("Payload sent:", payload);
@@ -185,173 +199,220 @@ function EditServerEvent() {
   return (
     <>
       <Container className="py-4">
-        <Card className="shadow-sm">
-          <Card.Header className="bg-primary text-white">
-            <h4 className="mb-0">Add Server Event</h4>
+        <Card className="shadow-lg border-0">
+          <Card.Header className="bg-dark text-white d-flex justify-content-between align-items-center">
+            <div>
+              <h4 className="mb-0">Edit Server Event</h4>
+              <small className="text-white-50">
+                Update actions and chained conditions.
+              </small>
+            </div>
+            <Button variant="outline-light" onClick={addCondition}>
+              <AddBoxIcon className="me-1" /> Add Condition
+            </Button>
           </Card.Header>
-          <Card.Body>
+          <Card.Body className="bg-light">
             <Form>
-              <Row className="mb-4">
-                <h4 className="mb-0">Actions</h4>
-                <div className="d-flex gap-2">
-                  <Button variant="secondary" onClick={addAction}>
-                    <AddBoxIcon />
+              <section className="mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h5 className="mb-1">Actions</h5>
+                    <small className="text-muted">
+                      Actions executed when the rule matches.
+                    </small>
+                  </div>
+                  <Button variant="outline-primary" onClick={addAction}>
+                    <AddBoxIcon className="me-1" /> Add Action
                   </Button>
                 </div>
-              </Row>
-              
-              {actions.map((action, index) => (
-                <Row key={`action-${index}`} className="mb-4">
-                  <Col md={action.action === "reboot" ? 6 : 3}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Action</Form.Label>
-                      <Form.Select
-                        aria-label="Action"
-                        value={action.action}
-                        onChange={(e) =>
-                          handleChangeAction(index, "action", e.target.value)
-                        }
-                      >
-                        <option value="webhook">Custom Webhook</option>
-                        <option value="slack_webhook">Slack Webhook</option>
-                        <option value="discord_webhook">Discord Webhook</option>
-                        <hr/>
-                        <option value="reboot">Reboot Server</option>
-                        <option value="exec_command">Execute Command</option>
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
 
-                  {action.action !== "reboot" && (
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>{valueTypes[action.action] || "Value"}</Form.Label>
-                        <InputGroup className="mb-3">
-                          <InputGroup.Text id="value">
-                            {valueTypes[action.action] || "Value"}
-                          </InputGroup.Text>
-                          <Form.Control
-                            id="value"
-                            value={action.value}
-                            aria-describedby="value"
-                            onChange={(e) =>
-                              handleChangeAction(index, "value", e.target.value)
-                            }
-                            placeholder={`Enter ${valueTypes[action.action] || "value"}`}
-                          />
-                          <Button
-                            variant="danger"
-                            onClick={() => removeAction(index)}
-                          >
-                            <DeleteIcon />
-                          </Button>
-                        </InputGroup>
-                      </Form.Group>
-                    </Col>
-                  )}
-                  
-                  {action.action === "reboot" && (
-                    <Col md={3}>
-                      <Form.Group className="mb-3">
-                        <Form.Label> </Form.Label>
-                        <div>
-                          <Button
-                            variant="danger"
-                            onClick={() => removeAction(index)}
-                          >
-                            <DeleteIcon />
-                          </Button>
-                        </div>
-                      </Form.Group>
-                    </Col>
-                  )}
-                </Row>
-              ))}
-              
-              <Row className="mb-4">
-                <h4 className="mb-0">Conditions</h4>
-                <div className="d-flex gap-2">
-                  <Button variant="secondary" onClick={addCondition}>
-                    <AddBoxIcon />
+                {actions.map((action, index) => (
+                  <Card key={`action-${index}`} className="mb-3 shadow-sm">
+                    <Card.Body>
+                      <Row className="align-items-end">
+                        <Col md={action.action === "reboot" ? 6 : 4}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Action</Form.Label>
+                            <Form.Select
+                              aria-label="Action"
+                              value={action.action}
+                              onChange={(e) =>
+                                handleChangeAction(index, "action", e.target.value)
+                              }
+                            >
+                              <option value="webhook">Custom Webhook</option>
+                              <option value="slack_webhook">Slack Webhook</option>
+                              <option value="discord_webhook">Discord Webhook</option>
+                              <option value="reboot">Reboot Server</option>
+                              <option value="exec_command">Execute Command</option>
+                            </Form.Select>
+                          </Form.Group>
+                        </Col>
+
+                        {action.action !== "reboot" && (
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>{valueTypes[action.action] || "Value"}</Form.Label>
+                              <InputGroup className="mb-3">
+                                <InputGroup.Text id="value">
+                                  {valueTypes[action.action] || "Value"}
+                                </InputGroup.Text>
+                                <Form.Control
+                                  id="value"
+                                  value={action.value}
+                                  aria-describedby="value"
+                                  onChange={(e) =>
+                                    handleChangeAction(index, "value", e.target.value)
+                                  }
+                                  placeholder={`Enter ${valueTypes[action.action] || "value"}`}
+                                />
+                                <Button
+                                  variant="outline-danger"
+                                  onClick={() => removeAction(index)}
+                                >
+                                  <DeleteIcon />
+                                </Button>
+                              </InputGroup>
+                            </Form.Group>
+                          </Col>
+                        )}
+
+                        {action.action === "reboot" && (
+                          <Col md={2} className="text-end">
+                            <Button
+                              variant="outline-danger"
+                              className="mt-1"
+                              onClick={() => removeAction(index)}
+                            >
+                              <DeleteIcon />
+                            </Button>
+                          </Col>
+                        )}
+                      </Row>
+                    </Card.Body>
+                  </Card>
+                ))}
+              </section>
+
+              <section className="mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h5 className="mb-1">Conditions</h5>
+                    <small className="text-muted">
+                      Connect conditions with AND / OR logic.
+                    </small>
+                  </div>
+                  <Button variant="outline-primary" onClick={addCondition}>
+                    <AddBoxIcon className="me-1" /> Add Condition
                   </Button>
                 </div>
-              </Row>
-              {conditions
-                .filter((c) => !c.delete)
-                .map((c, index) => (
-                  <Row className="mb-4">
-                    <Col md={3}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Metric</Form.Label>
-                        <Form.Select
-                          onChange={(e) =>
-                            handleChange(index, "metric", e.target.value)
-                          }
-                          aria-label="metric"
-                          defaultValue={"cpu_usage"}
-                          value={c.metric}
-                        >
-                          <option value="cpu_usage">CPU (%)</option>
-                          <option value="memory_allocated">Memory Allocated</option>
-                          <option value="memory_allocations">Memory Allocations</option>
-                          <option value="memory_usage">Memory (%)</option>
-                          <option value="swap_used">Swap Used</option>
-                          <option value="swap_total">Swap Total</option>
-                          <option value="swap_free">Swap Free</option>
-                          <option value="cache_memory">Cache Memory</option>
-                          <option value="buffer_memory">Buffer Memory</option>
-                          <option value="disk_usage_total">Disk Total</option>
-                          <option value="disk_usage_used">Disk Used</option>
-                          <option value="disk_usage_free">Disk Free</option>
-                          <option value="disk_usage">Disk Usage (%)</option>
-                          <option value="ssh_connections">SSH Connections</option>
-                          <option value="http_connections">HTTP Connections</option>
-                          <option value="https_connections">HTTPS Connections</option>
-                          <option value="connections">Connections</option>
-                          <option value="uptime_seconds">Uptime (s)</option>
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Operation</Form.Label>
-                        <Form.Select
-                          onChange={(e) =>
-                            handleChange(index, "operation", e.target.value)
-                          }
-                          aria-label="operation"
-                          defaultValue={"cpu_usage"}
-                          value={c.operation}
-                        >
-                          <option value="more_than">More than</option>
-                          <option value="less_than">Less than</option>
-                          <option value="equal_to">Equal to</option>
-                          <option value="not_equal_to">Not Equal to</option>
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Value</Form.Label>
-                        <InputGroup className="mb-3">
-                          <Form.Control
-                            onChange={(e) =>
-                              handleChange(index, "value", e.target.value)
-                            }
-                            aria-label="Value"
-                            value={c.value}
-                          />
-                          <Button
-                            variant="danger"
-                            onClick={(e) => removeCondition(c.condition_id)}
-                          >
-                            <DeleteIcon />
-                          </Button>
-                        </InputGroup>
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                ))}
+
+                {conditions
+                  .filter((c) => !c.delete)
+                  .map((c, index) => (
+                    <React.Fragment key={`condition-${index}`}>
+                      {index > 0 && (
+                        <div className="d-flex align-items-center justify-content-center mb-2">
+                          <span className="text-muted me-2">Join with</span>
+                          <div className="btn-group">
+                            <Button
+                              size="sm"
+                              variant={c.connector === "AND" ? "primary" : "outline-primary"}
+                              onClick={() => handleConnectorChange(index, "AND")}
+                            >
+                              AND
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={c.connector === "OR" ? "primary" : "outline-primary"}
+                              onClick={() => handleConnectorChange(index, "OR")}
+                            >
+                              OR
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      <Card className="mb-3 shadow-sm">
+                        <Card.Body>
+                          <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h6 className="mb-0 text-primary">Condition {index + 1}</h6>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => removeCondition(c.condition_id, index)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </Button>
+                          </div>
+                          <Row className="g-3">
+                            <Col md={4}>
+                              <Form.Group className="mb-0">
+                                <Form.Label>Metric</Form.Label>
+                                <Form.Select
+                                  onChange={(e) =>
+                                    handleChange(index, "metric", e.target.value)
+                                  }
+                                  aria-label="metric"
+                                  value={c.metric}
+                                >
+                                  <option value="cpu_usage">CPU (%)</option>
+                                  <option value="memory_allocated">Memory Allocated</option>
+                                  <option value="memory_allocations">Memory Allocations</option>
+                                  <option value="memory_usage">Memory (%)</option>
+                                  <option value="swap_used">Swap Used</option>
+                                  <option value="swap_total">Swap Total</option>
+                                  <option value="swap_free">Swap Free</option>
+                                  <option value="cache_memory">Cache Memory</option>
+                                  <option value="buffer_memory">Buffer Memory</option>
+                                  <option value="disk_usage_total">Disk Total</option>
+                                  <option value="disk_usage_used">Disk Used</option>
+                                  <option value="disk_usage_free">Disk Free</option>
+                                  <option value="disk_usage">Disk Usage (%)</option>
+                                  <option value="ssh_connections">SSH Connections</option>
+                                  <option value="http_connections">HTTP Connections</option>
+                                  <option value="https_connections">HTTPS Connections</option>
+                                  <option value="connections">Connections</option>
+                                  <option value="uptime_seconds">Uptime (s)</option>
+                                </Form.Select>
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group className="mb-0">
+                                <Form.Label>Operation</Form.Label>
+                                <Form.Select
+                                  onChange={(e) =>
+                                    handleChange(index, "operation", e.target.value)
+                                  }
+                                  aria-label="operation"
+                                  value={c.operation}
+                                >
+                                  <option value="more_than">More than</option>
+                                  <option value="less_than">Less than</option>
+                                  <option value="equal_to">Equal to</option>
+                                  <option value="not_equal_to">Not Equal to</option>
+                                </Form.Select>
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group className="mb-0">
+                                <Form.Label>Value</Form.Label>
+                                <InputGroup>
+                                  <Form.Control
+                                    onChange={(e) =>
+                                      handleChange(index, "value", e.target.value)
+                                    }
+                                    aria-label="Value"
+                                    value={c.value}
+                                  />
+                                </InputGroup>
+                              </Form.Group>
+                            </Col>
+                          </Row>
+                        </Card.Body>
+                      </Card>
+                    </React.Fragment>
+                  ))}
+              </section>
 
               <Button variant={"primary"} onClick={(e) => submitData(e)}>
                 Save Event

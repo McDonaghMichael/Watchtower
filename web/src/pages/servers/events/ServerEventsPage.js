@@ -180,6 +180,14 @@ const table = useMaterialReactTable({
         },
       },
     },
+    muiRowActionMenuProps: {
+      PaperProps: {
+        sx: {
+          backgroundColor: "#2d2d2d",
+          color: "#fff",
+        },
+      },
+    },
     mrtTheme: {
       baseBackgroundColor: "#1e1e1e",
     },
@@ -190,10 +198,10 @@ const table = useMaterialReactTable({
       <MenuItem
         key="Edit Group"
         onClick={() => navigate(`/server/events/${id}/edit/${row.original.group_id}`)}
-        sx={{ m: 0 }}
+        sx={{ m: 0, color: "#fff" }}
       >
         <ListItemIcon>
-          <EditIcon />
+          <EditIcon sx={{ color: "#90caf9" }} />
         </ListItemIcon>
         Edit Group
       </MenuItem>

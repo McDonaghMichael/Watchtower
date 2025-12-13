@@ -75,11 +75,6 @@ func ExecuteActions() {
 		return
 	}
 
-	for _, value := range serverMetrics {
-		fmt.Printf("Server %s: CPU Usage %.2f%% at %v\n",
-			value.ServerID, value.CPUUsage, value.Timestamp)
-	}
-
 	var conditionals []Conditionals
 
 	rows, err = database.Pool.Query(context.Background(),
@@ -110,10 +105,7 @@ func ExecuteActions() {
 
 	}
 
-	for index, value := range conditionals {
-		fmt.Printf("%v : Server: %v,Condition: %v, Group: %v, Metric: %v, Value: %v, Action: %v\n\n", index,
-			value.ServerID, value.ConditionalID, value.GroupID, value.Metric, value.Value, value.Action)
-
+	for _, value := range conditionals {
 		var server models.Server = GetServerByID(value.ServerID)
 		if IsConditionCorrect(value.ServerID, value.Metric, value.Value, value.ConditionalID, value.Operation) {
 			executeAction(server, value.Action, value.ActionValue)
