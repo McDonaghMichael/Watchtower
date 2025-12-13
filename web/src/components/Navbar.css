@@ -1,0 +1,76 @@
+.nav-shell {
+  background: #0a0a0f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+}
+
+.brand-glow {
+  color: #e5e7eb;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #82b1ff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.nav-links .nav-link,
+.nav-links .dropdown-toggle {
+  color: #e5e7eb;
+  padding: 8px 12px;
+  border-radius: 12px;
+  margin-right: 4px;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-links .nav-link:hover,
+.nav-links .dropdown-toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #82b1ff;
+  transform: translateY(-1px);
+}
+
+.nav-pill .dropdown-menu {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.nav-pill .dropdown-item {
+  color: #e5e7eb;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.nav-pill .dropdown-item:hover {
+  background: rgba(130, 177, 255, 0.1);
+  color: #82b1ff;
+}
+
+.nav-toggle {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-cta {
+  box-shadow: 0 10px 25px rgba(130, 177, 255, 0.25);
+}

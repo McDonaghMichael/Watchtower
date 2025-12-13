@@ -1,0 +1,16 @@
+.metrics-tabs .nav-link {
+  color: #e5e7eb;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0f172a;
+  margin-right: 6px;
+}
+
+.metrics-tabs .nav-link.active {
+  color: #fff !important;
+  background: #111827 !important;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.metrics-tabs .nav-link:hover {
+  color: #82b1ff;
+}

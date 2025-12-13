@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Container, Badge, Alert, Button } from "react-bootstrap";
+import { Container, Badge, Button, Card, Row, Col } from "react-bootstrap";
 import axios from "axios";
 import {
   MaterialReactTable,
@@ -24,6 +24,38 @@ function ServerEventsPage() {
 
   const [groups, setGroups] = useState([]);
   const [errors, setErrors] = useState([]);
+
+  const operatorLabel = {
+    "<": "less than",
+    ">": "more than",
+    "=": "equal to",
+    "!=": "not equal to",
+    less_than: "less than",
+    more_than: "more than",
+    equal_to: "equal to",
+    not_equal_to: "not equal to",
+  };
+
+  const metricLabel = {
+    cpu_usage: "CPU (%)",
+    memory_allocated: "Memory Allocated",
+    memory_allocations: "Memory Allocations",
+    memory_usage: "Memory (%)",
+    swap_used: "Swap Used",
+    swap_total: "Swap Total",
+    swap_free: "Swap Free",
+    cache_memory: "Cache Memory",
+    buffer_memory: "Buffer Memory",
+    disk_usage_total: "Disk Total",
+    disk_usage_used: "Disk Used",
+    disk_usage_free: "Disk Free",
+    disk_usage: "Disk Usage (%)",
+    ssh_connections: "SSH Connections",
+    http_connections: "HTTP Connections",
+    https_connections: "HTTPS Connections",
+    connections: "Connections",
+    uptime_seconds: "Uptime (s)",
+  };
 
  useEffect(() => {
   const fetchGroupsData = async () => {
@@ -77,6 +109,28 @@ function ServerEventsPage() {
     ],
     []
   );
+
+  const totalConditions = groups.reduce(
+    (sum, g) => sum + (g.conditions ? g.conditions.length : 0),
+    0
+  );
+  const totalActions = groups.reduce(
+    (sum, g) => sum + (g.actions ? g.actions.length : 0),
+    0
+  );
+  const actionBreakdown = groups.flatMap((g) => g.actions || []);
+  const popularActions = Array.from(
+    actionBreakdown.reduce((map, act) => {
+      map.set(act.action, (map.get(act.action) || 0) + 1);
+      return map;
+    }, new Map())
+  ).sort((a, b) => b[1] - a[1]);
+
+  const formatCondition = (cond) => {
+    const metric = metricLabel[cond.metric] || cond.metric;
+    const op = operatorLabel[cond.operator] || cond.operator;
+    return `${metric} ${op} ${cond.value}`;
+  };
 const table = useMaterialReactTable({
     columns,
     data: groups,
@@ -212,8 +266,27 @@ const table = useMaterialReactTable({
   return (
     <>
       <Container fluid className="w-75 mt-5">
-        <h2 className="mb-4">Server Events</h2>
-        <Button variant="info" className="text-white mb-2" onClick={() => navigate(`/server/events/${id}/create`)}>Create Event</Button>
+        <div className="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h2 className="mb-1">Server Events</h2>
+            <p className="text-muted mb-0">
+              Review alert groups, their conditions, and the actions they trigger.
+            </p>
+          </div>
+          <div className="d-flex gap-2">
+            <Button variant="outline-secondary" onClick={() => navigate(`/server/${id}`)}>
+              Back to Server
+            </Button>
+            <Button
+              variant="info"
+              className="text-white"
+              onClick={() => navigate(`/server/events/${id}/create`)}
+            >
+              Create Event
+            </Button>
+          </div>
+        </div>
+
         {errors.map((err, index) => {
           return (
             <AlertBadge
@@ -225,7 +298,125 @@ const table = useMaterialReactTable({
             ></AlertBadge>
           );
         })}
-        <MaterialReactTable table={table} />
+
+        <Row className="g-3 mb-4">
+          <Col md={4}>
+            <Card className="shadow-sm h-100">
+              <Card.Body>
+                <small className="text-uppercase text-muted">Groups</small>
+                <h3 className="mb-0">{groups.length || 0}</h3>
+                <p className="text-muted mb-0">Alert groups configured for this server.</p>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={4}>
+            <Card className="shadow-sm h-100">
+              <Card.Body>
+                <small className="text-uppercase text-muted">Conditions</small>
+                <h3 className="mb-0">{totalConditions}</h3>
+                <p className="text-muted mb-0">Active checks that trigger actions.</p>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={4}>
+            <Card className="shadow-sm h-100">
+              <Card.Body>
+                <small className="text-uppercase text-muted">Actions</small>
+                <h3 className="mb-0">{totalActions}</h3>
+                <p className="text-muted mb-1">Responses when conditions match.</p>
+                <div className="d-flex flex-wrap gap-2">
+                  {popularActions.length === 0 && (
+                    <Badge bg="secondary" className="text-uppercase">None</Badge>
+                  )}
+                  {popularActions.slice(0, 3).map(([action, count]) => (
+                    <Badge key={action} bg="info" text="dark">
+                      {action.replace("_", " ")} · {count}
+                    </Badge>
+                  ))}
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
+        <Card className="shadow-sm mb-4">
+          <Card.Header className="bg-dark text-white d-flex justify-content-between align-items-center">
+            <div>
+              <h5 className="mb-0">Group Overview</h5>
+              <small className="text-white-50">Counts for conditions and actions</small>
+            </div>
+          </Card.Header>
+          <Card.Body className="p-0">
+            <MaterialReactTable table={table} />
+          </Card.Body>
+        </Card>
+
+        <div className="mb-3">
+          <h5 className="mb-3">Details</h5>
+          {groups.length === 0 && (
+            <Card className="shadow-sm">
+              <Card.Body>
+                <p className="mb-0 text-muted">No event groups yet. Create your first rule to get started.</p>
+              </Card.Body>
+            </Card>
+          )}
+          <Row className="g-3">
+            {groups.map((group) => (
+              <Col md={6} key={group.group_id}>
+                <Card className="shadow-sm h-100">
+                  <Card.Header className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>Group #{group.group_id}</strong>
+                      <div className="text-muted small">
+                        {group.conditions?.length || 0} conditions · {group.actions?.length || 0} actions
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline-primary"
+                      onClick={() => navigate(`/server/events/${id}/edit/${group.group_id}`)}
+                    >
+                      Edit
+                    </Button>
+                  </Card.Header>
+                  <Card.Body>
+                    <div className="mb-3">
+                      <div className="text-uppercase text-muted small mb-1">Conditions</div>
+                      {group.conditions && group.conditions.length > 0 ? (
+                        <ul className="mb-0">
+                          {group.conditions.map((cond) => (
+                            <li key={cond.condition_id} className="mb-1">
+                              <Badge bg="secondary" className="me-2">
+                                #{cond.condition_id || "-"}
+                              </Badge>
+                              {formatCondition(cond)}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-muted">No conditions.</span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-uppercase text-muted small mb-1">Actions</div>
+                      {group.actions && group.actions.length > 0 ? (
+                        <div className="d-flex flex-wrap gap-2">
+                          {group.actions.map((act) => (
+                            <Badge key={act.action_id} bg="info" text="dark">
+                              {act.action.replace("_", " ")} {act.value ? `→ ${act.value}` : ""}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted">No actions.</span>
+                      )}
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </div>
       </Container>
     </>
   );

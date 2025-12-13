@@ -64,19 +64,28 @@ const handleSubmit = (event) => {
   };
 
   return (
-    <Container className="py-4">
-      <Card className="shadow-sm">
-        <Card.Header className="bg-primary text-white">
-          <h4 className="mb-0">Add New Server</h4>
+    <Container className="py-4 w-75">
+      <Card className="shadow-lg border-0 bg-dark text-light rounded-4 overflow-hidden">
+        <Card.Header className="bg-gradient bg-dark text-white d-flex justify-content-between align-items-center">
+          <div>
+            <h4 className="mb-0">Add New Server</h4>
+            <small className="text-white-50">
+              Provision a server with connection and environment details.
+            </small>
+          </div>
+          <Button variant="outline-light" onClick={() => navigate('/servers')}>
+            Back
+          </Button>
         </Card.Header>
-        <Card.Body>
+        <Card.Body className="bg-dark">
           <Form noValidate validated={validated} onSubmit={handleSubmit}>
 
-            <h5 className="mb-3">Basic Information</h5>
-            <Row className="mb-4">
+            <div className="bg-body-secondary bg-opacity-10 rounded-3 p-3 mb-4">
+              <h5 className="mb-3 text-light">Basic Information</h5>
+              <Row className="g-3">
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Server Name</Form.Label>
+                  <Form.Label className="text-light">Server Name</Form.Label>
                   <Form.Control
                     required
                     type="text"
@@ -92,7 +101,7 @@ const handleSubmit = (event) => {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>IP Address</Form.Label>
+                  <Form.Label className="text-light">IP Address</Form.Label>
                   <Form.Control
                     required
                     type="text"
@@ -107,13 +116,15 @@ const handleSubmit = (event) => {
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
-            </Row>
+              </Row>
+            </div>
 
-            <h5 className="mb-3">SSH Connection Details</h5>
-            <Row className="mb-4">
+            <div className="bg-body-secondary bg-opacity-10 rounded-3 p-3 mb-4">
+              <h5 className="mb-3 text-light">SSH Connection Details</h5>
+              <Row className="g-3">
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>SSH Username</Form.Label>
+                  <Form.Label className="text-light">SSH Username</Form.Label>
                   <Form.Control
                     required
                     type="text"
@@ -123,9 +134,9 @@ const handleSubmit = (event) => {
                   />
                 </Form.Group>
               </Col>
-              <Col md={4}>
+              <Col md={5}>
                 <Form.Group className="mb-3">
-                <Form.Label>SSH Private Key</Form.Label>
+                <Form.Label className="text-light">SSH Private Key</Form.Label>
                 <div className="input-group">
                   <Form.Control
                     required
@@ -143,9 +154,9 @@ const handleSubmit = (event) => {
                 </Form.Text>
               </Form.Group>
               </Col>
-              <Col md={4}>
+              <Col md={3}>
                 <Form.Group className="mb-3">
-                  <Form.Label>SSH Port</Form.Label>
+                  <Form.Label className="text-light">SSH Port</Form.Label>
                   <Form.Control
                     required
                     type="number"
@@ -157,13 +168,15 @@ const handleSubmit = (event) => {
                   />
                 </Form.Group>
               </Col>
-            </Row>
+              </Row>
+            </div>
 
-            <h5 className="mb-3">Server Details</h5>
-            <Row className="mb-4">
+            <div className="bg-body-secondary bg-opacity-10 rounded-3 p-3 mb-4">
+              <h5 className="mb-3 text-light">Server Details</h5>
+              <Row className="g-3">
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Operating System</Form.Label>
+                  <Form.Label className="text-light">Operating System</Form.Label>
                   <Form.Select
                     required
                     name="operatingSystem"
@@ -179,7 +192,7 @@ const handleSubmit = (event) => {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Environment</Form.Label>
+                  <Form.Label className="text-light">Environment</Form.Label>
                   <Form.Select
                     required
                     name="environment"
@@ -194,7 +207,7 @@ const handleSubmit = (event) => {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Location</Form.Label>
+                  <Form.Label className="text-light">Location</Form.Label>
                   <Form.Control
                     type="text"
                     name="location"
@@ -206,7 +219,7 @@ const handleSubmit = (event) => {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Tags</Form.Label>
+                  <Form.Label className="text-light">Tags</Form.Label>
                   <Form.Control
                     type="text"
                     name="tags"
@@ -219,28 +232,31 @@ const handleSubmit = (event) => {
                   </Form.Text>
                 </Form.Group>
               </Col>
-            </Row>
-            <Row className="mb-4">
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Description</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Enter server description..."
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+              </Row>
+            </div>
+            <div className="bg-body-secondary bg-opacity-10 rounded-3 p-3 mb-4">
+              <h5 className="mb-3 text-light">Description</h5>
+              <Row className="g-3">
+                <Col md={12}>
+                  <Form.Group className="mb-3">
+                    <Form.Control
+                      as="textarea"
+                      rows={4}
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      placeholder="Enter server description..."
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+            </div>
 
             <div className="d-flex gap-2">
-              <Button type="submit" variant="primary">
+              <Button type="submit" variant="info">
                 Add Server
               </Button>
-              <Button variant="secondary" onClick={() => navigate('/servers')}>
+              <Button variant="outline-light" onClick={() => navigate('/servers')}>
                 Cancel
               </Button>
             </div>

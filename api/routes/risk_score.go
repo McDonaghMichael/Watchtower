@@ -48,7 +48,7 @@ func GetRiskScoreByServerId() gin.HandlerFunc {
 			m.Connections = m.HTTPConnections + m.SSHConnections + m.HTTPSConnections
 		}
 
-		var res float64 = machinelearning.RunMachineLearning([]float32{
+		res := machinelearning.RunMachineLearning([]float32{
 			float32(m.NumOfCPU),                                 // num_of_cpu
 			float32(m.CPUUsage),                                 // cpu_usage (25% utilization)
 			float32(m.MemoryAllocated),                          // memory_allocated (8 GB)

@@ -4,13 +4,14 @@ import axios from "axios";
 import AlertNotice from "../../../components/notices/AlertNotice";
 import { getTimestamp } from "../../../utils/timeUtils";
 import LoadingSpinner from "../../../components/misc/LoadingSpinner";
-import { Col, Row, Card, Button } from "react-bootstrap";
+import { Col, Row, Card, Button, Form } from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import DisplayCard from "../../../components/metrics/DisplayCard";
 import { LineChart } from "@mui/x-charts/LineChart";
 import AlertDefaultNotice from "../../../components/notices/AlertDefaultNotice";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
+import "./ServerMetricsPage.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -216,201 +217,201 @@ function ServerMetricsPage() {
 
   return (
     <>
-      <div>
-        <Container className="mt-4">
-          <Row className="mb-4 g-3">
-            <Col md={2}>
-              <DisplayCard
-                value={currentHealth.status ? "ONLINE" : "OFFLINE"}
-                color={currentHealth.status ? "#37fc47ff" : "#ff7349ff"}
-                message={"STATUS"}
-              />
-            </Col>
-            <Col md={2}>
-              <DisplayCard
-                value={(Math.round(currentMetric.cpu_usage, 2) || 0) + "%"}
-                color={getMetricColor(Math.round(currentMetric.cpu_usage || 0))}
-                message={"CPU USAGE"}
-              />
-            </Col>
-            <Col md={2}>
-              <DisplayCard
-                value={
-                  Math.round((currentMetric.memory_usage_percent || 0) * 100) /
-                    100 +
-                  "%"
-                }
-                color={getMetricColor(
-                  Math.round((currentMetric.memory_usage_percent || 0) * 100) /
-                    100
-                )}
-                message={"MEMORY USAGE"}
-              />
-            </Col>
-            <Col md={2}>
-              <DisplayCard
-                value={
-                  Math.round(
-                    ((currentMetric.disk_usage_used || 0) /
-                      (currentMetric.disk_usage_total || 1)) *
-                      100
-                  ) + "%"
-                }
-                color={getMetricColor(
-                  Math.round(
-                    ((currentMetric.disk_usage_used || 0) /
-                      (currentMetric.disk_usage_total || 1)) *
-                      100
-                  )
-                )}
-                message={"DISK USAGE"}
-              />
-            </Col>
-            <Col md={2}>
-              <DisplayCard
-                value={currentMetric.connections || 0}
-                message={"CONN"}
-              />
-            </Col>
-            <Col md={2}>
-              <DisplayCard
-                value={Math.round(riskScore.score, 4)}
-                message={"RISK SCORE"}
-              />
-            </Col>
-          </Row>
-          <Button
-            variant="secondary"
-            className="text-white mb-2"
-            onClick={() => navigate(`/server/events/${id}/create`)}
-          >
-            Create Event
-          </Button>
-          <Button
-            variant="secondary"
-            className="text-white mb-2"
-            onClick={() => navigate(`/server/events/${id}`)}
-          >
-            Events
-          </Button>
-          <Card className="h-100 border-start border-4 border-secondary mb-4">
-            <Card.Body className="py-3">
-              <LineChart
-                xAxis={[
-                  {
-                    data: chartData.xData,
-                    label: "Metrics",
-                    labelStyle: {
-                      fill: "#fff",
-                      fontSize: 14,
+      <Container className="py-4 w-75">
+        <Card className="shadow-lg border-0 bg-dark text-light rounded-4 overflow-hidden">
+          <Card.Header className="bg-gradient bg-dark text-white d-flex justify-content-between align-items-center">
+            <div>
+              <h4 className="mb-0">Server Metrics</h4>
+              <small className="text-white-50">
+                Live telemetry, health, and risk for this server.
+              </small>
+            </div>
+            <div className="d-flex gap-2">
+              <Button
+                variant="outline-light"
+                onClick={() => navigate(`/server/events/${id}`)}
+              >
+                Events
+              </Button>
+              <Button
+                variant="info"
+                onClick={() => navigate(`/server/events/${id}/create`)}
+              >
+                Create Event
+              </Button>
+            </div>
+          </Card.Header>
+          <Card.Body className="bg-dark">
+            <Row className="mb-4 g-3">
+              <Col md={2}>
+                <DisplayCard
+                  value={currentHealth.status ? "ONLINE" : "OFFLINE"}
+                  color={currentHealth.status ? "#37fc47ff" : "#ff7349ff"}
+                  message={"STATUS"}
+                />
+              </Col>
+              <Col md={2}>
+                <DisplayCard
+                  value={(Math.round(currentMetric.cpu_usage, 2) || 0) + "%"}
+                  color={getMetricColor(
+                    Math.round(currentMetric.cpu_usage || 0)
+                  )}
+                  message={"CPU USAGE"}
+                />
+              </Col>
+              <Col md={2}>
+                <DisplayCard
+                  value={
+                    Math.round(
+                      (currentMetric.memory_usage_percent || 0) * 100
+                    ) /
+                      100 +
+                    "%"
+                  }
+                  color={getMetricColor(
+                    Math.round(
+                      (currentMetric.memory_usage_percent || 0) * 100
+                    ) / 100
+                  )}
+                  message={"MEMORY USAGE"}
+                />
+              </Col>
+              <Col md={2}>
+                <DisplayCard
+                  value={
+                    Math.round(
+                      ((currentMetric.disk_usage_used || 0) /
+                        (currentMetric.disk_usage_total || 1)) *
+                        100
+                    ) + "%"
+                  }
+                  color={getMetricColor(
+                    Math.round(
+                      ((currentMetric.disk_usage_used || 0) /
+                        (currentMetric.disk_usage_total || 1)) *
+                        100
+                    )
+                  )}
+                  message={"DISK USAGE"}
+                />
+              </Col>
+              <Col md={2}>
+                <DisplayCard
+                  value={currentMetric.connections || 0}
+                  message={"CONN"}
+                />
+              </Col>
+              <Col md={2}>
+                <DisplayCard
+                  value={Math.round(riskScore.score, 4)}
+                  message={"RISK SCORE"}
+                />
+              </Col>
+            </Row>
+
+            <Card className="border-0 shadow-sm bg-body-secondary bg-opacity-10 mb-4">
+              <Card.Body className="py-3">
+                <LineChart
+                  xAxis={[
+                    {
+                      data: chartData.xData,
+                      label: "Metrics",
+                      labelStyle: {
+                        fill: "#fff",
+                        fontSize: 14,
+                      },
                     },
-                  },
-                ]}
-                yAxis={[
-                  {
-                    label: "Percentage (%)",
-                    labelStyle: {
-                      fill: "#fff",
-                      fontSize: 14,
+                  ]}
+                  yAxis={[
+                    {
+                      label: "Percentage (%)",
+                      labelStyle: {
+                        fill: "#fff",
+                        fontSize: 14,
+                      },
                     },
-                  },
-                ]}
-                series={[
-                  {
-                    data: chartData.cpuUsage,
-                    label: "CPU Usage",
-                    color: "#ffa657",
-                    showMark: false,
-                  },
-                  {
-                    data: chartData.memoryUsage,
-                    label: "Memory Usage",
-                    color: "#d2a8ff",
-                    showMark: false,
-                  },
-                  {
-                    data: chartData.diskUsage,
-                    label: "Disk Usage",
-                    color: "#f85149",
-                    showMark: false,
-                  },
-                  {
-                    data: chartData.swapUsage,
-                    label: "Swap Usage",
-                    color: "#97355bff",
-                    showMark: false,
-                  },
-                  {
-                    data: chartData.connections,
-                    label: "Live Connections",
-                    color: "#799eafff",
-                    showMark: false,
-                  },
-                ]}
-                height={500}
-                sx={{
-                  width: "100%",
-                  backgroundColor: "#1e1e1e",
-                  "& .MuiChartsAxis-line": { stroke: "#fff" },
-                  "& .MuiChartsAxis-tick": { stroke: "#fff" },
-                  "& .MuiChartsAxis-tickLabel": { fill: "#fff" },
-                  "& .MuiChartsLegend-series text": {
-                    fill: "#fff !important",
-                  },
-                  "& .MuiChartsLegend-mark": { rx: 2 },
-                }}
-              />
-            </Card.Body>
-          </Card>
-        </Container>
-      </div>
-      <div>
-        <Container className="mt-4">
-          <Card className="h-100 border-start border-4 border-secondary bg-dark">
-            <Card.Body className="py-3">
-              <div style={{ minHeight: "50vh" }}>
-                <div style={{ marginBottom: "10px" }}>
-                  <input
-                    type="text"
-                    placeholder="Search stats..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="bg-dark"
-                    style={{
-                      width: "50%",
-                      padding: "10px 16px",
-                      borderRadius: "6px",
-                      color: "#c9d1d9",
-                      fontFamily: "monospace",
-                      fontSize: "14px",
-                      outline: "none",
-                    }}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Query Limit"
-                    value={queryLimit}
-                    min={10}
-                    max={200}
-                    interval={10}
-                    onChange={(e) => setQueryLimit(Number(e.target.value))}
-                    className="bg-dark"
-                    style={{
-                      width: "25%",
-                      padding: "10px 16px",
-                      borderRadius: "6px",
-                      color: "#c9d1d9",
-                      fontFamily: "monospace",
-                      fontSize: "14px",
-                      outline: "none",
-                    }}
-                  />
+                  ]}
+                  series={[
+                    {
+                      data: chartData.cpuUsage,
+                      label: "CPU Usage",
+                      color: "#ffa657",
+                      showMark: false,
+                      labelStyle: { fill: "#fff" },
+                    },
+                    {
+                      data: chartData.memoryUsage,
+                      label: "Memory Usage",
+                      color: "#d2a8ff",
+                      showMark: false,
+                      labelStyle: { fill: "#fff" },
+                    },
+                    {
+                      data: chartData.diskUsage,
+                      label: "Disk Usage",
+                      color: "#f85149",
+                      showMark: false,
+                      labelStyle: { fill: "#fff" },
+                    },
+                    {
+                      data: chartData.swapUsage,
+                      label: "Swap Usage",
+                      color: "#97355bff",
+                      showMark: false,
+                      labelStyle: { fill: "#fff" },
+                    },
+                    {
+                      data: chartData.connections,
+                      label: "Live Connections",
+                      color: "#799eafff",
+                      showMark: false,
+                      labelStyle: { fill: "#fff" },
+                    },
+                  ]}
+                  height={420}
+                  sx={{
+                    width: "100%",
+                    backgroundColor: "#0a0a0f",
+                    borderRadius: "12px",
+                    "& .MuiChartsAxis-line": { stroke: "#fff" },
+                    "& .MuiChartsAxis-tick": { stroke: "#fff" },
+                    "& .MuiChartsAxis-tickLabel": { fill: "#fff" },
+                    "& .MuiChartsLegend-series text": {
+                      fill: "#fff !important",
+                    },
+                    "& .MuiChartsLegend-mark": { rx: 2 },
+                  }}
+                />
+              </Card.Body>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-body-secondary bg-opacity-10">
+              <Card.Body className="py-3">
+                <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-3">
+                  <div className="d-flex gap-2 w-100 w-md-50">
+                    <Form.Control
+                      type="text"
+                      placeholder="Search stats..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="bg-dark text-light"
+                    />
+                    <Form.Control
+                      type="number"
+                      placeholder="Query Limit"
+                      value={queryLimit}
+                      min={10}
+                      max={200}
+                      onChange={(e) => setQueryLimit(Number(e.target.value))}
+                      className="bg-dark text-light"
+                    />
+                  </div>
                 </div>
 
                 <Tabs
                   defaultActiveKey="metrics"
                   id="uncontrolled-tab-example"
-                  className="mb-3"
+                  className="mb-3 metrics-tabs"
                 >
                   <Tab eventKey="metrics" title="Metrics">
                     {filteredMetrics.length === 0 ? (
@@ -426,52 +427,47 @@ function ServerMetricsPage() {
                         }}
                       >
                         {filteredMetrics.map((metric, index) => (
-                          <div
+                          <Card
                             key={metric?.id || index}
+                            className="mb-2 border-0 bg-dark text-light shadow-sm"
                             style={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: "16px",
-                              fontFamily: "monospace",
-                              fontSize: "13px",
-                              padding: "12px 16px",
+                              borderLeft: "3px solid #1e293b",
                               background:
-                                index % 2 === 0 ? "#0c0c0cff" : "#222222ff",
-                              color: "#c9d1d9",
-                              borderLeft: "3px solid #202020ff",
-                              marginBottom: "2px",
+                                "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.85))",
                             }}
                           >
-                            <span
-                              style={{ color: "#8b949e", minWidth: "160px" }}
-                            >
-                              [{metric?.timestamp || getTimestamp()}]
-                            </span>
-                            <span style={{ color: "#7ee787" }}>
-                              ID: {metric?.id || "N/A"}
-                            </span>
-                            <span style={{ color: "#ffa657" }}>
-                              CPU Count: {metric?.num_of_cpu || "N/A"} (
-                              {(metric?.cpu_usage || 0) + "%" || "N/A"})
-                            </span>
-                            <span style={{ color: "#d2a8ff" }}>
-                              Memory Usage: {metric?.memory_usage || "N/A"} /{" "}
-                              {metric?.memory_allocated || "N/A"} (
-                              {Math.round(
-                                (metric?.memory_usage_percent || 0) * 100
-                              ) /
-                                100 +
-                                "%" || "N/A"}
-                              )
-                            </span>
-                            <span style={{ color: "#f85149" }}>
-                              Disk Usage: {metric?.disk_usage_used || "N/A"} /{" "}
-                              {metric?.disk_usage_total || "N/A"}
-                            </span>
-                            <span style={{ color: "#799eafff" }}>
-                              CONN: {metric?.connections || "0"}
-                            </span>
-                          </div>
+                            <Card.Body className="py-2">
+                              <div className="d-flex flex-wrap gap-3 align-items-center small">
+                                <span
+                                  className="text-secondary"
+                                  style={{ minWidth: "160px" }}
+                                >
+                                  [{metric?.timestamp || getTimestamp()}]
+                                </span>
+                                <span style={{ color: "#7ee787" }}>
+                                  ID: {metric?.id || "N/A"}
+                                </span>
+                                <span style={{ color: "#ffa657" }}>
+                                  CPU: {metric?.cpu_usage || 0}%
+                                </span>
+                                <span style={{ color: "#d2a8ff" }}>
+                                  Mem: {metric?.memory_usage || "N/A"} /{" "}
+                                  {metric?.memory_allocated || "N/A"} (
+                                  {Math.round(
+                                    (metric?.memory_usage_percent || 0) * 100
+                                  ) / 100}
+                                  %)
+                                </span>
+                                <span style={{ color: "#f85149" }}>
+                                  Disk: {metric?.disk_usage_used || "N/A"} /{" "}
+                                  {metric?.disk_usage_total || "N/A"}
+                                </span>
+                                <span style={{ color: "#799eafff" }}>
+                                  Conn: {metric?.connections || "0"}
+                                </span>
+                              </div>
+                            </Card.Body>
+                          </Card>
                         ))}
                       </div>
                     )}
@@ -490,48 +486,48 @@ function ServerMetricsPage() {
                         }}
                       >
                         {health.map((h, index) => (
-                          <div
+                          <Card
                             key={h?.id || index}
+                            className="mb-2 border-0 bg-dark text-light shadow-sm"
                             style={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: "16px",
-                              fontFamily: "monospace",
-                              fontSize: "13px",
-                              padding: "12px 16px",
+                              borderLeft: "3px solid #1e293b",
                               background:
-                                index % 2 === 0 ? "#0c0c0cff" : "#222222ff",
-                              color: "#c9d1d9",
-                              borderLeft: "3px solid #202020ff",
-                              marginBottom: "2px",
+                                "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.85))",
                             }}
                           >
-                            <span
-                              style={{ color: "#8b949e", minWidth: "160px" }}
-                            >
-                              [{h?.timestamp || getTimestamp()}]
-                            </span>
-                            <span style={{ color: "#7ee787" }}>
-                              ID: {h?.id || "N/A"}
-                            </span>
-                            <span
-                              style={{
-                                color: h?.status ? "#37fc47ff" : "#ff7349ff",
-                              }}
-                            >
-                              STATUS: {h?.status ? "ONLINE" : "OFFLINE"}
-                            </span>
-                          </div>
+                            <Card.Body className="py-2">
+                              <div className="d-flex flex-wrap gap-3 align-items-center small">
+                                <span
+                                  className="text-secondary"
+                                  style={{ minWidth: "160px" }}
+                                >
+                                  [{h?.timestamp || getTimestamp()}]
+                                </span>
+                                <span style={{ color: "#7ee787" }}>
+                                  ID: {h?.id || "N/A"}
+                                </span>
+                                <span
+                                  style={{
+                                    color: h?.status
+                                      ? "#37fc47ff"
+                                      : "#ff7349ff",
+                                  }}
+                                >
+                                  STATUS: {h?.status ? "ONLINE" : "OFFLINE"}
+                                </span>
+                              </div>
+                            </Card.Body>
+                          </Card>
                         ))}
                       </div>
                     )}
                   </Tab>
                 </Tabs>
-              </div>
-            </Card.Body>
-          </Card>
-        </Container>
-      </div>
+              </Card.Body>
+            </Card>
+          </Card.Body>
+        </Card>
+      </Container>
     </>
   );
 }

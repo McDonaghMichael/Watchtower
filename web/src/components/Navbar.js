@@ -1,22 +1,27 @@
-import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
+import { Container, Nav, Navbar, NavDropdown, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
+import './Navbar.css';
 
 function NavigationBar() {
   const navigate = useNavigate();
 
   return (
-    <Navbar className='dark-navbar' expand="lg">
+    <Navbar expand="lg" className="nav-shell shadow-lg">
       <Container>
-        <Navbar.Brand as={Link} to="/">
-          <i className="bi bi-display me-2"></i>
-          WATCHTOWER
+        <Navbar.Brand as={Link} to="/" className="d-flex align-items-center brand-glow">
+          <div className="brand-icon me-2">
+            <i className="bi bi-display" />
+          </div>
+          <span className="fw-bold">WATCHTOWER</span>
         </Navbar.Brand>
-        
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+
+        <Navbar.Toggle aria-controls="basic-navbar-nav" className="border-0 nav-toggle" />
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto">
-            <Nav.Link as={Link} to="/">Dashboard</Nav.Link>
-            <NavDropdown title="Servers" id="servers-dropdown">
+          <Nav className="me-auto align-items-lg-center nav-links">
+            <Nav.Link as={Link} to="/" className="nav-pill">
+              Dashboard
+            </Nav.Link>
+            <NavDropdown title="Servers" id="servers-dropdown" className="nav-pill">
               <NavDropdown.Item as={Link} to="/servers">
                 View All Servers
               </NavDropdown.Item>
@@ -25,7 +30,7 @@ function NavigationBar() {
               </NavDropdown.Item>
             </NavDropdown>
 
-            <NavDropdown title="Accounts" id="accounts-dropdown">
+            <NavDropdown title="Accounts" id="accounts-dropdown" className="nav-pill">
               <NavDropdown.Item as={Link} to="/accounts">
                 View All Accounts
               </NavDropdown.Item>
@@ -33,26 +38,25 @@ function NavigationBar() {
                 Add Account
               </NavDropdown.Item>
             </NavDropdown>
-          
 
-          <NavDropdown title="Management" id="management-dropdown">
-           <NavDropdown.Item as={Link} to="/">
+            <NavDropdown title="Management" id="management-dropdown" className="nav-pill">
+              <NavDropdown.Item as={Link} to="/">
                 Roles
               </NavDropdown.Item>
               <NavDropdown.Item as={Link} to="/">
                 Reports
               </NavDropdown.Item>
-              
+
               <NavDropdown.Item as={Link} to="/">
                 Settings
               </NavDropdown.Item>
             </NavDropdown>
 
-            <NavDropdown title="Security" id="security-dropdown">
-               <NavDropdown.Item as={Link} to="/">
+            <NavDropdown title="Security" id="security-dropdown" className="nav-pill">
+              <NavDropdown.Item as={Link} to="/">
                 Audit Logs
               </NavDropdown.Item>
-            
+
               <NavDropdown.Item as={Link} to="/">
                 Sessions
               </NavDropdown.Item>
@@ -63,14 +67,33 @@ function NavigationBar() {
                 Backups
               </NavDropdown.Item>
             </NavDropdown>
-            
+          </Nav>
 
-</Nav>
-
-          <Navbar.Text>
-            Signed in as: <a href="#login">John Doe</a>
-          </Navbar.Text>
-
+          <div className="d-flex align-items-center gap-3 mt-3 mt-lg-0">
+            <NavDropdown
+              align="end"
+              title={<i className="bi bi-person-circle fs-5 text-light"></i>}
+              id="profile-dropdown"
+              className="nav-pill"
+            >
+              <NavDropdown.Item as={Link} to="/account/1">
+                View Account
+              </NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/account/create">
+                Manage Profile
+              </NavDropdown.Item>
+              <NavDropdown.Divider />
+              <NavDropdown.Item as={Link} to="/logout">
+                Sign Out
+              </NavDropdown.Item>
+            </NavDropdown>
+            <Button variant="outline-light" size="sm" className="nav-ghost" onClick={() => navigate('/servers')}>
+              Servers
+            </Button>
+            <Button variant="info" size="sm" className="nav-cta" onClick={() => navigate('/server/add')}>
+              + Add Server
+            </Button>
+          </div>
         </Navbar.Collapse>
       </Container>
     </Navbar>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Container, Button, Alert } from "react-bootstrap";
+import { Container, Button, Card, Row, Col, Badge } from "react-bootstrap";
 import axios from "axios";
 import {
   MaterialReactTable,
@@ -354,24 +354,124 @@ function ServersPage() {
       });
   };
 
+  const totalServers = servers.length;
+  const onlineCount = servers.filter((s) => s.health?.status).length;
+  const offlineCount = Math.max(totalServers - onlineCount, 0);
+  const environments = servers.reduce((acc, s) => {
+    if (s.environment) {
+      acc[s.environment] = (acc[s.environment] || 0) + 1;
+    }
+    return acc;
+  }, {});
+  const topEnvs = Object.entries(environments).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const avgPing =
+    servers.reduce((sum, s) => {
+      const pingMs = s.last_ping ? new Date(s.last_ping).getTime() : null;
+      return sum + (pingMs ? currentTime - pingMs : 0);
+    }, 0) / (servers.length || 1);
+
   return (
     <Container fluid className="w-75 mt-5">
-      <PageHeader header={"Server Monitoring"}/>
-      
-      <Button variant="secondary" className="text-white mb-2" onClick={() => navigate(`/server/add`)}>Add Server</Button>
-      {errors.map((err, index) => {
-        return (
-          <AlertBadge
-            key={index}
-            status={err.status}
-            message={err.message}
-            id={err.id}
-            index={index}
-          ></AlertBadge>
-        );
-      })}
+      <div className="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h2 className="mb-1 text-white">Server Monitoring</h2>
+          <p className="text-muted mb-0">
+            Fleet overview, status, and quick actions.
+          </p>
+        </div>
+        <div className="d-flex gap-2">
+          <Button
+            variant="outline-light"
+            onClick={() => navigate(`/server/add`)}
+          >
+            Add Server
+          </Button>
+        </div>
+      </div>
 
-      <MaterialReactTable table={table} />
+      {errors.map((err, index) => (
+        <AlertBadge
+          key={index}
+          status={err.status}
+          message={err.message}
+          id={err.id}
+          index={index}
+        />
+      ))}
+
+      <Row className="g-3 mb-4">
+        <Col md={3}>
+          <Card className="shadow-sm border-0 bg-dark text-light">
+            <Card.Body>
+              <small className="text-uppercase text-muted">Total</small>
+              <h3 className="mb-0">{totalServers}</h3>
+              <p className="text-muted mb-0 small">Servers tracked</p>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={3}>
+          <Card className="shadow-sm border-0 bg-dark text-light">
+            <Card.Body>
+              <small className="text-uppercase text-muted">Online</small>
+              <h3 className="mb-0 text-success">{onlineCount}</h3>
+              <p className="text-muted mb-0 small">Healthy status</p>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={3}>
+          <Card className="shadow-sm border-0 bg-dark text-light">
+            <Card.Body>
+              <small className="text-uppercase text-muted">Offline</small>
+              <h3 className="mb-0 text-danger">{offlineCount}</h3>
+              <p className="text-muted mb-0 small">Unreachable</p>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={3}>
+          <Card className="shadow-sm border-0 bg-dark text-light">
+            <Card.Body>
+              <small className="text-uppercase text-muted">Avg Ping</small>
+              <h3 className="mb-0">{Math.max(Math.round(avgPing / 1000), 0)}s</h3>
+              <p className="text-muted mb-0 small">Since last check</p>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      <Card className="shadow-sm border-0 bg-dark text-light mb-4">
+        <Card.Header className="bg-dark border-0">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 className="mb-0">Environment Mix</h5>
+              <small className="text-muted">Top environments by count</small>
+            </div>
+          </div>
+        </Card.Header>
+        <Card.Body className="bg-dark">
+          {topEnvs.length === 0 && (
+            <p className="text-muted mb-0">No environment data yet.</p>
+          )}
+          <div className="d-flex flex-wrap gap-2">
+            {topEnvs.map(([env, count]) => (
+              <Badge key={env} bg="info" text="dark">
+                {env} · {count}
+              </Badge>
+            ))}
+          </div>
+        </Card.Body>
+      </Card>
+
+      <Card className="shadow-sm border-0 bg-dark text-light">
+        <Card.Header className="bg-dark border-0 d-flex justify-content-between align-items-center">
+          <div>
+            <h5 className="mb-0">Servers</h5>
+            <small className="text-muted">Status, health, and actions</small>
+          </div>
+        </Card.Header>
+        <Card.Body className="p-0">
+          <MaterialReactTable table={table} />
+        </Card.Body>
+      </Card>
     </Container>
   );
 }

@@ -17,7 +17,7 @@ func RunMachineLearning(testInput []float32) float64 {
 
 	err := onnxruntime.InitializeEnvironment()
 	if err != nil {
-		log.Fatal("❌ Failed to initialize ONNX runtime:", err)
+		fmt.Print("❌ Failed to initialize ONNX runtime:", err)
 	}
 	defer onnxruntime.DestroyEnvironment()
 
