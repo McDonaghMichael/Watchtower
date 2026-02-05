@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
+	"watchtower/api/utils"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -13,21 +13,27 @@ import (
 var Pool *pgxpool.Pool
 
 func Connect() {
+	utils.GetConsole().PrintSecondary("Connecting to database.")
+
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
 		dbHost = "localhost"
+		utils.GetConsole().PrintWarning("DB_HOST is undefined, using localhost instead.")
 	}
 	dbUser := os.Getenv("DB_USER")
 	if dbUser == "" {
 		dbUser = "sysadmin"
+		utils.GetConsole().PrintWarning("DB_USER is undefined, using sysadmin instead.")
 	}
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
 		dbPassword = "Galway123"
+		utils.GetConsole().PrintWarning("DB_PASSWORD is undefined, using Galway123 instead.")
 	}
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
 		dbName = "watchtower"
+		utils.GetConsole().PrintWarning("DB_NAME is undefined, using watchtower instead.")
 	}
 
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable",
@@ -35,27 +41,28 @@ func Connect() {
 	err := error(nil)
 	Pool, err = pgxpool.New(context.Background(), connStr)
 	if err != nil {
-		log.Fatal("Unable to connect:", err)
+		utils.GetConsole().PrintError("Unable to connect:", err)
 	}
 
 	sqlBytes, err := ioutil.ReadFile("schema.sql")
 	if err != nil {
-		panic(err)
+		utils.GetConsole().PrintError("Unable to import schema.sql: ", err)
 	}
 
 	sqlScript := string(sqlBytes)
 
 	_, err = Pool.Exec(context.Background(), sqlScript)
 	if err != nil {
-		fmt.Println("Error executing SQL script:", err)
+		utils.GetConsole().PrintError("Error executing SQL script:", err)
 		return
 	}
 
-	fmt.Println("Database schema and seed data imported successfully!")
+	utils.GetConsole().PrintSuccess("Executed schema.sql successfully")
+
 
 	if err != nil {
-		fmt.Println(err)
+		utils.GetConsole().PrintError("Unable to connect:", err)
 	}
+	utils.GetConsole().PrintSuccess("Connected to PostgreSQL!")
 
-	log.Println("Connected to PostgreSQL!")
 }

@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 	"watchtower/api/database"
 	"watchtower/api/models"
 	"watchtower/api/routes"
+	"watchtower/api/utils"
 )
 
 type Conditionals struct {
@@ -31,11 +31,10 @@ type MetricConditionalLog struct {
 }
 
 func StartHandlingActions() {
-	fmt.Println("ACTION HANDLER STARTED")
+	utils.GetConsole().PrintSecondary("Starting action handler")
 
 	for true {
-		fmt.Println("EXECUTION HANDLER STARTED")
-
+		utils.GetConsole().PrintSuccess("Action handler has been started")
 		go ExecuteActions()
 		time.Sleep(6 * time.Second)
 	}
@@ -53,7 +52,8 @@ func ExecuteActions() {
 	)
 
 	if err != nil {
-		log.Printf("Query error: %v", err)
+		utils.GetConsole().PrintError("Query error: ", err)
+
 		return
 	}
 	defer rows.Close()
@@ -64,14 +64,16 @@ func ExecuteActions() {
 		err := rows.Scan(&sm.ServerID, &sm.CPUUsage, &sm.Timestamp)
 
 		if err != nil {
-			log.Printf("Scan error: %v", err)
+		utils.GetConsole().PrintError("Scan error: ", err)
+
 			continue
 		}
 		serverMetrics = append(serverMetrics, sm)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Printf("Rows error: %v", err)
+		utils.GetConsole().PrintError("Rows error: ", err)
+
 		return
 	}
 
@@ -85,7 +87,8 @@ func ExecuteActions() {
 	)
 
 	if err != nil {
-		log.Printf("Query error: %v", err)
+				utils.GetConsole().PrintError("Query error: ", err)
+
 		return
 	}
 
@@ -97,7 +100,8 @@ func ExecuteActions() {
 		err := rows.Scan(&cond.ServerID, &cond.ConditionalID, &cond.Metric, &cond.GroupID, &cond.Value, &cond.Action, &cond.ActionValue, &cond.Operation)
 
 		if err != nil {
-			log.Printf("Query error: %v", err)
+					utils.GetConsole().PrintError("Query error: ", err)
+
 			continue
 		}
 
@@ -268,12 +272,10 @@ func logMetricConditional(conditionID int, metricID int) error {
 	).Scan(&id)
 
 	if err != nil {
-		log.Printf("Failed to log metric conditional: %v", err)
+		utils.GetConsole().PrintError("Failed to log metric conditional: ", err)
+
 		return err
 	}
-
-	log.Printf("Logged metric conditional: condition=%d, metric=%d, id=%d",
-		conditionID, metricID, id)
 	return nil
 }
 
@@ -289,7 +291,8 @@ func hasMetricBeenCondition(conditionID int, metricID int) (bool, error) {
 	).Scan(&exists)
 
 	if err != nil {
-		log.Printf("Failed to check metric conditional: %v", err)
+		utils.GetConsole().PrintError("Failed to check metric conditional: ", err)
+
 		return false, err
 	}
 

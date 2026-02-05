@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 	"watchtower/api/models"
+	"watchtower/api/utils"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -16,14 +17,20 @@ var ctx = context.Background()
 var Rdb *redis.Client
 
 func Init() {
+	utils.GetConsole().PrintSecondary("Connecting to Redis.")
+
 	host := os.Getenv("REDIS_HOST")
 	if host == "" {
-		host = "localhost" // fallback for local dev
+		host = "localhost"
+		utils.GetConsole().PrintWarning("REDIS_HOST is undefined, using localhost instead.")
+
 	}
 
 	port := os.Getenv("REDIS_PORT")
 	if port == "" {
 		port = "6379"
+		utils.GetConsole().PrintWarning("REDIS_PORT is undefined, using 6379 instead.")
+
 	}
 
 	addr := fmt.Sprintf("%s:%s", host, port)
@@ -37,22 +44,7 @@ func Init() {
 		panic(err)
 	}
 
-	fmt.Println("Connected to Redis!")
-}
-
-func ExampleClient() {
-
-	Rdb.LPush(ctx, "test", "t1", time.Hour*1).Err()
-
-	val, err := Rdb.Get(ctx, "test").Result()
-
-	if err == redis.Nil {
-		fmt.Println("key does not exist")
-	} else if err != nil {
-		fmt.Println("Redis error:", err)
-	}
-
-	fmt.Println("Redis val:", val)
+		utils.GetConsole().PrintSuccess("Connected to Redis!")
 
 }
 

@@ -143,7 +143,7 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 Optional: build, tag, and push your API image
 
 ```sh
-docker build -t watchtower-api:latest .
-docker tag watchtower-api:latest ghcr.io/mcdonaghmichael/watchtower-api:latest
-docker push ghcr.io/mcdonaghmichael/watchtower-api:latest
+docker build -t watchtower-web:latest .
+docker tag watchtower-web:latest ghcr.io/mcdonaghmichael/watchtower-web:latest
+docker push ghcr.io/mcdonaghmichael/watchtower-web:latest
 ```

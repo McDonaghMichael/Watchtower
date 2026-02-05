@@ -9,19 +9,21 @@ import (
 	"watchtower/api/database"
 	"watchtower/api/redis"
 	"watchtower/api/routes"
-
+	"watchtower/api/utils"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+
+	utils.GetConsole().PrintInfo("LOADING WATCHTOWER API")
+
 	database.Connect()
 	gin.SetMode(gin.ReleaseMode)
 
-	r := gin.New() // don't use Default, we'll add our own middleware
+	r := gin.New() 
 	r.Use(gin.Recovery())
-	r.Use(corsMiddleware()) // global CORS for all routes
+	r.Use(corsMiddleware())
 
-	// Catch-all OPTIONS preflight
 	r.OPTIONS("/*path", func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -29,11 +31,11 @@ func main() {
 		c.AbortWithStatus(200)
 	})
 
-	// API routes
+	utils.GetConsole().PrintSecondary("Setting up all API routes on /api/v1")
 	routes.SetupAPIRoutes(r.Group("/api/v1"))
 
-	// Start ping loop
 	go func() {
+	utils.GetConsole().PrintSecondary("Starting ping loop for all servers every 60's")
 		for {
 			routes.PingAllServers()
 			time.Sleep(60 * time.Second)
@@ -41,12 +43,14 @@ func main() {
 	}()
 
 	StartHealthChecker()
+
 	go actions.StartHandlingActions()
 
 	redis.Init()
-	redis.ExampleClient()
 	port := "8080"
 	log.Printf("🚀 API server running on http://localhost:%s/api/v1\n", port)
+	utils.GetConsole().PrintSuccess("LOADED API")
+
 	log.Fatal(r.Run(":" + port))
 
 }
