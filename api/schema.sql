@@ -1,8 +1,35 @@
 CREATE TABLE IF NOT EXISTS roles (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(20),
+  name VARCHAR(20) UNIQUE NOT NULL,
   description VARCHAR(100),
   administrator INT DEFAULT 0
+);
+
+-- Ensure unique constraint exists even if the table was created before the UNIQUE change
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'roles_name_key'
+    ) THEN
+        ALTER TABLE roles ADD CONSTRAINT roles_name_key UNIQUE (name);
+    END IF;
+END$$;
+
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  department VARCHAR(100),
+  phone VARCHAR(50),
+  is_active BOOLEAN DEFAULT TRUE,
+  permissions TEXT,
+  role_id INT REFERENCES roles(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS servers (
@@ -83,4 +110,11 @@ CREATE TABLE IF NOT EXISTS metrics_used_for_condtionals (
   id SERIAL PRIMARY KEY,
   condition_id SERIAL NOT NULL REFERENCES conditions(condition_id) ON DELETE CASCADE,
   metric_id SERIAL NOT NULL REFERENCES metrics(id) ON DELETE CASCADE
-)
+);
+
+-- Seed base roles
+INSERT INTO roles (name, description, administrator)
+VALUES
+  ('admin', 'Full administrative access', 1),
+  ('user', 'Standard user', 0)
+ON CONFLICT (name) DO NOTHING;

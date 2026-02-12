@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
-import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
+import { Container, Form, Card, Button, Row, Col } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+import apiClient from '../../../api/client';
 
 
 function AddServerPage() {
 
   const navigate = useNavigate();
 
-  const [validated, setValidated] = useState(false);
-
-  const [showssh_private_key, setShowssh_private_key] = useState(false);
+  const [validated] = useState(false);
   
   const [formData, setFormData] = useState({
     server_name: '',
@@ -43,14 +39,14 @@ const handleSubmit = (event) => {
     disk_threshold: parseInt(formData.disk_threshold, 10)
   };
 
-  axios.post(`${API_BASE_URL}/server`, submitData)
+  apiClient.post(`/server`, submitData)
     .then(res => {
       console.log('Server added successfully:', res.data);
       navigate('/servers');
     })
     .catch(err => {
       console.error('Error adding server:', err);
-      alert('Failed to add server. Please try again.');
+      alert(err.response?.data?.error || 'Failed to add server. Please try again.');
     });
 };
 

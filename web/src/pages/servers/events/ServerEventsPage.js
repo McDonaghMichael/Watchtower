@@ -1,21 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Container, Badge, Button, Card, Row, Col } from "react-bootstrap";
-import axios from "axios";
+import apiClient from "../../../api/client";
 import {
   MaterialReactTable,
   useMaterialReactTable,
 } from "material-react-table";
 import { ListItemIcon, MenuItem } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import CelebrationIcon from "@mui/icons-material/Celebration";
-import SignalCellularAltIcon from "@mui/icons-material/SignalCellularAlt";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import SettingsIcon from "@mui/icons-material/Settings";
-import AlertBadge from "../../../components/notices/AlertBadge";
 import CustomBadge from "../../../components/badges/CustomBadge";
 import EditIcon from '@mui/icons-material/Edit';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ServerEventsPage() {
   const { id } = useParams("id");
@@ -23,8 +16,6 @@ function ServerEventsPage() {
   var navigate = useNavigate();
 
   const [groups, setGroups] = useState([]);
-  const [errors, setErrors] = useState([]);
-
   const operatorLabel = {
     "<": "less than",
     ">": "more than",
@@ -60,14 +51,14 @@ function ServerEventsPage() {
  useEffect(() => {
   const fetchGroupsData = async () => {
     try {
-      const groupResponse = await axios.get(`${API_BASE_URL}/group/server/${id}`);
+      const groupResponse = await apiClient.get(`/group/server/${id}`);
       const groups = groupResponse.data;
 
       const groupsWithData = await Promise.all(
         groups.map(async (group) => {
           const [conditionResponse, actionResponse] = await Promise.all([
-            axios.get(`${API_BASE_URL}/condition/group/${group.group_id}`),
-            axios.get(`${API_BASE_URL}/action/group/${group.group_id}`)
+            apiClient.get(`/condition/group/${group.group_id}`),
+            apiClient.get(`/action/group/${group.group_id}`)
           ]);
 
           return {
@@ -227,13 +218,6 @@ const table = useMaterialReactTable({
         },
       },
     },
-    muiTableBodyRowProps: {
-      sx: {
-        "&:hover": {
-          backgroundColor: "#2d2d2d",
-        },
-      },
-    },
     muiRowActionMenuProps: {
       PaperProps: {
         sx: {
@@ -286,18 +270,6 @@ const table = useMaterialReactTable({
             </Button>
           </div>
         </div>
-
-        {errors.map((err, index) => {
-          return (
-            <AlertBadge
-              key={index}
-              status={err.status}
-              message={err.message}
-              id={err.id}
-              index={index}
-            ></AlertBadge>
-          );
-        })}
 
         <Row className="g-3 mb-4">
           <Col md={4}>

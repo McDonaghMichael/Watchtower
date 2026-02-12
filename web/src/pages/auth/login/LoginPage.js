@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { Container, Card, Form, Button, Alert, Row, Col, Badge, Spinner } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { Container, Card, Form, Button, Alert, Badge, Spinner } from "react-bootstrap";
+import { useNavigate, useLocation } from "react-router-dom";
+import apiClient from "../../../api/client";
+import { clearAuth, isAuthenticated, setAuth } from "../../../utils/auth";
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -14,7 +17,15 @@ function LoginPage() {
   const [captchaToken, setCaptchaToken] = useState(null);
   const [status, setStatus] = useState(null);
   const [captchaLoading, setCaptchaLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const RECAPTCHA_SITE_KEY = "6LdpfCosAAAAAPkiy7uI1G9c3-SRkrUfA_L5FXOM";
+  const redirectTo = location.state?.from?.pathname || "/";
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [navigate, redirectTo]);
 
   // Hide the navbar on the login page
   useEffect(() => {
@@ -73,13 +84,22 @@ function LoginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Mock validation only; no real auth wired
-    if (!form.email || !form.password || !form.otp || !captchaToken) {
-      setStatus({ variant: "danger", message: "Please complete all fields, 2FA, and captcha." });
-      return;
-    }
-    setStatus({ variant: "success", message: "Credentials captured. Authentication not yet wired." });
-    setTimeout(() => navigate("/"), 800);
+    setLoading(true);
+    clearAuth();
+    apiClient
+      .post("/auth/login", {
+        email: form.email,
+        password: form.password,
+      })
+      .then((res) => {
+        setAuth(res.data.token, res.data.user);
+        navigate(redirectTo, { replace: true });
+      })
+      .catch((err) => {
+        console.error(err);
+        setStatus({ variant: "danger", message: err.response?.data?.error || "Invalid credentials" });
+      })
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -217,8 +237,8 @@ function LoginPage() {
               className="text-light mb-3"
             />
 
-            <Button variant="info" type="submit" className="w-100">
-              Sign In Securely
+            <Button variant="info" type="submit" className="w-100" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In Securely"}
             </Button>
 
             <div className="text-center mt-3">

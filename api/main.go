@@ -17,6 +17,7 @@ func main() {
 
 	utils.GetConsole().PrintInfo("LOADING WATCHTOWER API")
 
+	utils.InitAuth()
 	database.Connect()
 	gin.SetMode(gin.ReleaseMode)
 

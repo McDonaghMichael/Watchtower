@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../../../api/client';
 
 function EditAccountPage() {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ function EditAccountPage() {
 
   useEffect(() => {
     if (id) {
-      axios.get(`http://localhost:8080/api/v1/accounts/${id}`)
+      apiClient.get(`/accounts/${id}`)
         .then(res => {
           console.log('Response data:', res.data);
           if (res.data) {
@@ -62,14 +62,14 @@ function EditAccountPage() {
       delete submitData.password;
     }
 
-    axios.put(`http://localhost:8080/api/v1/accounts/${id}`, submitData)
+    apiClient.put(`/accounts/${id}`, submitData)
       .then(res => {
         console.log('Account updated successfully:', res.data);
         navigate('/accounts');
       })
       .catch(err => {
         console.error('Error updating account:', err);
-        setError('Failed to update account. Please try again.');
+        setError(err.response?.data?.error || 'Failed to update account. Please try again.');
       })
       .finally(() => {
         setLoading(false);

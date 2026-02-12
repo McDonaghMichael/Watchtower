@@ -2,35 +2,24 @@ import { useEffect, useState } from "react";
 import { Col, Row, Card, Button, Badge } from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import DisplayCard from "../../components/metrics/DisplayCard";
-import GradientText from "../../components/GradientText";
-import PageHeader from "../../components/PageHeader";
-import axios from "axios";
+import apiClient from "../../api/client";
 import { useNavigate } from "react-router-dom";
 
 function Home() {
   const navigate = useNavigate();
   const [servers, setServers] = useState([]);
   const [health, setHealth] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState([]);
-
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [serversRes, healthRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/servers`),
-          axios.get(`${API_BASE_URL}/health`),
+          apiClient.get("/servers"),
+          apiClient.get("/health"),
         ]);
         setServers(serversRes.data || []);
         setHealth(healthRes.data || []);
       } catch (err) {
-        setErrors([
-          { status: "danger", message: "Failed to load dashboard data" },
-        ]);
-      } finally {
-        setLoading(false);
+        console.error(err);
       }
     };
 

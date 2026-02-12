@@ -7,38 +7,120 @@ import AddServerPage from "./pages/servers/add/AddServerPage";
 import EditServerPage from "./pages/servers/edit/EditServerPage";
 import CreateAccountPage from "./pages/accounts/create/CreateAccountPage";
 import EditAccountPage from "./pages/accounts/edit/EditAccountPage";
+import AccountsPage from "./pages/accounts/AccountsPage";
 import ServerMetricsPage from "./pages/servers/metrics/ServerMetricsPage";
 import CreateServerEvent from "./pages/servers/events/create/CreateServerEvent";
 import ServerEventsPage from "./pages/servers/events/ServerEventsPage";
 import EditServerEvent from "./pages/servers/events/edit/EditServerEvent";
 import LoginPage from "./pages/auth/login/LoginPage";
+import RequireAuth from "./components/RequireAuth";
+import { clearAuth } from "./utils/auth";
+import { Navigate } from "react-router-dom";
 
 function App() {
+  const Logout = () => {
+    clearAuth();
+    return <Navigate to="/login" replace />;
+  };
+
   return (
     <BrowserRouter>
       <div className="App">
         <Navbar />
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/servers" element={<ServersPage />} />
-          <Route path="/server/add" element={<AddServerPage />} />
-          <Route path="/server/edit/:id" element={<EditServerPage />} />
-          <Route path="/server/metrics/:id" element={<ServerMetricsPage />} />
-          <Route path="/server/events/:id/" element={<ServerEventsPage />} /> //
-          Show all events for a server
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <Home />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/servers"
+            element={
+              <RequireAuth>
+                <ServersPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/server/add"
+            element={
+              <RequireAuth roles={["admin"]}>
+                <AddServerPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/server/edit/:id"
+            element={
+              <RequireAuth roles={["admin"]}>
+                <EditServerPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/server/metrics/:id"
+            element={
+              <RequireAuth>
+                <ServerMetricsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/server/events/:id/"
+            element={
+              <RequireAuth>
+                <ServerEventsPage />
+              </RequireAuth>
+            }
+          />{" "}
+          {/* Show all events for a server */}
           <Route
             path="/server/events/:id/create"
-            element={<CreateServerEvent />}
+            element={
+              <RequireAuth roles={["admin"]}>
+                <CreateServerEvent />
+              </RequireAuth>
+            }
           />{" "}
-          // Create a new event conditional group for a server
+          {/* Create a new event conditional group for a server */}
           <Route
             path="/server/events/:id/edit/:group_id"
-            element={<EditServerEvent />}
+            element={
+              <RequireAuth roles={["admin"]}>
+                <EditServerEvent />
+              </RequireAuth>
+            }
           />{" "}
-          // Edit a conditional group for a server
-          <Route path="/account/create" element={<CreateAccountPage />} />
-          <Route path="/account/edit/:id" element={<EditAccountPage />} />
+          {/* Edit a conditional group for a server */}
+          <Route
+            path="/account/create"
+            element={
+              <RequireAuth roles={["admin"]}>
+                <CreateAccountPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/accounts"
+            element={
+              <RequireAuth roles={["admin"]}>
+                <AccountsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/account/edit/:id"
+            element={
+              <RequireAuth>
+                <EditAccountPage />
+              </RequireAuth>
+            }
+          />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/logout" element={<Logout />} />
         </Routes>
       </div>
     </BrowserRouter>

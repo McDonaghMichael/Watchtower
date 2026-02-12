@@ -1,9 +1,21 @@
 import { Container, Nav, Navbar, NavDropdown, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import './Navbar.css';
+import { clearAuth, getUser, isAuthenticated } from '../utils/auth';
 
 function NavigationBar() {
   const navigate = useNavigate();
+  const authed = isAuthenticated();
+  const user = getUser();
+
+  if (!authed) {
+    return null;
+  }
+
+  const handleLogout = () => {
+    clearAuth();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <Navbar expand="lg" className="nav-shell shadow-lg">
@@ -76,14 +88,14 @@ function NavigationBar() {
               id="profile-dropdown"
               className="nav-pill"
             >
-              <NavDropdown.Item as={Link} to="/account/1">
+              <NavDropdown.Item as={Link} to={`/account/edit/${user?.id || ''}`}>
                 View Account
               </NavDropdown.Item>
               <NavDropdown.Item as={Link} to="/account/create">
                 Manage Profile
               </NavDropdown.Item>
               <NavDropdown.Divider />
-              <NavDropdown.Item as={Link} to="/logout">
+              <NavDropdown.Item onClick={handleLogout}>
                 Sign Out
               </NavDropdown.Item>
             </NavDropdown>

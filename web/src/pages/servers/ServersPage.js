@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Container, Button, Card, Row, Col, Badge } from "react-bootstrap";
-import axios from "axios";
+import apiClient from "../../api/client";
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -11,34 +11,26 @@ import CelebrationIcon from "@mui/icons-material/Celebration";
 import SignalCellularAltIcon from "@mui/icons-material/SignalCellularAlt";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import SettingsIcon from "@mui/icons-material/Settings";
-import AlertBadge from "../../components/notices/AlertBadge";
 import PingBadge from "../../components/badges/PingBadge";
 import CustomBadge from "../../components/badges/CustomBadge";
 import StatusBadge from "../../components/badges/StatusBadge";
-import PageHeader from "../../components/PageHeader";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ServersPage() {
   var navigate = useNavigate();
 
   const [servers, setServers] = useState([]);
 
-  const [loading, setLoading] = useState(true);
-
   const [currentTime, setCurrentTime] = useState(Date.now());
-
-  const [errors, setErrors] = useState([]);
 
   useEffect(() => {
   const fetchServers = () => {
-    axios
-      .get(`${API_BASE_URL}/servers`)
+    apiClient
+      .get(`/servers`)
       .then(async (res) => {
         console.log("Response data:", res.data);
 
         // Fetch all health statuses
-        const healthResponse = await axios.get(`${API_BASE_URL}/health`);
+        const healthResponse = await apiClient.get(`/health`);
         const healthData = healthResponse.data || [];
         
         console.log("Health data:", healthData);
@@ -58,11 +50,9 @@ function ServersPage() {
         console.log("Servers with health:", serversWithHealth);
 
         setServers(serversWithHealth);
-        setLoading(false);
       })
       .catch((err) => {
         console.error("Error fetching servers:", err);
-        setLoading(false);
       });
   }
 
@@ -108,7 +98,7 @@ function ServersPage() {
         Cell: ({ cell, row }) => {
           const value = cell.getValue();
 
-          if (row.original.status == "warning") {
+          if (row.original.status === "warning") {
             return <CustomBadge variant={"warning"} text={"WARNING"} />;
           }
 
@@ -240,21 +230,6 @@ function ServersPage() {
         "& .MuiSvgIcon-root": {
           fill: "#fff",
         },
-        "& .MuiSvgIcon-root": {
-          fill: "#fff",
-          color: "#fff",
-        },
-      },
-    },
-    muiTableBodyRowProps: {
-      sx: {
-        "&:hover": {
-          backgroundColor: "#2d2d2d",
-        },
-        "& .MuiSvgIcon-root": {
-          fill: "#fff",
-          color: "#fff",
-        },
       },
     },
     muiRowActionMenuProps: {
@@ -269,7 +244,7 @@ function ServersPage() {
       baseBackgroundColor: "#1e1e1e",
     },
     state: {
-      isLoading: loading,
+      isLoading: false,
     },
     renderRowActionMenuItems: ({ row }) => [
       <MenuItem
@@ -316,8 +291,8 @@ function ServersPage() {
   });
 
   const handlePing = (id) => {
-    axios
-      .post(`${API_BASE_URL}/server/ping/` + id)
+    apiClient
+      .post(`/server/ping/${id}`)
       .then((res) => {
         console.log("Response data:", res.data);
         setServers((prevServers) =>
@@ -339,8 +314,8 @@ function ServersPage() {
       )
     );
 
-    axios
-      .get(`${API_BASE_URL}/server/status/` + id)
+    apiClient
+      .get(`/server/status/${id}`)
       .then((res) => {
         console.log("Response data:", res.data);
         setServers((prevServers) =>
@@ -388,16 +363,6 @@ function ServersPage() {
           </Button>
         </div>
       </div>
-
-      {errors.map((err, index) => (
-        <AlertBadge
-          key={index}
-          status={err.status}
-          message={err.message}
-          id={err.id}
-          index={index}
-        />
-      ))}
 
       <Row className="g-3 mb-4">
         <Col md={3}>

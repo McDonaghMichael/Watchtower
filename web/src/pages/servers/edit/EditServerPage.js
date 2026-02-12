@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
-import axios from 'axios';
+import apiClient from '../../../api/client';
 import AlertNotice from '../../../components/notices/AlertNotice';
 import DisplayCard from "../../../components/notices/DisplayCard";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function EditServerPage() {
 
@@ -39,7 +37,7 @@ function EditServerPage() {
 
   useEffect(() => {
     if (id) {
-      axios.get(`${API_BASE_URL}/server/${id}`)
+      apiClient.get(`/server/${id}`)
         .then(res => {
           console.log('Response data:', res.data);
           if (res.data) {
@@ -78,7 +76,7 @@ function EditServerPage() {
     };
 
     try {
-      const res = await axios.put(`${API_BASE_URL}/server/${id}`, submitData);
+      const res = await apiClient.put(`/server/${id}`, submitData);
       console.log('Server updated successfully:', res.data);
       setNotice({
         show: true,

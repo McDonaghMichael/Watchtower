@@ -8,47 +8,59 @@ import (
 
 func SetupAPIRoutes(r *gin.RouterGroup) {
 
-	// ========== Account Routes ==========
-	r.GET("/accounts", getDefault())       // List all accounts
-	r.GET("/account/:id", getDefault())    // Find account given the ID
-	r.POST("/account/:id", getDefault())   // Update the account given the ID
-	r.POST("/account", getDefault())       // Create a new account
-	r.DELETE("/account/:id", getDefault()) // Delete the account given the ID
+	// Public auth routes
+	r.POST("/auth/login", Login())
+	r.POST("/auth/bootstrap", BootstrapAdmin())
+
+	// Authenticated routes
+	auth := r.Group("")
+	auth.Use(AuthMiddleware())
+
+	auth.GET("/me", Me())
+
+	// Account Routes
+	admin := auth.Group("")
+	admin.Use(RequireRoles("admin"))
+	admin.GET("/accounts", ListAccounts())   // List all accounts
+	admin.POST("/accounts", CreateAccount()) // Create a new account
+
+	auth.GET("/accounts/:id", GetAccount())    // Find account given the ID (self or admin)
+	auth.PUT("/accounts/:id", UpdateAccount()) // Update the account given the ID (self or admin)
+	auth.DELETE("/accounts/:id", DeleteAccount())
 
 	// ========== Server Routes ==========
-	r.GET("/servers", GetServers())       // List all servers
-	r.GET("/server/:id", GetServerByID()) // Find server given the ID
-	//r.POST("/server/:id/execute", getDefault()) // Execute command on server given the ID
-	r.PUT("/server/:id", UpdateServer()) // Update the server given the ID
-	r.POST("/server/ping/:id", UpdateLastPingServer())
-	r.POST("/server", AddServer())          // Create a new server
-	r.DELETE("/server/:id", DeleteServer()) // Delete the server given the ID
+	auth.GET("/servers", GetServers())       // List all servers
+	auth.GET("/server/:id", GetServerByID()) // Find server given the ID
+	auth.PUT("/server/:id", UpdateServer())  // Update the server given the ID
+	auth.POST("/server/ping/:id", UpdateLastPingServer())
+	auth.POST("/server", AddServer())          // Create a new server
+	auth.DELETE("/server/:id", DeleteServer()) // Delete the server given the ID
 
 	// ========== Metrics Routes ==========
-	r.POST("/metric", AddMetric())
-	r.GET("/metrics/server/:id", GetMetricsByServerID()) // Gets metrics by server ID
+	auth.POST("/metric", AddMetric())
+	auth.GET("/metrics/server/:id", GetMetricsByServerID()) // Gets metrics by server ID
 
-	r.GET("/risk/server/:id", GetRiskScoreByServerId()) // Gets risk score by server ID
+	auth.GET("/risk/server/:id", GetRiskScoreByServerId()) // Gets risk score by server ID
 
 	// ========== Health Routes ==========
-	r.POST("/health", addHealthStatus())
-	r.GET("/health/server/:id", GetHealthStatusByServerID())
-	r.GET("/health", GetLatestHealthStatusAllServers())
+	auth.POST("/health", addHealthStatus())
+	auth.GET("/health/server/:id", GetHealthStatusByServerID())
+	auth.GET("/health", GetLatestHealthStatusAllServers())
 
 	// ========== Group Routes ==========
-	r.POST("/group", addGroup())
-	r.GET("/group/server/:id", GetGroupsByServerId())
+	auth.POST("/group", addGroup())
+	auth.GET("/group/server/:id", GetGroupsByServerId())
 
 	// ========== Conditions for Groups Routes ==========
-	r.POST("/condition", addCondition())
-	r.GET("/condition/group/:id", GetConditionsByGroupId())
-	r.GET("/condition/server/:id", GetConditionsByServer())
-	r.PUT("/condition/server/:id", UpdateConditionsByServer())
+	auth.POST("/condition", addCondition())
+	auth.GET("/condition/group/:id", GetConditionsByGroupId())
+	auth.GET("/condition/server/:id", GetConditionsByServer())
+	auth.PUT("/condition/server/:id", UpdateConditionsByServer())
 
 	// ========== Actions for Groups Routes ==========
-	r.POST("/action", addAction())
-	r.GET("/action/group/:id", GetActionsByGroupId())
-	r.PUT("/action/server/:id", UpdateActionsByServer())
+	auth.POST("/action", addAction())
+	auth.GET("/action/group/:id", GetActionsByGroupId())
+	auth.PUT("/action/server/:id", UpdateActionsByServer())
 
 }
 

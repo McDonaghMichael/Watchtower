@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../../../api/client';
 
 function CreateAccountPage() {
 
@@ -41,14 +41,14 @@ function CreateAccountPage() {
     setLoading(true);
     setError('');
 
-    axios.post('http://localhost:8080/api/v1/accounts', formData)
+    apiClient.post('/accounts', formData)
       .then(res => {
         console.log('Account created successfully:', res.data);
         navigate('/accounts');
       })
       .catch(err => {
         console.error('Error creating account:', err);
-        setError('Failed to create account. Please try again.');
+        setError(err.response?.data?.error || 'Failed to create account. Please try again.');
       })
       .finally(() => {
         setLoading(false);

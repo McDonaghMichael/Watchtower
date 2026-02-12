@@ -9,12 +9,10 @@ import {
   Col,
 } from "react-bootstrap";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../../../../api/client";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import DisplayCard from "../../../../components/notices/DisplayCard";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function CreateServerEvent() {
   const { id } = useParams();
@@ -116,7 +114,7 @@ function CreateServerEvent() {
     };
 
     try {
-      const { data: group } = await axios.post(`${API_BASE_URL}/group`, {
+      const { data: group } = await apiClient.post(`/group`, {
         server_id: Number(id),
       });
 
@@ -136,8 +134,8 @@ function CreateServerEvent() {
         value: cond.value,
       }));
 
-      await axios.put(`${API_BASE_URL}/condition/server/${id}`, payload);
-      await axios.put(`${API_BASE_URL}/action/server/${id}`, newpayload);
+      await apiClient.put(`/condition/server/${id}`, payload);
+      await apiClient.put(`/action/server/${id}`, newpayload);
 
       setNotice({
         show: true,

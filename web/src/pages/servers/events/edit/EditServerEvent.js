@@ -9,12 +9,10 @@ import {
   Col,
 } from "react-bootstrap";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../../../../api/client";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import DisplayCard from "../../../../components/notices/DisplayCard";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function EditServerEvent() {
   const { id, group_id } = useParams();
@@ -67,8 +65,8 @@ function EditServerEvent() {
     };
 
     if (id) {
-      axios
-        .get(`${API_BASE_URL}/condition/group/${group_id}`)
+      apiClient
+        .get(`/condition/group/${group_id}`)
         .then((res) => {
           console.log("Response data:", res.data);
           if (res.data) {
@@ -84,8 +82,8 @@ function EditServerEvent() {
         .catch((err) => {
           console.error("Error fetching server:", err);
         });
-      axios
-        .get(`${API_BASE_URL}/action/group/${group_id}`)
+      apiClient
+        .get(`/action/group/${group_id}`)
         .then((res) => {
           console.log("Response actions data:", res.data);
 
@@ -95,7 +93,7 @@ function EditServerEvent() {
           console.error("Error fetching server:", err);
         });
     }
-  }, [id]);
+  }, [id, group_id]);
 
   const handleChange = (index, field, value) => {
     setConditions((prev) => {
@@ -178,8 +176,8 @@ function EditServerEvent() {
     }));
 
     try {
-      await axios.put(`${API_BASE_URL}/condition/server/${id}`, payload);
-      await axios.put(`${API_BASE_URL}/action/server/${id}`, newpayload);
+      await apiClient.put(`/condition/server/${id}`, payload);
+      await apiClient.put(`/action/server/${id}`, newpayload);
       setNotice({
         show: true,
         status: "success",

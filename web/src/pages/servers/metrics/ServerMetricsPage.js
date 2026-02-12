@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import AlertNotice from "../../../components/notices/AlertNotice";
+import apiClient from "../../../api/client";
 import { getTimestamp } from "../../../utils/timeUtils";
 import LoadingSpinner from "../../../components/misc/LoadingSpinner";
 import { Col, Row, Card, Button, Form } from "react-bootstrap";
@@ -12,8 +11,6 @@ import AlertDefaultNotice from "../../../components/notices/AlertDefaultNotice";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import "./ServerMetricsPage.css";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 // Default empty metric object
 const DEFAULT_METRIC = {
@@ -50,7 +47,6 @@ function ServerMetricsPage() {
   const [riskScore, setRiskScore] = useState([DEFAULT_RISK]);
   const [searchTerm, setSearchTerm] = useState("");
   const [queryLimit, setQueryLimit] = useState(10);
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,8 +58,8 @@ function ServerMetricsPage() {
         if (queryLimit > 200) {
           setQueryLimit(200);
         }
-        const res = await axios.get(
-          `${API_BASE_URL}/metrics/server/${id}?limit=${queryLimit}`
+        const res = await apiClient.get(
+          `/metrics/server/${id}?limit=${queryLimit}`
         );
         const data = Array.isArray(res.data) ? res.data : [res.data];
 
@@ -74,16 +70,11 @@ function ServerMetricsPage() {
           setMetrics(data);
         }
 
-        setError(null);
         setLoading(false);
       } catch (err) {
         console.error(err);
         // On error, use default metrics instead of showing error
         setMetrics([DEFAULT_METRIC]);
-        setError({
-          status: err.response?.status,
-          message: err.message,
-        });
         setLoading(false);
       }
     };
@@ -102,8 +93,8 @@ function ServerMetricsPage() {
         if (queryLimit > 200) {
           setQueryLimit(200);
         }
-        const res = await axios.get(
-          `${API_BASE_URL}/health/server/${id}?limit=${queryLimit}`
+        const res = await apiClient.get(
+          `/health/server/${id}?limit=${queryLimit}`
         );
         const data = Array.isArray(res.data) ? res.data : [res.data];
 
@@ -114,16 +105,11 @@ function ServerMetricsPage() {
           setHealth(data);
         }
 
-        setError(null);
         setLoading(false);
       } catch (err) {
         console.error(err);
         // On error, use default health instead of showing error
         setHealth([DEFAULT_HEALTH]);
-        setError({
-          status: err.response?.status,
-          message: err.message,
-        });
         setLoading(false);
       }
     };
@@ -136,7 +122,7 @@ function ServerMetricsPage() {
   useEffect(() => {
     const fetchRisk = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/risk/server/${id}`);
+        const res = await apiClient.get(`/risk/server/${id}`);
         const data = Array.isArray(res.data) ? res.data : [res.data];
 
         // If no health data returned, use default
@@ -146,16 +132,11 @@ function ServerMetricsPage() {
           setRiskScore(data[0]);
         }
 
-        setError(null);
         setLoading(false);
       } catch (err) {
         console.error(err);
         // On error, use default health instead of showing error
         setRiskScore([DEFAULT_RISK]);
-        setError({
-          status: err.response?.status,
-          message: err.message,
-        });
         setLoading(false);
       }
     };
