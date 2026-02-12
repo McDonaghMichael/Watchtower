@@ -27,6 +27,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("userID", claims.UserID)
 		c.Set("userRole", claims.Role)
 		c.Set("userRoleID", claims.RoleID)
+		c.Set("sessionID", claims.SessionID)
 
 		// load permissions for this role
 		perms, err := getPermissionsByRole(c, claims.RoleID)
@@ -35,6 +36,17 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		c.Set("permissions", perms)
+
+		// session validity
+		if claims.SessionID != 0 {
+			var active bool
+			err = database.Pool.QueryRow(c, "SELECT active FROM sessions WHERE id=$1", claims.SessionID).Scan(&active)
+			if err != nil || !active {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session revoked"})
+				return
+			}
+			database.Pool.Exec(c, "UPDATE sessions SET last_seen=NOW() WHERE id=$1", claims.SessionID)
+		}
 		c.Next()
 	}
 }

@@ -66,12 +66,8 @@ function NavigationBar() {
                   Roles
                 </NavDropdown.Item>
               )}
-              <NavDropdown.Item as={Link} to="/">
-                Reports
-              </NavDropdown.Item>
-
-              <NavDropdown.Item as={Link} to="/">
-                Settings
+              <NavDropdown.Item as={Link} to="/tickets">
+                Support Tickets
               </NavDropdown.Item>
             </NavDropdown>
 
@@ -81,16 +77,21 @@ function NavigationBar() {
                   Audit Logs
                 </NavDropdown.Item>
               )}
-              <NavDropdown.Item as={Link} to="/">
-                Sessions
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/">
-                Alerts
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/">
-                Backups
-              </NavDropdown.Item>
+              {has("backup_read") && (
+                <NavDropdown.Item as={Link} to="/backups">
+                  Backups
+                </NavDropdown.Item>
+              )}
+              {has("manage_sessions") && (
+                <NavDropdown.Item as={Link} to="/sessions">
+                  Sessions
+                </NavDropdown.Item>
+              )}
             </NavDropdown>
+
+            <Nav.Link as={Link} to="/tickets" className="nav-pill">
+              Support
+            </Nav.Link>
           </Nav>
 
           <div className="d-flex align-items-center gap-3 mt-3 mt-lg-0">
@@ -100,19 +101,16 @@ function NavigationBar() {
               label={theme === 'dark' ? 'Dark' : 'Light'}
               checked={theme === 'dark'}
               onChange={toggle}
-              className="text-light"
+              className="theme-toggle"
             />
             <NavDropdown
               align="end"
-              title={<i className="bi bi-person-circle fs-5 text-light"></i>}
+              title={<i className="bi bi-person-circle fs-5 text-primary-emphasis"></i>}
               id="profile-dropdown"
               className="nav-pill"
             >
               <NavDropdown.Item as={Link} to={`/account/edit/${user?.id || ''}`}>
                 View Account
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/account/create">
-                Manage Profile
               </NavDropdown.Item>
               <NavDropdown.Divider />
               <NavDropdown.Item onClick={handleLogout}>

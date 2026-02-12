@@ -48,6 +48,7 @@ func main() {
 	go actions.StartHandlingActions()
 
 	redis.Init()
+	startBackupScheduler(database.Pool)
 	port := "8080"
 	log.Printf("🚀 API server running on http://localhost:%s/api/v1\n", port)
 	utils.GetConsole().PrintSuccess("LOADED API")

@@ -134,7 +134,7 @@ function RolesPage() {
   return (
     <Container className="py-4">
       <LoadingOverlay show={loading} />
-      <Card className="bg-dark text-light shadow-sm">
+      <Card className="shadow-sm border-0">
         <Card.Header className="d-flex justify-content-between align-items-center">
           <div>
             <h4 className="mb-0">Roles</h4>
@@ -146,7 +146,7 @@ function RolesPage() {
         </Card.Header>
         <Card.Body>
           {roles.map((r) => (
-            <Card key={r.id} className="mb-2 bg-body-secondary bg-opacity-10">
+            <Card key={r.id} className="mb-2 border-0">
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-start">
                   <div>

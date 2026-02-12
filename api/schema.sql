@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS users (
   phone VARCHAR(50),
   is_active BOOLEAN DEFAULT TRUE,
   permissions TEXT,
+  avatar_url TEXT,
+  profile_color VARCHAR(7),
   role_id INT REFERENCES roles(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -140,7 +142,12 @@ INSERT INTO permissions (key, description) VALUES
   ('manage_accounts', 'Create, update, delete accounts'),
   ('manage_servers', 'Create, update, delete servers'),
   ('manage_events', 'Create, update, delete server events/actions'),
-  ('view_audit_logs', 'View audit logs')
+  ('view_audit_logs', 'View audit logs'),
+  ('backup_read', 'View and download backups'),
+  ('backup_write', 'Create and manage backups'),
+  ('backup_schedule', 'Manage automatic backup schedules'),
+  ('manage_sessions', 'View and revoke active sessions'),
+  ('support_manage', 'Respond to and manage support tickets')
 ON CONFLICT (key) DO NOTHING;
 
 -- Grant all permissions to admin
@@ -176,5 +183,53 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   metadata JSONB,
   ip_address VARCHAR(64),
   user_agent TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Backup tracking
+CREATE TABLE IF NOT EXISTS backups (
+  id SERIAL PRIMARY KEY,
+  filename TEXT NOT NULL,
+  size_bytes BIGINT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS backup_config (
+  id INT PRIMARY KEY DEFAULT 1,
+  enabled BOOLEAN DEFAULT FALSE,
+  interval_minutes INT DEFAULT 1440,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO backup_config (id, enabled, interval_minutes)
+VALUES (1, FALSE, 1440)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL,
+  ip_address VARCHAR(64),
+  user_agent TEXT,
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tickets (
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  status VARCHAR(20) DEFAULT 'open',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ticket_messages (
+  id SERIAL PRIMARY KEY,
+  ticket_id INT REFERENCES tickets(id) ON DELETE CASCADE,
+  user_id INT REFERENCES users(id) ON DELETE SET NULL,
+  message TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -12,6 +12,8 @@ type User struct {
 	Phone        string    `json:"phone"`
 	IsActive     bool      `json:"is_active"`
 	Permissions  string    `json:"permissions"`
+	AvatarURL    string    `json:"avatar_url"`
+	ProfileColor string    `json:"profile_color"`
 	RoleID       int       `json:"role_id"`
 	RoleName     string    `json:"role"`
 	RolePerms    []string  `json:"role_permissions"`

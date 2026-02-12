@@ -16,16 +16,18 @@ import (
 )
 
 type accountRequest struct {
-	Email       string `json:"email" binding:"required,email"`
-	Username    string `json:"username" binding:"required"`
-	Password    string `json:"password,omitempty"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Department  string `json:"department"`
-	Phone       string `json:"phone"`
-	IsActive    *bool  `json:"is_active"`
-	Permissions string `json:"permissions"`
-	Role        string `json:"role"`
+	Email        string `json:"email" binding:"required,email"`
+	Username     string `json:"username" binding:"required"`
+	Password     string `json:"password,omitempty"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	Department   string `json:"department"`
+	Phone        string `json:"phone"`
+	AvatarURL    string `json:"avatar_url"`
+	ProfileColor string `json:"profile_color"`
+	IsActive     *bool  `json:"is_active"`
+	Permissions  string `json:"permissions"`
+	Role         string `json:"role"`
 }
 
 func ListAccounts() gin.HandlerFunc {
@@ -206,6 +208,8 @@ func UpdateAccount() gin.HandlerFunc {
 			chooseString(req.LastName, existing.LastName),
 			chooseString(req.Department, existing.Department),
 			chooseString(req.Phone, existing.Phone),
+			chooseString(req.AvatarURL, existing.AvatarURL),
+			chooseString(req.ProfileColor, existing.ProfileColor),
 			isActive,
 			chooseString(req.Permissions, existing.Permissions),
 			roleID,
@@ -270,18 +274,32 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
+		var sessionID int
+		tokenString := ""
+		tokenIP := c.ClientIP()
+		ua := c.Request.UserAgent()
+		err = database.Pool.QueryRow(ctx, `
+			INSERT INTO sessions (user_id, token, ip_address, user_agent)
+			VALUES ($1, '', $2, $3) RETURNING id`, user.ID, tokenIP, ua).Scan(&sessionID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+			return
+		}
+
 		user.RolePerms, _ = fetchPermissions(ctx, user.RoleID)
 
-		token, err := utils.GenerateJWT(user, 24*time.Hour)
+		token, err := utils.GenerateJWT(user, sessionID, 24*time.Hour)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
 			return
 		}
+		tokenString = token
+		_, _ = database.Pool.Exec(ctx, "UPDATE sessions SET token=$1 WHERE id=$2", tokenString, sessionID)
 
 		user.PasswordHash = ""
 		utils.LogAudit(c, database.Pool, user.ID, "login", "user", &user.ID, nil)
 		c.JSON(http.StatusOK, gin.H{
-			"token": token,
+			"token": tokenString,
 			"user":  user,
 		})
 	}
@@ -373,11 +391,20 @@ func BootstrapAdmin() gin.HandlerFunc {
 		user.RoleName, _ = lookupRoleName(ctx, roleID)
 		user.PasswordHash = ""
 
-		token, tokenErr := utils.GenerateJWT(user, 24*time.Hour)
+		var sessionID int
+		tokenIP := c.ClientIP()
+		ua := c.Request.UserAgent()
+		if err := database.Pool.QueryRow(ctx, `INSERT INTO sessions (user_id, token, ip_address, user_agent) VALUES ($1,'',$2,$3) RETURNING id`, user.ID, tokenIP, ua).Scan(&sessionID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+			return
+		}
+
+		token, tokenErr := utils.GenerateJWT(user, sessionID, 24*time.Hour)
 		if tokenErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
 			return
 		}
+		_, _ = database.Pool.Exec(ctx, "UPDATE sessions SET token=$1 WHERE id=$2", token, sessionID)
 
 		c.JSON(http.StatusCreated, gin.H{
 			"token": token,
@@ -399,6 +426,8 @@ func scanUser(row pgx.Row) (models.User, error) {
 		&user.Phone,
 		&user.IsActive,
 		&user.Permissions,
+		&user.AvatarURL,
+		&user.ProfileColor,
 		&user.RoleID,
 		&user.RoleName,
 		&user.CreatedAt,
@@ -411,7 +440,7 @@ func findUserByEmail(ctx context.Context, email string) (models.User, error) {
 	row := database.Pool.QueryRow(ctx, `
 		SELECT u.id, u.email, u.username, u.password_hash, COALESCE(u.first_name, ''), COALESCE(u.last_name, ''),
 		       COALESCE(u.department, ''), COALESCE(u.phone, ''), u.is_active, COALESCE(u.permissions, ''),
-		       COALESCE(u.role_id, 0), COALESCE(r.name, ''), u.created_at, u.updated_at
+		       COALESCE(u.avatar_url, ''), COALESCE(u.profile_color, ''), COALESCE(u.role_id, 0), COALESCE(r.name, ''), u.created_at, u.updated_at
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
 		WHERE u.email=$1`, email)
@@ -427,7 +456,7 @@ func findUserByID(ctx context.Context, id int) (models.User, error) {
 	row := database.Pool.QueryRow(ctx, `
 		SELECT u.id, u.email, u.username, u.password_hash, COALESCE(u.first_name, ''), COALESCE(u.last_name, ''),
 		       COALESCE(u.department, ''), COALESCE(u.phone, ''), u.is_active, COALESCE(u.permissions, ''),
-		       COALESCE(u.role_id, 0), COALESCE(r.name, ''), u.created_at, u.updated_at
+		       COALESCE(u.avatar_url, ''), COALESCE(u.profile_color, ''), COALESCE(u.role_id, 0), COALESCE(r.name, ''), u.created_at, u.updated_at
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
 		WHERE u.id=$1`, id)

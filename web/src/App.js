@@ -19,6 +19,9 @@ import { Navigate } from "react-router-dom";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import RolesPage from "./pages/roles/RolesPage";
 import AuditLogsPage from "./pages/audit/AuditLogsPage";
+import BackupsPage from "./pages/backups/BackupsPage";
+import SessionsPage from "./pages/sessions/SessionsPage";
+import TicketsPage from "./pages/tickets/TicketsPage";
 
 function App() {
   const Logout = () => {
@@ -136,6 +139,30 @@ function App() {
               element={
                 <RequireAuth perms={["view_audit_logs"]}>
                   <AuditLogsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/backups"
+              element={
+                <RequireAuth perms={["backup_read"]}>
+                  <BackupsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/sessions"
+              element={
+                <RequireAuth perms={["manage_sessions"]}>
+                  <SessionsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/tickets"
+              element={
+                <RequireAuth>
+                  <TicketsPage />
                 </RequireAuth>
               }
             />

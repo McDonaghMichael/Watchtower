@@ -39,6 +39,24 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	// Audit Logs
 	auth.GET("/audit-logs", RequirePermissions("view_audit_logs"), ListAuditLogs())
 
+	// Backups
+	auth.GET("/backups/full", RequirePermissions("backup_read"), BackupDatabase())
+	auth.POST("/backups/tables", RequirePermissions("backup_write"), BackupTables())
+	auth.POST("/backups/schedule", RequirePermissions("backup_schedule"), SetBackupSchedule())
+	auth.GET("/backups", RequirePermissions("backup_read"), ListBackups())
+	auth.GET("/backups/download/:id", RequirePermissions("backup_read"), DownloadBackup())
+
+	// Sessions
+	auth.GET("/sessions", RequirePermissions("manage_sessions"), ListSessions())
+	auth.DELETE("/sessions/:id", RequirePermissions("manage_sessions"), RevokeSession())
+
+	// Tickets
+	auth.POST("/tickets", CreateTicket())
+	auth.GET("/tickets", ListTickets())
+	auth.GET("/tickets/:id", GetTicket())
+	auth.POST("/tickets/:id/reply", RequirePermissions("support_manage"), ReplyTicket())
+	auth.PATCH("/tickets/:id/status", RequirePermissions("support_manage"), UpdateTicketStatus())
+
 	// ========== Server Routes ==========
 	auth.GET("/servers", GetServers())       // List all servers
 	auth.GET("/server/:id", GetServerByID()) // Find server given the ID

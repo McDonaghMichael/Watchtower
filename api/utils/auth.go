@@ -23,23 +23,25 @@ func InitAuth() {
 }
 
 type Claims struct {
-	UserID int    `json:"uid"`
-	Role   string `json:"role"`
-	RoleID int    `json:"rid"`
-	Email  string `json:"email"`
+	UserID    int    `json:"uid"`
+	Role      string `json:"role"`
+	RoleID    int    `json:"rid"`
+	Email     string `json:"email"`
+	SessionID int    `json:"sid"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(user models.User, ttl time.Duration) (string, error) {
+func GenerateJWT(user models.User, sessionID int, ttl time.Duration) (string, error) {
 	if len(jwtSecret) == 0 {
 		return "", errors.New("JWT secret not initialized")
 	}
 
 	claims := Claims{
-		UserID: user.ID,
-		Role:   user.RoleName,
-		RoleID: user.RoleID,
-		Email:  user.Email,
+		UserID:    user.ID,
+		Role:      user.RoleName,
+		RoleID:    user.RoleID,
+		Email:     user.Email,
+		SessionID: sessionID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
