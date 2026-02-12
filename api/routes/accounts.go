@@ -238,6 +238,7 @@ func DeleteAccount() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete user"})
 			return
 		}
+		utils.LogAudit(c, database.Pool, c.GetInt("userID"), "delete_account", "user", &id, nil)
 		c.Status(http.StatusNoContent)
 	}
 }
@@ -269,6 +270,8 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
+		user.RolePerms, _ = fetchPermissions(ctx, user.RoleID)
+
 		token, err := utils.GenerateJWT(user, 24*time.Hour)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
@@ -276,6 +279,7 @@ func Login() gin.HandlerFunc {
 		}
 
 		user.PasswordHash = ""
+		utils.LogAudit(c, database.Pool, user.ID, "login", "user", &user.ID, nil)
 		c.JSON(http.StatusOK, gin.H{
 			"token": token,
 			"user":  user,
@@ -292,7 +296,9 @@ func Me() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load profile"})
 			return
 		}
+		user.RolePerms, _ = fetchPermissions(ctx, user.RoleID)
 		user.PasswordHash = ""
+		utils.LogAudit(c, database.Pool, userID, "view_profile", "user", &userID, nil)
 		c.JSON(http.StatusOK, user)
 	}
 }
@@ -409,7 +415,12 @@ func findUserByEmail(ctx context.Context, email string) (models.User, error) {
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
 		WHERE u.email=$1`, email)
-	return scanUser(row)
+	user, err := scanUser(row)
+	if err != nil {
+		return user, err
+	}
+	user.RolePerms, _ = fetchPermissions(ctx, user.RoleID)
+	return user, nil
 }
 
 func findUserByID(ctx context.Context, id int) (models.User, error) {
@@ -420,7 +431,12 @@ func findUserByID(ctx context.Context, id int) (models.User, error) {
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
 		WHERE u.id=$1`, id)
-	return scanUser(row)
+	user, err := scanUser(row)
+	if err != nil {
+		return user, err
+	}
+	user.RolePerms, _ = fetchPermissions(ctx, user.RoleID)
+	return user, nil
 }
 
 func ensureRole(ctx context.Context, role string) (int, error) {
@@ -447,6 +463,26 @@ func lookupRoleName(ctx context.Context, id int) (string, error) {
 	var name string
 	err := database.Pool.QueryRow(ctx, "SELECT name FROM roles WHERE id=$1", id).Scan(&name)
 	return name, err
+}
+
+func fetchPermissions(ctx context.Context, roleID int) ([]string, error) {
+	rows, err := database.Pool.Query(ctx, `
+		SELECT p.key FROM role_permissions rp
+		JOIN permissions p ON rp.permission_id = p.id
+		WHERE rp.role_id = $1`, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var perms []string
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return nil, err
+		}
+		perms = append(perms, key)
+	}
+	return perms, nil
 }
 
 func chooseString(candidate, fallback string) string {

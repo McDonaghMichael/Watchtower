@@ -16,6 +16,9 @@ import LoginPage from "./pages/auth/login/LoginPage";
 import RequireAuth from "./components/RequireAuth";
 import { clearAuth } from "./utils/auth";
 import { Navigate } from "react-router-dom";
+import { ThemeProvider } from "./theme/ThemeProvider";
+import RolesPage from "./pages/roles/RolesPage";
+import AuditLogsPage from "./pages/audit/AuditLogsPage";
 
 function App() {
   const Logout = () => {
@@ -24,18 +27,19 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
-      <div className="App">
-        <Navbar />
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <RequireAuth>
-                <Home />
-              </RequireAuth>
-            }
-          />
+    <ThemeProvider>
+      <BrowserRouter>
+        <div className="App">
+          <Navbar />
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <RequireAuth>
+                  <Home />
+                </RequireAuth>
+              }
+            />
           <Route
             path="/servers"
             element={
@@ -103,14 +107,14 @@ function App() {
               </RequireAuth>
             }
           />
-          <Route
-            path="/accounts"
-            element={
-              <RequireAuth roles={["admin"]}>
-                <AccountsPage />
-              </RequireAuth>
-            }
-          />
+            <Route
+              path="/accounts"
+              element={
+                <RequireAuth perms={["manage_accounts"]}>
+                  <AccountsPage />
+                </RequireAuth>
+              }
+            />
           <Route
             path="/account/edit/:id"
             element={
@@ -119,11 +123,28 @@ function App() {
               </RequireAuth>
             }
           />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/logout" element={<Logout />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
+            <Route
+              path="/roles"
+              element={
+                <RequireAuth perms={["manage_roles"]}>
+                  <RolesPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/audit-logs"
+              element={
+                <RequireAuth perms={["view_audit_logs"]}>
+                  <AuditLogsPage />
+                </RequireAuth>
+              }
+            />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/logout" element={<Logout />} />
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

@@ -24,10 +24,11 @@ function EditAccountPage() {
     permissions: ''
   });
 
-  const roles = ['user', 'admin', 'operator', 'viewer'];
+  const [roles, setRoles] = useState([]);
   const departments = ['IT', 'Engineering', 'Operations', 'Security', 'Finance', 'HR'];
 
   useEffect(() => {
+    apiClient.get('/roles').then(res => setRoles(res.data || [])).catch(() => setRoles([]));
     if (id) {
       apiClient.get(`/accounts/${id}`)
         .then(res => {
@@ -179,8 +180,8 @@ function EditAccountPage() {
                       onChange={handleInputChange}
                     >
                       {roles.map(role => (
-                        <option key={role} value={role}>
-                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        <option key={role.id} value={role.name}>
+                          {role.name}
                         </option>
                       ))}
                     </Form.Select>

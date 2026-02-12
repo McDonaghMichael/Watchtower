@@ -25,6 +25,7 @@ func InitAuth() {
 type Claims struct {
 	UserID int    `json:"uid"`
 	Role   string `json:"role"`
+	RoleID int    `json:"rid"`
 	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
@@ -37,6 +38,7 @@ func GenerateJWT(user models.User, ttl time.Duration) (string, error) {
 	claims := Claims{
 		UserID: user.ID,
 		Role:   user.RoleName,
+		RoleID: user.RoleID,
 		Email:  user.Email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),

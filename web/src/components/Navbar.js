@@ -1,12 +1,17 @@
-import { Container, Nav, Navbar, NavDropdown, Button } from 'react-bootstrap';
+import { Container, Nav, Navbar, NavDropdown, Button, Form } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import './Navbar.css';
 import { clearAuth, getUser, isAuthenticated } from '../utils/auth';
+import { useTheme } from '../theme/ThemeProvider';
 
 function NavigationBar() {
   const navigate = useNavigate();
+  const { theme, toggle } = useTheme();
   const authed = isAuthenticated();
   const user = getUser();
+  const isAdmin = user?.role === 'admin';
+  const perms = user?.role_permissions || [];
+  const has = (p) => isAdmin || perms.includes(p);
 
   if (!authed) {
     return null;
@@ -37,24 +42,30 @@ function NavigationBar() {
               <NavDropdown.Item as={Link} to="/servers">
                 View All Servers
               </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/server/add">
-                Add Server
-              </NavDropdown.Item>
+              {has("manage_servers") && (
+                <NavDropdown.Item as={Link} to="/server/add">
+                  Add Server
+                </NavDropdown.Item>
+              )}
             </NavDropdown>
 
-            <NavDropdown title="Accounts" id="accounts-dropdown" className="nav-pill">
-              <NavDropdown.Item as={Link} to="/accounts">
-                View All Accounts
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/account/create">
-                Add Account
-              </NavDropdown.Item>
-            </NavDropdown>
+            {has("manage_accounts") && (
+              <NavDropdown title="Accounts" id="accounts-dropdown" className="nav-pill">
+                <NavDropdown.Item as={Link} to="/accounts">
+                  View All Accounts
+                </NavDropdown.Item>
+                <NavDropdown.Item as={Link} to="/account/create">
+                  Add Account
+                </NavDropdown.Item>
+              </NavDropdown>
+            )}
 
             <NavDropdown title="Management" id="management-dropdown" className="nav-pill">
-              <NavDropdown.Item as={Link} to="/">
-                Roles
-              </NavDropdown.Item>
+              {has("manage_roles") && (
+                <NavDropdown.Item as={Link} to="/roles">
+                  Roles
+                </NavDropdown.Item>
+              )}
               <NavDropdown.Item as={Link} to="/">
                 Reports
               </NavDropdown.Item>
@@ -65,10 +76,11 @@ function NavigationBar() {
             </NavDropdown>
 
             <NavDropdown title="Security" id="security-dropdown" className="nav-pill">
-              <NavDropdown.Item as={Link} to="/">
-                Audit Logs
-              </NavDropdown.Item>
-
+              {has("view_audit_logs") && (
+                <NavDropdown.Item as={Link} to="/audit-logs">
+                  Audit Logs
+                </NavDropdown.Item>
+              )}
               <NavDropdown.Item as={Link} to="/">
                 Sessions
               </NavDropdown.Item>
@@ -82,6 +94,14 @@ function NavigationBar() {
           </Nav>
 
           <div className="d-flex align-items-center gap-3 mt-3 mt-lg-0">
+            <Form.Check
+              type="switch"
+              id="theme-toggle"
+              label={theme === 'dark' ? 'Dark' : 'Light'}
+              checked={theme === 'dark'}
+              onChange={toggle}
+              className="text-light"
+            />
             <NavDropdown
               align="end"
               title={<i className="bi bi-person-circle fs-5 text-light"></i>}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../../api/client';
@@ -25,8 +25,14 @@ function CreateAccountPage() {
     permissions: ''
   });
 
-  const roles = ['user', 'admin', 'operator', 'viewer'];
+  const [roles, setRoles] = useState([]);
   const departments = ['IT', 'Engineering', 'Operations', 'Security', 'Finance', 'HR'];
+
+  useEffect(() => {
+    apiClient.get('/roles')
+      .then(res => setRoles(res.data || []))
+      .catch(() => setRoles([]));
+  }, []);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -159,8 +165,8 @@ function CreateAccountPage() {
                       onChange={handleInputChange}
                     >
                       {roles.map(role => (
-                        <option key={role} value={role}>
-                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        <option key={role.id} value={role.name}>
+                          {role.name}
                         </option>
                       ))}
                     </Form.Select>

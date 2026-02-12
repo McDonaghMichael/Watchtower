@@ -116,5 +116,65 @@ CREATE TABLE IF NOT EXISTS metrics_used_for_condtionals (
 INSERT INTO roles (name, description, administrator)
 VALUES
   ('admin', 'Full administrative access', 1),
-  ('user', 'Standard user', 0)
+  ('user', 'Standard user', 0),
+  ('operator', 'Manage servers and events', 0),
+  ('viewer', 'Read-only access', 0)
 ON CONFLICT (name) DO NOTHING;
+
+-- Permissions and role mapping
+CREATE TABLE IF NOT EXISTS permissions (
+  id SERIAL PRIMARY KEY,
+  key VARCHAR(50) UNIQUE NOT NULL,
+  description VARCHAR(150) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS role_permissions (
+  role_id INT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  permission_id INT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+  PRIMARY KEY (role_id, permission_id)
+);
+
+-- Seed baseline permissions
+INSERT INTO permissions (key, description) VALUES
+  ('manage_roles', 'Create, update, delete roles'),
+  ('manage_accounts', 'Create, update, delete accounts'),
+  ('manage_servers', 'Create, update, delete servers'),
+  ('manage_events', 'Create, update, delete server events/actions'),
+  ('view_audit_logs', 'View audit logs')
+ON CONFLICT (key) DO NOTHING;
+
+-- Grant all permissions to admin
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.name = 'admin'
+ON CONFLICT DO NOTHING;
+
+-- Default permissions for operator
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r
+JOIN permissions p ON p.key IN ('manage_servers','manage_events')
+WHERE r.name = 'operator'
+ON CONFLICT DO NOTHING;
+
+-- Default permissions for viewer
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r
+JOIN permissions p ON p.key IN ('view_audit_logs')
+WHERE r.name = 'viewer'
+ON CONFLICT DO NOTHING;
+
+-- Audit logging table
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id) ON DELETE SET NULL,
+  action VARCHAR(100) NOT NULL,
+  resource VARCHAR(100),
+  resource_id INT,
+  metadata JSONB,
+  ip_address VARCHAR(64),
+  user_agent TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

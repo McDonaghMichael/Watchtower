@@ -41,6 +41,7 @@ func AddServer() gin.HandlerFunc {
 			return
 		}
 
+		utils.LogAudit(c, database.Pool, c.GetInt("userID"), "create_server", "server", &server.ID, map[string]interface{}{"name": server.ServerName})
 		c.JSON(http.StatusCreated, server)
 	}
 }
@@ -142,6 +143,7 @@ func UpdateServer() gin.HandlerFunc {
 			return
 		}
 
+		utils.LogAudit(c, database.Pool, c.GetInt("userID"), "update_server", "server", &server.ID, nil)
 		c.JSON(http.StatusCreated, server)
 	}
 }
@@ -161,6 +163,8 @@ func DeleteServer() gin.HandlerFunc {
 		if rowsAffected == 0 {
 			c.JSON(http.StatusNotFound, gin.H{"error": "models.Server not found"})
 		} else {
+			serverIDInt, _ := strconv.Atoi(id)
+			utils.LogAudit(c, database.Pool, c.GetInt("userID"), "delete_server", "server", &serverIDInt, nil)
 			c.JSON(http.StatusOK, gin.H{"response": "server deleted"})
 		}
 

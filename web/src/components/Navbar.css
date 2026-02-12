@@ -1,7 +1,6 @@
 .nav-shell {
-  background: #0a0a0f;
+  background: #0a0a0a;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
   transition: box-shadow 0.25s ease, transform 0.25s ease;
   position: sticky;
   top: 0;
@@ -45,7 +44,7 @@
 }
 
 .nav-pill .dropdown-menu {
-  background: #0f172a;
+  background: #0a0a0a;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 6px;

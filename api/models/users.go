@@ -14,8 +14,8 @@ type User struct {
 	Permissions  string    `json:"permissions"`
 	RoleID       int       `json:"role_id"`
 	RoleName     string    `json:"role"`
+	RolePerms    []string  `json:"role_permissions"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 	PasswordHash string    `json:"-"`
 }
-

@@ -11,6 +11,7 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	// Public auth routes
 	r.POST("/auth/login", Login())
 	r.POST("/auth/bootstrap", BootstrapAdmin())
+	r.GET("/auth/permissions", ListPermissions())
 
 	// Authenticated routes
 	auth := r.Group("")
@@ -27,6 +28,16 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	auth.GET("/accounts/:id", GetAccount())    // Find account given the ID (self or admin)
 	auth.PUT("/accounts/:id", UpdateAccount()) // Update the account given the ID (self or admin)
 	auth.DELETE("/accounts/:id", DeleteAccount())
+
+	// Roles & Permissions
+	admin.GET("/roles", ListRoles())
+	admin.POST("/roles", CreateRole())
+	admin.GET("/roles/:id", GetRole())
+	admin.PUT("/roles/:id", UpdateRole())
+	admin.DELETE("/roles/:id", DeleteRole())
+
+	// Audit Logs
+	auth.GET("/audit-logs", RequirePermissions("view_audit_logs"), ListAuditLogs())
 
 	// ========== Server Routes ==========
 	auth.GET("/servers", GetServers())       // List all servers
