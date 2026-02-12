@@ -47,6 +47,7 @@ function TicketsPage() {
     apiClient
       .get(`/tickets/${id}`)
       .then((res) => setSelected(res.data))
+      .catch(() => setMessage("Unable to load ticket"))
       .finally(() => setLoading(false));
   };
 

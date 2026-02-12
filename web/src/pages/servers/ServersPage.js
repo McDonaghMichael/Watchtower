@@ -11,6 +11,8 @@ import CelebrationIcon from "@mui/icons-material/Celebration";
 import SignalCellularAltIcon from "@mui/icons-material/SignalCellularAlt";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import SettingsIcon from "@mui/icons-material/Settings";
+import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
 import PingBadge from "../../components/badges/PingBadge";
 import CustomBadge from "../../components/badges/CustomBadge";
 import StatusBadge from "../../components/badges/StatusBadge";
@@ -19,6 +21,8 @@ function ServersPage() {
   var navigate = useNavigate();
 
   const [servers, setServers] = useState([]);
+  const [message, setMessage] = useState(null);
+  const [installingId, setInstallingId] = useState(null);
 
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -248,6 +252,25 @@ function ServersPage() {
     },
     renderRowActionMenuItems: ({ row }) => [
       <MenuItem
+        key="install"
+        onClick={() => handleInstall(row.original)}
+        disabled={installingId === row.original.id}
+        sx={{ m: 0, color: "#fff" }}
+      >
+        <ListItemIcon>
+          {row.original.last_ping ? (
+            <SystemUpdateAltIcon sx={{ color: "#82b1ff" }} />
+          ) : (
+            <CloudDownloadIcon sx={{ color: "#82b1ff" }} />
+          )}
+        </ListItemIcon>
+        {installingId === row.original.id
+          ? "Working..."
+          : row.original.last_ping
+          ? "Update Agent"
+          : "Install Agent"}
+      </MenuItem>,
+      <MenuItem
         key="ping"
         onClick={() => handlePing(row.original.id)}
         sx={{ m: 0, color: "#fff" }}
@@ -289,6 +312,20 @@ function ServersPage() {
       </MenuItem>,
     ],
   });
+
+  const handleInstall = (server) => {
+    setInstallingId(server.id);
+    setMessage(null);
+    apiClient
+      .post(`/server/${server.id}/install`, { update: Boolean(server.last_ping) })
+      .then((res) => {
+        setMessage(res.data?.status === "ok" ? "Deployment completed" : "Install triggered");
+      })
+      .catch((err) => {
+        setMessage(err.response?.data?.error || "Install failed");
+      })
+      .finally(() => setInstallingId(null));
+  };
 
   const handlePing = (id) => {
     apiClient
@@ -434,6 +471,9 @@ function ServersPage() {
           </div>
         </Card.Header>
         <Card.Body className="p-0">
+          {message && (
+            <div className="alert alert-info m-3 mb-0 py-2">{message}</div>
+          )}
           <MaterialReactTable table={table} />
         </Card.Body>
       </Card>

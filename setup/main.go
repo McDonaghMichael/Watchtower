@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"golang.org/x/term"
+	"github.com/pquerna/otp/totp"
 )
 
 type bootstrapResponse struct {
@@ -37,6 +38,21 @@ func main() {
 		return
 	}
 
+	// Generate TOTP secret for the new admin
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      "Watchtower",
+		AccountName: email,
+		Period:      30,
+	})
+	if err != nil {
+		fmt.Printf("Failed to generate TOTP secret: %v\n", err)
+		return
+	}
+	fmt.Println("\n=== 2FA ENROLLMENT REQUIRED ===")
+	fmt.Printf("Scan this in Microsoft/Google Authenticator:\n%s\n", key.URL())
+	fmt.Printf("Or manually enter secret: %s\n", key.Secret())
+	otpCode := prompt(reader, "Enter the 6-digit code from your authenticator", "")
+
 	payload, _ := json.Marshal(map[string]string{
 		"email":       strings.TrimSpace(email),
 		"username":    strings.TrimSpace(username),
@@ -46,6 +62,8 @@ func main() {
 		"department":  "",
 		"phone":       "",
 		"permissions": "",
+		"totp_secret": key.Secret(),
+		"otp":         strings.TrimSpace(otpCode),
 	})
 
 	client := &http.Client{Timeout: 15 * time.Second}

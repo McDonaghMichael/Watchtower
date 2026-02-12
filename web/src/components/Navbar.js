@@ -89,8 +89,15 @@ function NavigationBar() {
               )}
             </NavDropdown>
 
-            <Nav.Link as={Link} to="/tickets" className="nav-pill">
-              Support
+            <Nav.Link
+              as={Link}
+              to="/tickets"
+              className="nav-pill"
+              title="Support tickets"
+              aria-label="Support tickets"
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <i className="bi bi-ticket-perforated-fill"></i>
             </Nav.Link>
           </Nav>
 
@@ -105,12 +112,12 @@ function NavigationBar() {
             />
             <NavDropdown
               align="end"
-              title={<i className="bi bi-person-circle fs-5 text-primary-emphasis"></i>}
+              title={<i className="bi bi-gear-fill fs-5" aria-label="Profile" style={{ color: "var(--text)" }}></i>}
               id="profile-dropdown"
               className="nav-pill"
             >
-              <NavDropdown.Item as={Link} to={`/account/edit/${user?.id || ''}`}>
-                View Account
+              <NavDropdown.Item as={Link} to={`/account/${user?.id || ''}`}>
+                View Profile
               </NavDropdown.Item>
               <NavDropdown.Divider />
               <NavDropdown.Item onClick={handleLogout}>

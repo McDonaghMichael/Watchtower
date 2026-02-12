@@ -2,7 +2,8 @@ CREATE TABLE IF NOT EXISTS roles (
   id SERIAL PRIMARY KEY,
   name VARCHAR(20) UNIQUE NOT NULL,
   description VARCHAR(100),
-  administrator INT DEFAULT 0
+  administrator INT DEFAULT 0,
+  color VARCHAR(7) DEFAULT '#10a37f'
 );
 
 -- Ensure unique constraint exists even if the table was created before the UNIQUE change
@@ -15,6 +16,13 @@ BEGIN
         ALTER TABLE roles ADD CONSTRAINT roles_name_key UNIQUE (name);
     END IF;
 END$$;
+
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS color VARCHAR(7) DEFAULT '#10a37f';
+UPDATE roles SET color = COALESCE(color, '#10a37f');
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN DEFAULT TRUE;
+ALTER TABLE users ALTER COLUMN totp_enabled SET DEFAULT TRUE;
+UPDATE users SET totp_enabled = TRUE WHERE totp_enabled IS NULL;
 
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,

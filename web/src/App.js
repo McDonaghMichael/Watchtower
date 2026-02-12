@@ -8,6 +8,7 @@ import EditServerPage from "./pages/servers/edit/EditServerPage";
 import CreateAccountPage from "./pages/accounts/create/CreateAccountPage";
 import EditAccountPage from "./pages/accounts/edit/EditAccountPage";
 import AccountsPage from "./pages/accounts/AccountsPage";
+import ProfilePage from "./pages/accounts/profile/ProfilePage";
 import ServerMetricsPage from "./pages/servers/metrics/ServerMetricsPage";
 import CreateServerEvent from "./pages/servers/events/create/CreateServerEvent";
 import ServerEventsPage from "./pages/servers/events/ServerEventsPage";
@@ -126,6 +127,22 @@ function App() {
               </RequireAuth>
             }
           />
+            <Route
+              path="/account/:id"
+              element={
+                <RequireAuth>
+                  <ProfilePage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <RequireAuth>
+                  <ProfilePage />
+                </RequireAuth>
+              }
+            />
             <Route
               path="/roles"
               element={

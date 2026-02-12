@@ -5,6 +5,7 @@
   position: sticky;
   top: 0;
   z-index: 1050;
+  color: var(--text);
 }
 
 .brand-glow {
@@ -29,7 +30,7 @@
 
 .nav-links .nav-link,
 .nav-links .dropdown-toggle {
-  color: var(--text);
+  color: var(--text) !important;
   padding: 8px 12px;
   border-radius: 12px;
   margin-right: 4px;
@@ -48,17 +49,17 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
 }
 
 .nav-pill .dropdown-item {
-  color: var(--text);
+  color: var(--text) !important;
   border-radius: 8px;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .nav-pill .dropdown-item:hover {
-  background: #0a0a0a;
-  color: #ffffff;
+  transform: translateX(4px);
 }
 
 .nav-toggle {
@@ -78,4 +79,31 @@
 .theme-toggle .form-check-input:checked {
   background-color: var(--accent);
   border-color: var(--accent);
+}
+
+/* Light theme overrides */
+[data-theme="light"] .nav-links .nav-link,
+[data-theme="light"] .nav-links .dropdown-toggle,
+[data-theme="light"] .navbar-brand {
+  color: #111 !important;
+}
+
+[data-theme="light"] .nav-pill .dropdown-menu {
+  background: #ffffff;
+  border-color: #e5e5e5;
+}
+
+[data-theme="light"] .nav-pill .dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111 !important;
+}
+
+/* Dark theme hover */
+[data-theme="dark"] .nav-pill .dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff !important;
+}
+
+.theme-toggle .form-check-label {
+  color: var(--text) !important;
 }

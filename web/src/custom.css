@@ -37,9 +37,15 @@ body {
   border: 1px solid var(--border);
 }
 
-.dropdown-menu .dropdown-item:hover,
-.dropdown-menu .dropdown-item:focus {
-  background: #0a0a0a;
+[data-theme="light"] .dropdown-menu .dropdown-item:hover,
+[data-theme="light"] .dropdown-menu .dropdown-item:focus {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111111;
+}
+
+[data-theme="dark"] .dropdown-menu .dropdown-item:hover,
+[data-theme="dark"] .dropdown-menu .dropdown-item:focus {
+  background: rgba(255, 255, 255, 0.06);
   color: #ffffff;
 }
 

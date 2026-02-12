@@ -8,6 +8,7 @@ function RoleForm({ show, onHide, onSaved, role }) {
   const [description, setDescription] = useState(role?.description || "");
   const [administrator, setAdministrator] = useState(role?.administrator || false);
   const [selected, setSelected] = useState(role?.permissions || []);
+  const [color, setColor] = useState(role?.color || "#10a37f");
   const [allPerms, setAllPerms] = useState([]);
   const [error, setError] = useState("");
 
@@ -20,6 +21,7 @@ function RoleForm({ show, onHide, onSaved, role }) {
     setDescription(role?.description || "");
     setAdministrator(role?.administrator || false);
     setSelected(role?.permissions || []);
+    setColor(role?.color || "#10a37f");
   }, [role]);
 
   const toggle = (key) => {
@@ -31,7 +33,7 @@ function RoleForm({ show, onHide, onSaved, role }) {
       setError("Name is required");
       return;
     }
-    const payload = { name, description, administrator, permissions: selected };
+    const payload = { name, description, administrator, color, permissions: selected };
     const req = role
       ? apiClient.put(`/roles/${role.id}`, payload)
       : apiClient.post("/roles", payload);
@@ -67,6 +69,23 @@ function RoleForm({ show, onHide, onSaved, role }) {
             checked={administrator}
             onChange={(e) => setAdministrator(e.target.checked)}
           />
+          <Form.Group className="mb-3">
+            <Form.Label>Role Color</Form.Label>
+            <div className="d-flex align-items-center gap-2">
+              <Form.Control
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                style={{ width: 70 }}
+              />
+              <Form.Control
+                type="text"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                placeholder="#10a37f"
+              />
+            </div>
+          </Form.Group>
           <Row className="g-2">
             {allPerms.map((p) => (
               <Col md={6} key={p.id}>
@@ -150,7 +169,11 @@ function RolesPage() {
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
-                    <h5 className="mb-1">
+                    <h5 className="mb-1 d-flex align-items-center gap-2">
+                      <span
+                        className="rounded-circle border"
+                        style={{ display: "inline-block", width: 18, height: 18, background: r.color || "#10a37f" }}
+                      />
                       {r.name} {r.administrator ? <Badge bg="success">Admin</Badge> : null}
                     </h5>
                     <p className="text-muted mb-1">{r.description}</p>

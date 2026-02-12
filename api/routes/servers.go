@@ -1,9 +1,11 @@
 package routes
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -195,6 +197,97 @@ func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
 
 	fmt.Printf("✅ %d: SUCCESS (pinged at %v)\n", serverID, time.Now().Format("15:04:05"))
 
+}
+
+// InstallAgent connects via SSH and installs or updates the watchtower-agent Docker container.
+func InstallAgent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, _ := strconv.Atoi(c.Param("id"))
+		var req struct {
+			Update bool `json:"update"`
+		}
+		_ = c.ShouldBindJSON(&req)
+
+		var s models.Server
+		err := database.Pool.QueryRow(context.Background(), `
+			SELECT id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port
+			FROM servers WHERE id=$1`, id).Scan(
+			&s.ID, &s.ServerName, &s.IPAddress, &s.SSHUsername, &s.SSHPrivateKey, &s.SSHPort,
+		)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
+			return
+		}
+
+		metricURL := os.Getenv("AGENT_METRIC_URL")
+		if metricURL == "" {
+			base := os.Getenv("API_PUBLIC_URL")
+			if base == "" {
+				base = fmt.Sprintf("http://%s", c.Request.Host)
+			}
+			base = strings.TrimSuffix(base, "/")
+			if !strings.Contains(base, "/api/") {
+				base = base + "/api/v1"
+			}
+			metricURL = base + "/metric"
+		}
+
+		cmds := []string{
+			"command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh",
+			"docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest",
+			"docker rm -f watchtower-agent || true",
+			fmt.Sprintf(`docker run -d --name watchtower-agent --restart unless-stopped --network host -e SERVER_URL="%s" -e SERVER_ID=%d ghcr.io/mcdonaghmichael/watchtower-agent:latest`, metricURL, s.ID),
+		}
+		if req.Update {
+			cmds = cmds[1:] // skip docker install for update
+		}
+
+		out, err := runSSHCommands(s, cmds)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "log": out})
+			return
+		}
+
+		utils.LogAudit(c, database.Pool, c.GetInt("userID"), "install_agent", "server", &s.ID, map[string]interface{}{"update": req.Update})
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "log": out})
+	}
+}
+
+func runSSHCommands(s models.Server, commands []string) (string, error) {
+	signer, err := ssh.ParsePrivateKey([]byte(s.SSHPrivateKey))
+	if err != nil {
+		return "", fmt.Errorf("invalid ssh key: %w", err)
+	}
+	config := &ssh.ClientConfig{
+		User:            s.SSHUsername,
+		Auth:            []ssh.AuthMethod{ssh.PublicKeys(signer)},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         45 * time.Second,
+	}
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", s.IPAddress, s.SSHPort), config)
+	if err != nil {
+		return "", fmt.Errorf("ssh dial failed: %w", err)
+	}
+	defer client.Close()
+
+	var output bytes.Buffer
+	for _, cmd := range commands {
+		session, err := client.NewSession()
+		if err != nil {
+			return output.String(), fmt.Errorf("session error: %w", err)
+		}
+		var buf bytes.Buffer
+		session.Stdout = &buf
+		session.Stderr = &buf
+		if err := session.Run(cmd); err != nil {
+			output.WriteString(buf.String())
+			session.Close()
+			return output.String(), fmt.Errorf("cmd '%s' failed: %w", cmd, err)
+		}
+		output.WriteString(buf.String())
+		session.Close()
+	}
+	return output.String(), nil
 }
 
 func UpdateLastPingServer() gin.HandlerFunc {

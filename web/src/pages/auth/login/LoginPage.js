@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Container, Card, Form, Button, Alert, Badge, Spinner } from "react-bootstrap";
+import { Container, Card, Form, Button, Alert, Badge } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
 import apiClient from "../../../api/client";
 import { clearAuth, isAuthenticated, setAuth } from "../../../utils/auth";
@@ -11,14 +11,10 @@ function LoginPage() {
     email: "",
     password: "",
     otp: "",
-    method: "totp",
     remember: false,
   });
-  const [captchaToken, setCaptchaToken] = useState(null);
   const [status, setStatus] = useState(null);
-  const [captchaLoading, setCaptchaLoading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const RECAPTCHA_SITE_KEY = "6LdpfCosAAAAAPkiy7uI1G9c3-SRkrUfA_L5FXOM";
   const redirectTo = location.state?.from?.pathname || "/";
 
   useEffect(() => {
@@ -37,43 +33,6 @@ function LoginPage() {
     };
   }, []);
 
-  // Load and execute reCAPTCHA v3
-  useEffect(() => {
-    const scriptId = "recaptcha-script";
-    const existingScript = document.getElementById(scriptId);
-
-    const obtainToken = () => {
-      const gre = window.grecaptcha || window.grecaptcha?.enterprise;
-      if (!gre?.execute) return;
-      setCaptchaLoading(true);
-      const executor = gre.ready ? gre.ready : (cb) => cb();
-      executor(() => {
-        gre
-          .execute(RECAPTCHA_SITE_KEY, { action: "login" })
-          .then((token) => {
-            setCaptchaToken(token);
-            setCaptchaLoading(false);
-          })
-          .catch(() => {
-            setCaptchaToken(null);
-            setCaptchaLoading(false);
-          });
-      });
-    };
-
-    if (!existingScript) {
-      const script = document.createElement("script");
-      script.id = scriptId;
-      script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
-      script.async = true;
-      script.defer = true;
-      script.onload = obtainToken;
-      document.body.appendChild(script);
-    } else {
-      obtainToken();
-    }
-  }, []);
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
@@ -90,6 +49,7 @@ function LoginPage() {
       .post("/auth/login", {
         email: form.email,
         password: form.password,
+        otp: form.otp,
       })
       .then((res) => {
         setAuth(res.data.token, res.data.user);
@@ -97,7 +57,20 @@ function LoginPage() {
       })
       .catch((err) => {
         console.error(err);
-        setStatus({ variant: "danger", message: err.response?.data?.error || "Invalid credentials" });
+        const code = err.response?.data?.error;
+        const provision = err.response?.data?.totp_secret;
+        const otpauth = err.response?.data?.otpauth_url;
+        const msg =
+          code === "otp_required"
+            ? "Enter a 6-digit code from your authenticator app."
+            : code === "invalid_otp"
+            ? "Invalid authenticator code."
+            : err.response?.data?.error || "Invalid credentials";
+        setStatus({
+          variant: "danger",
+          message: msg + (provision ? ` Secret: ${provision}` : ""),
+          otpauth,
+        });
       })
       .finally(() => setLoading(false));
   };
@@ -120,7 +93,16 @@ function LoginPage() {
             <small className="text-muted">2FA and verification required</small>
           </div>
 
-          {status && <Alert variant={status.variant}>{status.message}</Alert>}
+          {status && (
+            <Alert variant={status.variant}>
+              {status.message}
+              {status.otpauth && (
+                <div className="small mt-2">
+                  Scan in Authenticator: <code>{status.otpauth}</code>
+                </div>
+              )}
+            </Alert>
+          )}
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3">
@@ -152,31 +134,11 @@ function LoginPage() {
             <div className="bg-body-secondary bg-opacity-10 rounded-3 p-3 mb-3">
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <div>
-                  <Form.Label className="text-light mb-0">Two-Factor Authentication</Form.Label>
-                  <small className="text-muted d-block">Required for access</small>
+                  <Form.Label className="text-light mb-0">Hardware/Authenticator Code</Form.Label>
+                  <small className="text-muted d-block">Enter a fresh 6-digit code from Microsoft/Google Authenticator.</small>
                 </div>
                 <Badge bg="info" text="dark">Required</Badge>
               </div>
-              <Form.Check
-                type="radio"
-                id="method-totp"
-                label="Authenticator App (TOTP)"
-                name="method"
-                value="totp"
-                checked={form.method === "totp"}
-                onChange={handleChange}
-                className="text-light"
-              />
-              <Form.Check
-                type="radio"
-                id="method-email"
-                label="Email OTP"
-                name="method"
-                value="email"
-                checked={form.method === "email"}
-                onChange={handleChange}
-                className="text-light"
-              />
               <Form.Group className="mt-3">
                 <Form.Control
                   type="text"
@@ -189,42 +151,6 @@ function LoginPage() {
                   required
                 />
               </Form.Group>
-            </div>
-
-            <div className="bg-body-secondary bg-opacity-10 rounded-3 p-3 mb-3">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <Form.Label className="text-light mb-0">Bot Verification</Form.Label>
-                <Badge bg="secondary">reCAPTCHA v3</Badge>
-              </div>
-              <div className="d-flex align-items-center justify-content-between">
-                <small className="text-muted">
-                  A token is generated automatically via reCAPTCHA v3.
-                </small>
-                <Button
-                  variant="outline-light"
-                  size="sm"
-                  onClick={() => {
-                    setCaptchaToken(null);
-                    const gre = window.grecaptcha || window.grecaptcha?.enterprise;
-                    if (gre?.execute) {
-                      (gre.ready ? gre.ready : (cb) => cb())(() =>
-                        gre
-                          .execute(RECAPTCHA_SITE_KEY, { action: "login" })
-                          .then((token) => setCaptchaToken(token))
-                          .catch(() => setCaptchaToken(null))
-                      );
-                    }
-                  }}
-                  disabled={captchaLoading}
-                >
-                  {captchaLoading ? <Spinner animation="border" size="sm" /> : "Refresh"}
-                </Button>
-              </div>
-              {captchaToken ? (
-                <small className="text-success d-block mt-2">Captcha verified.</small>
-              ) : (
-                <small className="text-warning d-block mt-2">Captcha not yet verified.</small>
-              )}
             </div>
 
             <Form.Check
@@ -240,10 +166,9 @@ function LoginPage() {
             <Button variant="info" type="submit" className="w-100" disabled={loading}>
               {loading ? "Signing in..." : "Sign In Securely"}
             </Button>
-
             <div className="text-center mt-3">
               <small className="text-muted">
-                Trouble signing in? <a href="#reset" className="text-info">Reset password</a> or <a href="#support" className="text-info">contact support</a>.
+                Authorized personnel only. Access monitored & logged.
               </small>
             </div>
           </Form>

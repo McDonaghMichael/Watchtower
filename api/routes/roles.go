@@ -15,6 +15,7 @@ type roleRequest struct {
 	Name          string   `json:"name" binding:"required"`
 	Description   string   `json:"description"`
 	Administrator bool     `json:"administrator"`
+	Color         string   `json:"color"`
 	Permissions   []string `json:"permissions"`
 }
 
@@ -41,7 +42,7 @@ func ListPermissions() gin.HandlerFunc {
 
 func ListRoles() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		rows, err := database.Pool.Query(c, `SELECT id, name, description, COALESCE(administrator,0) FROM roles ORDER BY id ASC`)
+		rows, err := database.Pool.Query(c, `SELECT id, name, description, COALESCE(administrator,0), COALESCE(color, '#10a37f') FROM roles ORDER BY id ASC`)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list roles"})
 			return
@@ -52,7 +53,7 @@ func ListRoles() gin.HandlerFunc {
 		for rows.Next() {
 			var r models.Role
 			var adminInt int
-			if err := rows.Scan(&r.ID, &r.Name, &r.Description, &adminInt); err != nil {
+			if err := rows.Scan(&r.ID, &r.Name, &r.Description, &adminInt, &r.Color); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read role"})
 				return
 			}
@@ -77,9 +78,9 @@ func CreateRole() gin.HandlerFunc {
 		}
 		var roleID int
 		err := database.Pool.QueryRow(c, `
-			INSERT INTO roles (name, description, administrator)
-			VALUES ($1, $2, $3) RETURNING id`,
-			req.Name, req.Description, boolToInt(req.Administrator),
+			INSERT INTO roles (name, description, administrator, color)
+			VALUES ($1, $2, $3, $4) RETURNING id`,
+			req.Name, req.Description, boolToInt(req.Administrator), chooseColor(req.Color),
 		).Scan(&roleID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create role"})
@@ -122,8 +123,8 @@ func UpdateRole() gin.HandlerFunc {
 		}
 
 		_, err := database.Pool.Exec(c, `
-			UPDATE roles SET name=$1, description=$2, administrator=$3 WHERE id=$4`,
-			req.Name, req.Description, boolToInt(req.Administrator), id,
+			UPDATE roles SET name=$1, description=$2, administrator=$3, color=$4 WHERE id=$5`,
+			req.Name, req.Description, boolToInt(req.Administrator), chooseColor(req.Color), id,
 		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update role"})
@@ -156,8 +157,8 @@ func DeleteRole() gin.HandlerFunc {
 func fetchRole(c *gin.Context, id int) (models.Role, error) {
 	var r models.Role
 	var adminInt int
-	err := database.Pool.QueryRow(c, `SELECT id, name, description, COALESCE(administrator,0) FROM roles WHERE id=$1`, id).
-		Scan(&r.ID, &r.Name, &r.Description, &adminInt)
+	err := database.Pool.QueryRow(c, `SELECT id, name, description, COALESCE(administrator,0), COALESCE(color, '#10a37f') FROM roles WHERE id=$1`, id).
+		Scan(&r.ID, &r.Name, &r.Description, &adminInt, &r.Color)
 	if err != nil {
 		return r, err
 	}
@@ -201,4 +202,11 @@ func boolToInt(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+func chooseColor(c string) string {
+	if c == "" {
+		return "#10a37f"
+	}
+	return c
 }
