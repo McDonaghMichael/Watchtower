@@ -41,27 +41,26 @@ func Connect() {
 	err := error(nil)
 	Pool, err = pgxpool.New(context.Background(), connStr)
 	if err != nil {
-		utils.GetConsole().PrintError("Unable to connect:", err)
+		utils.GetConsole().PrintError("Unable to connect: %v", err)
 	}
 
 	sqlBytes, err := ioutil.ReadFile("schema.sql")
 	if err != nil {
-		utils.GetConsole().PrintError("Unable to import schema.sql: ", err)
+		utils.GetConsole().PrintError("Unable to import schema.sql: %v", err)
 	}
 
 	sqlScript := string(sqlBytes)
 
 	_, err = Pool.Exec(context.Background(), sqlScript)
 	if err != nil {
-		utils.GetConsole().PrintError("Error executing SQL script:", err)
+		utils.GetConsole().PrintError("Error executing SQL script: %v", err)
 		return
 	}
 
 	utils.GetConsole().PrintSuccess("Executed schema.sql successfully")
 
-
 	if err != nil {
-		utils.GetConsole().PrintError("Unable to connect:", err)
+		utils.GetConsole().PrintError("Unable to connect: %v", err)
 	}
 	utils.GetConsole().PrintSuccess("Connected to PostgreSQL!")
 

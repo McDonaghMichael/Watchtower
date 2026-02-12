@@ -189,7 +189,7 @@ func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
 		return
 	}
 
-	fmt.Printf("✅ %s: SUCCESS (pinged at %v)\n", serverID, time.Now().Format("15:04:05"))
+	fmt.Printf("✅ %d: SUCCESS (pinged at %v)\n", serverID, time.Now().Format("15:04:05"))
 
 }
 
@@ -216,7 +216,7 @@ func UpdateLastPingServer() gin.HandlerFunc {
 			return
 		}
 
-		fmt.Printf("✅ %s: SUCCESS (pinged at %v)\n", serverID, time.Now().Format("15:04:05"))
+		fmt.Printf("✅ %d: SUCCESS (pinged at %v)\n", serverID, time.Now().Format("15:04:05"))
 
 		c.JSON(http.StatusAccepted, gin.H{"ping": now})
 	}
@@ -228,23 +228,27 @@ func EstablishSSHConnection(server models.Server) (*ssh.Client, error) {
 		return nil, fmt.Errorf("no SSH private key provided")
 	}
 
-	
-	utils.GetConsole().PrintSecondary(fmt.Sprintf("Attempting SSH to %s:%d as %s\n", server.IPAddress, server.SSHPort, server.SSHUsername))
+	utils.GetConsole().PrintSecondary("Attempting SSH to %s:%d as %s\n", server.IPAddress, server.SSHPort, server.SSHUsername)
 
-		utils.GetConsole().PrintSecondary(fmt.Sprintf("Key length: %d characters\n", len(server.SSHPrivateKey)))
-
+	utils.GetConsole().PrintSecondary("Key length: %d characters\n", len(server.SSHPrivateKey))
 
 	// Log the first and last parts of the key for debugging
 	keyPreview := strings.TrimSpace(server.SSHPrivateKey)
 	if len(keyPreview) > 100 {
-		utils.GetConsole().PrintDebug(fmt.Sprintf("Key preview (first 100 chars): %s...\n", keyPreview[:100]))
-		utils.GetConsole().PrintDebug(fmt.Sprintf("Key preview (last 50 chars): ...%s\n", keyPreview[len(keyPreview)-50:]))
+		utils.GetConsole().PrintDebug("Key preview (first 100 chars): %s...\n", keyPreview[:100])
+		utils.GetConsole().PrintDebug("Key preview (last 50 chars): ...%s\n", keyPreview[len(keyPreview)-50:])
 
 	}
 
+	previewPrefix := keyPreview
+	if len(previewPrefix) > 50 {
+		previewPrefix = previewPrefix[:50]
+	}
+
 	if !strings.HasPrefix(keyPreview, "-----BEGIN") {
-		return nil, utils.GetConsole().PrintError(fmt.Sprintf("private key format invalid - missing BEGIN header. Starts with: %s", keyPreview[:50]))
-		
+		msg := fmt.Sprintf("private key format invalid - missing BEGIN header. Starts with: %s", previewPrefix)
+		utils.GetConsole().PrintError("%s", msg)
+		return nil, fmt.Errorf("%s", msg)
 
 	}
 
@@ -255,21 +259,21 @@ func EstablishSSHConnection(server models.Server) (*ssh.Client, error) {
 	// Method 1: Standard parsing
 	signer, err = ssh.ParsePrivateKey([]byte(keyPreview))
 	if err != nil {
-		utils.GetConsole().PrintError(fmt.Sprintf("Standard parse failed: %v\n", err))
-
+		utils.GetConsole().PrintError("Standard parse failed: %v\n", err)
 
 		// Method 2: Try with empty passphrase
 		signer, err = ssh.ParsePrivateKeyWithPassphrase([]byte(keyPreview), []byte(""))
 		if err != nil {
-			utils.GetConsole().PrintError(fmt.Sprintf("Parse with empty passphrase failed: %v\n", err))
+			utils.GetConsole().PrintError("Parse with empty passphrase failed: %v\n", err)
 
-			
-			return nil, utils.GetConsole().PrintError(fmt.Sprintf("unable to parse private key: %w", err))
+			msg := fmt.Sprintf("unable to parse private key: %v", err)
+			utils.GetConsole().PrintError("%s", msg)
+			return nil, fmt.Errorf("%s", msg)
 		}
-			utils.GetConsole().PrintSuccess("Key parsed successfully with empty passphrase")
+		utils.GetConsole().PrintSuccess("Key parsed successfully with empty passphrase")
 
 	} else {
-			utils.GetConsole().PrintSuccess("Key parsed successfully without passphrase")
+		utils.GetConsole().PrintSuccess("Key parsed successfully without passphrase")
 
 	}
 
@@ -305,7 +309,7 @@ func PingAllServers() {
 		FROM servers`)
 
 	if err != nil {
-		utils.GetConsole().PrintError(fmt.Sprintf("Error querying servers: %v\n", err))
+		utils.GetConsole().PrintError("Error querying servers: %v", err)
 		return
 	}
 	defer rows.Close()
@@ -320,14 +324,12 @@ func PingAllServers() {
 			&server.SSHPort, &server.LastPing,
 		)
 		if err != nil {
-		utils.GetConsole().PrintError(fmt.Sprintf("Error scanning server: %v\n", err))
-
+			utils.GetConsole().PrintError("Error scanning server: %v", err)
 			continue
 		}
 
 		if server.SSHPrivateKey == "" {
-		utils.GetConsole().PrintWarning(fmt.Sprintf("models.Server %s: No SSH key provided\n", server.ServerName))
-			
+			utils.GetConsole().PrintWarning("models.Server %s: No SSH key provided", server.ServerName)
 			continue
 		}
 

@@ -52,8 +52,7 @@ func ExecuteActions() {
 	)
 
 	if err != nil {
-		utils.GetConsole().PrintError("Query error: ", err)
-
+		utils.GetConsole().PrintError("Query error: %v", err)
 		return
 	}
 	defer rows.Close()
@@ -64,16 +63,14 @@ func ExecuteActions() {
 		err := rows.Scan(&sm.ServerID, &sm.CPUUsage, &sm.Timestamp)
 
 		if err != nil {
-		utils.GetConsole().PrintError("Scan error: ", err)
-
+			utils.GetConsole().PrintError("Scan error: %v", err)
 			continue
 		}
 		serverMetrics = append(serverMetrics, sm)
 	}
 
 	if err := rows.Err(); err != nil {
-		utils.GetConsole().PrintError("Rows error: ", err)
-
+		utils.GetConsole().PrintError("Rows error: %v", err)
 		return
 	}
 
@@ -87,8 +84,7 @@ func ExecuteActions() {
 	)
 
 	if err != nil {
-				utils.GetConsole().PrintError("Query error: ", err)
-
+		utils.GetConsole().PrintError("Query error: %v", err)
 		return
 	}
 
@@ -100,8 +96,7 @@ func ExecuteActions() {
 		err := rows.Scan(&cond.ServerID, &cond.ConditionalID, &cond.Metric, &cond.GroupID, &cond.Value, &cond.Action, &cond.ActionValue, &cond.Operation)
 
 		if err != nil {
-					utils.GetConsole().PrintError("Query error: ", err)
-
+			utils.GetConsole().PrintError("Query error: %v", err)
 			continue
 		}
 
@@ -272,8 +267,7 @@ func logMetricConditional(conditionID int, metricID int) error {
 	).Scan(&id)
 
 	if err != nil {
-		utils.GetConsole().PrintError("Failed to log metric conditional: ", err)
-
+		utils.GetConsole().PrintError("Failed to log metric conditional: %v", err)
 		return err
 	}
 	return nil
@@ -291,8 +285,7 @@ func hasMetricBeenCondition(conditionID int, metricID int) (bool, error) {
 	).Scan(&exists)
 
 	if err != nil {
-		utils.GetConsole().PrintError("Failed to check metric conditional: ", err)
-
+		utils.GetConsole().PrintError("Failed to check metric conditional: %v", err)
 		return false, err
 	}
 

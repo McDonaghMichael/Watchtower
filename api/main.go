@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
 	"os"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"watchtower/api/redis"
 	"watchtower/api/routes"
 	"watchtower/api/utils"
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	database.Connect()
 	gin.SetMode(gin.ReleaseMode)
 
-	r := gin.New() 
+	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(corsMiddleware())
 
@@ -35,7 +35,7 @@ func main() {
 	routes.SetupAPIRoutes(r.Group("/api/v1"))
 
 	go func() {
-	utils.GetConsole().PrintSecondary("Starting ping loop for all servers every 60's")
+		utils.GetConsole().PrintSecondary("Starting ping loop for all servers every 60's")
 		for {
 			routes.PingAllServers()
 			time.Sleep(60 * time.Second)

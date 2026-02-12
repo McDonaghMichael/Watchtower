@@ -44,7 +44,7 @@ func Init() {
 		panic(err)
 	}
 
-		utils.GetConsole().PrintSuccess("Connected to Redis!")
+	utils.GetConsole().PrintSuccess("Connected to Redis!")
 
 }
 
