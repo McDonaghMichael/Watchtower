@@ -209,6 +209,9 @@ INSERT INTO backup_config (id, enabled, interval_minutes)
 VALUES (1, FALSE, 1440)
 ON CONFLICT (id) DO NOTHING;
 
+ALTER TABLE backup_config ADD COLUMN IF NOT EXISTS interval_ms BIGINT DEFAULT 86400000;
+ALTER TABLE backup_config ADD COLUMN IF NOT EXISTS backup_location TEXT DEFAULT './backups';
+
 CREATE TABLE IF NOT EXISTS sessions (
   id SERIAL PRIMARY KEY,
   user_id INT REFERENCES users(id) ON DELETE CASCADE,

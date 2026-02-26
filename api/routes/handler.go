@@ -40,11 +40,12 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	auth.GET("/audit-logs", RequirePermissions("view_audit_logs"), ListAuditLogs())
 
 	// Backups
-	auth.GET("/backups/full", RequirePermissions("backup_read"), BackupDatabase())
-	auth.POST("/backups/tables", RequirePermissions("backup_write"), BackupTables())
+	auth.GET("/backups/config", RequirePermissions("backup_read"), GetBackupConfigHandler())
 	auth.POST("/backups/schedule", RequirePermissions("backup_schedule"), SetBackupSchedule())
 	auth.GET("/backups", RequirePermissions("backup_read"), ListBackups())
+	auth.POST("/backups/create", RequirePermissions("backup_write"), CreateManualBackup())
 	auth.GET("/backups/download/:id", RequirePermissions("backup_read"), DownloadBackup())
+	auth.DELETE("/backups/:id", RequirePermissions("backup_write"), DeleteBackup())
 
 	// Sessions
 	auth.GET("/sessions", RequirePermissions("manage_sessions"), ListSessions())

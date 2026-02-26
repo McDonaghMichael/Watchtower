@@ -4,64 +4,12 @@ import apiClient from "../../api/client";
 import LoadingOverlay from "../../components/LoadingOverlay";
 
 function BackupsPage() {
-  const [tables, setTables] = useState("");
-  const [schedule, setSchedule] = useState({ enabled: false, interval_minutes: 1440 });
+  const [config, setConfig] = useState({ enabled: false, interval_ms: 86400000, backup_location: "./backups" });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState({ text: "", variant: "info" });
   const [backups, setBackups] = useState([]);
 
-  const triggerDownload = (url, filename) => {
-    apiClient
-      .get(url, { responseType: "blob" })
-      .then((res) => {
-        const blob = res.data;
-        const link = document.createElement("a");
-        link.href = window.URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
-      })
-      .catch(() => setMessage("Download failed"));
-  };
-
-  const handleFullBackup = () => {
-    setMessage("");
-    triggerDownload("/backups/full", "backup.sql");
-    refreshList();
-  };
-
-  const handleTableBackup = () => {
-    setLoading(true);
-    setMessage("");
-    const list = tables
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    apiClient
-      .post("/backups/tables", { tables: list }, { responseType: "blob" })
-      .then((res) => {
-        const blob = res.data;
-        const link = document.createElement("a");
-        link.href = window.URL.createObjectURL(blob);
-        link.download = "tables.sql";
-        link.click();
-      })
-      .catch(() => setMessage("Table export failed"))
-      .finally(() => setLoading(false));
-    refreshList();
-  };
-
-  const handleSchedule = () => {
-    setLoading(true);
-    setMessage("");
-    apiClient
-      .post("/backups/schedule", {
-        enabled: schedule.enabled,
-        interval_minutes: Number(schedule.interval_minutes || 1440),
-      })
-      .then(() => setMessage("Schedule updated"))
-      .catch(() => setMessage("Failed to update schedule"))
-      .finally(() => setLoading(false));
-  };
+  const showMsg = (text, variant = "info") => setMessage({ text, variant });
 
   const refreshList = () => {
     apiClient
@@ -70,82 +18,147 @@ function BackupsPage() {
       .catch(() => setBackups([]));
   };
 
-  useEffect(refreshList, []);
+  const loadConfig = () => {
+    apiClient
+      .get("/backups/config")
+      .then((res) => setConfig(res.data))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadConfig();
+    refreshList();
+  }, []);
+
+  const handleSaveConfig = () => {
+    setLoading(true);
+    setMessage({ text: "", variant: "info" });
+    apiClient
+      .post("/backups/schedule", {
+        enabled: config.enabled,
+        interval_ms: Number(config.interval_ms) || 86400000,
+        backup_location: config.backup_location || "./backups",
+      })
+      .then(() => showMsg("Configuration saved.", "success"))
+      .catch(() => showMsg("Failed to save configuration.", "danger"))
+      .finally(() => setLoading(false));
+  };
+
+  const handleManualBackup = () => {
+    setLoading(true);
+    setMessage({ text: "", variant: "info" });
+    apiClient
+      .post("/backups/create")
+      .then((res) => {
+        showMsg(`Backup created: ${res.data.filename}`, "success");
+        refreshList();
+      })
+      .catch((err) => showMsg(err?.response?.data?.error || "Backup failed.", "danger"))
+      .finally(() => setLoading(false));
+  };
+
+  const handleDownload = (id, filename) => {
+    const zipName = filename.replace(/\.sql$/, ".zip");
+    apiClient
+      .get(`/backups/download/${id}`, { responseType: "blob" })
+      .then((res) => {
+        const link = document.createElement("a");
+        link.href = window.URL.createObjectURL(res.data);
+        link.download = zipName;
+        link.click();
+      })
+      .catch(() => showMsg("Download failed.", "danger"));
+  };
+
+  const handleDelete = (id) => {
+    if (!window.confirm("Delete this backup?")) return;
+    apiClient
+      .delete(`/backups/${id}`)
+      .then(() => refreshList())
+      .catch(() => showMsg("Failed to delete backup.", "danger"));
+  };
 
   return (
     <Container className="py-4">
       <LoadingOverlay show={loading} />
-      <Card className="shadow-sm border-0 mb-4">
-        <Card.Header>
-          <h4 className="mb-0">Backups</h4>
-          <small className="text-muted">Manual and scheduled database backups</small>
-        </Card.Header>
-        <Card.Body>
-          {message && <Alert variant="info">{message}</Alert>}
-          <Row className="g-3">
-            <Col md={4}>
-              <Card className="h-100 border-0">
-                <Card.Body>
-                  <h5>Full Backup</h5>
-                  <p className="text-muted">Download entire database as SQL.</p>
-                  <Button variant="info" onClick={handleFullBackup}>
-                    Download Full Backup
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4}>
-              <Card className="h-100 border-0">
-                <Card.Body>
-                  <h5>Export Tables</h5>
-                  <p className="text-muted">Enter tables (comma separated) to export.</p>
-                  <Form.Control
-                    placeholder="tables, separated, by comma"
-                    value={tables}
-                    onChange={(e) => setTables(e.target.value)}
-                    className="mb-2"
-                  />
-                  <Button variant="info" onClick={handleTableBackup}>
-                    Export Selected Tables
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4}>
-              <Card className="h-100 border-0">
-                <Card.Body>
-                  <h5>Automatic Backups</h5>
-                  <p className="text-muted">Enable recurring backups using an interval in minutes.</p>
-                  <Form.Check
-                    type="switch"
-                    id="backup-enabled"
-                    label="Enable automatic backups"
-                    className="mb-2"
-                    checked={schedule.enabled}
-                    onChange={(e) => setSchedule((s) => ({ ...s, enabled: e.target.checked }))}
-                  />
-                  <Form.Control
-                    type="number"
-                    min={10}
-                    placeholder="Interval minutes (e.g., 1440)"
-                    value={schedule.interval_minutes}
-                    onChange={(e) =>
-                      setSchedule((s) => ({ ...s, interval_minutes: e.target.value }))
-                    }
-                    className="mb-2"
-                  />
-                  <Button variant="info" onClick={handleSchedule}>
-                    Save Schedule
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+
+      {message.text && (
+        <Alert variant={message.variant} dismissible onClose={() => setMessage({ text: "", variant: "info" })}>
+          {message.text}
+        </Alert>
+      )}
+
+      <Row className="g-4 mb-4">
+        {/* Backup Configuration */}
+        <Col md={8}>
+          <Card className="shadow-sm border-0 h-100">
+            <Card.Header>
+              <h5 className="mb-0">Backup Configuration</h5>
+              <small className="text-muted">Automatic backup schedule and storage location</small>
+            </Card.Header>
+            <Card.Body>
+              <Form.Check
+                type="switch"
+                id="backup-enabled"
+                label="Enable automatic backups"
+                className="mb-3"
+                checked={config.enabled}
+                onChange={(e) => setConfig((s) => ({ ...s, enabled: e.target.checked }))}
+              />
+              <Form.Group className="mb-3">
+                <Form.Label>Interval (milliseconds)</Form.Label>
+                <Form.Control
+                  type="number"
+                  min={1000}
+                  placeholder="e.g. 86400000 for 24 hours"
+                  value={config.interval_ms}
+                  onChange={(e) => setConfig((s) => ({ ...s, interval_ms: e.target.value }))}
+                />
+                <Form.Text className="text-muted">
+                  {config.interval_ms > 0
+                    ? `≈ ${(Number(config.interval_ms) / 3600000).toFixed(2)} hour(s)`
+                    : ""}
+                </Form.Text>
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Backup location (server path)</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="./backups"
+                  value={config.backup_location}
+                  onChange={(e) => setConfig((s) => ({ ...s, backup_location: e.target.value }))}
+                />
+              </Form.Group>
+              <Button variant="primary" onClick={handleSaveConfig}>
+                Save Configuration
+              </Button>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        {/* Manual Backup */}
+        <Col md={4}>
+          <Card className="shadow-sm border-0 h-100">
+            <Card.Header>
+              <h5 className="mb-0">Manual Backup</h5>
+              <small className="text-muted">Create a backup now</small>
+            </Card.Header>
+            <Card.Body className="d-flex flex-column justify-content-between">
+              <p className="text-muted">
+                Triggers a full pg_dump of the current database state and stores it in the configured backup location.
+              </p>
+              <Button variant="info" onClick={handleManualBackup}>
+                Create Backup Now
+              </Button>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Backup List */}
       <Card className="shadow-sm border-0">
         <Card.Header>
-          <h5 className="mb-0">Available Backups</h5>
+          <h5 className="mb-0">Stored Backups</h5>
         </Card.Header>
         <Card.Body>
           <div className="table-responsive">
@@ -166,15 +179,21 @@ function BackupsPage() {
                     <td>{b.filename}</td>
                     <td>{b.size_human || `${b.size_bytes} B`}</td>
                     <td>{new Date(b.created_at).toLocaleString()}</td>
-                    <td>
+                    <td className="text-end">
                       <Button
                         size="sm"
                         variant="outline-info"
-                        onClick={() =>
-                          triggerDownload(`/backups/download/${b.id}`, b.filename)
-                        }
+                        className="me-2"
+                        onClick={() => handleDownload(b.id, b.filename)}
                       >
-                        Download
+                        Download .zip
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline-danger"
+                        onClick={() => handleDelete(b.id)}
+                      >
+                        Delete
                       </Button>
                     </td>
                   </tr>

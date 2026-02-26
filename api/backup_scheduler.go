@@ -14,12 +14,12 @@ func startBackupScheduler(pool *pgxpool.Pool) {
 	}
 	go func() {
 		for {
-			enabled, interval, err := utils.GetBackupConfig(pool)
+			enabled, intervalMs, _, err := utils.GetBackupConfig(pool)
 			if err != nil {
 				time.Sleep(time.Minute)
 				continue
 			}
-			if !enabled || interval <= 0 {
+			if !enabled || intervalMs <= 0 {
 				time.Sleep(time.Minute * 5)
 				continue
 			}
@@ -30,7 +30,7 @@ func startBackupScheduler(pool *pgxpool.Pool) {
 				continue
 			}
 			if time.Now().After(next) {
-				if _, _, _, err := utils.CreateBackup(pool, nil); err != nil {
+				if _, _, err := utils.CreateBackup(pool); err != nil {
 					log.Printf("Auto backup failed: %v\n", err)
 				} else {
 					log.Printf("Auto backup completed at %v\n", time.Now())

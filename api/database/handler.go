@@ -26,6 +26,7 @@ func Connect() {
 	utils.GetConsole().PrintSecondary("Connecting to database.")
 
 	host, port, user, password, name := resolveDBConfig()
+	utils.SetDBCredentials(host, port, user, password, name)
 
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		user, password, host, port, name)
