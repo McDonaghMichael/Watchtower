@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Container, Card, Form, Button, Alert, Badge } from "react-bootstrap";
+import { Container, Card, Form, Button, Alert } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
 import apiClient from "../../../api/client";
 import { clearAuth, isAuthenticated, setAuth } from "../../../utils/auth";
@@ -10,7 +10,6 @@ function LoginPage() {
   const [form, setForm] = useState({
     email: "",
     password: "",
-    otp: "",
     remember: false,
   });
   const [status, setStatus] = useState(null);
@@ -49,7 +48,6 @@ function LoginPage() {
       .post("/auth/login", {
         email: form.email,
         password: form.password,
-        otp: form.otp,
       })
       .then((res) => {
         setAuth(res.data.token, res.data.user);
@@ -57,19 +55,10 @@ function LoginPage() {
       })
       .catch((err) => {
         console.error(err);
-        const code = err.response?.data?.error;
-        const provision = err.response?.data?.totp_secret;
-        const otpauth = err.response?.data?.otpauth_url;
-        const msg =
-          code === "otp_required"
-            ? "Enter a 6-digit code from your authenticator app."
-            : code === "invalid_otp"
-            ? "Invalid authenticator code."
-            : err.response?.data?.error || "Invalid credentials";
+        const msg = err.response?.data?.error || "Invalid credentials";
         setStatus({
           variant: "danger",
-          message: msg + (provision ? ` Secret: ${provision}` : ""),
-          otpauth,
+          message: msg,
         });
       })
       .finally(() => setLoading(false));
@@ -90,17 +79,12 @@ function LoginPage() {
               <i className="bi bi-shield-lock-fill fs-5 text-info"></i>
             </div>
             <h4 className="mb-1">Secure Login</h4>
-            <small className="text-muted">2FA and verification required</small>
+            <small className="text-muted">Authorized personnel only</small>
           </div>
 
           {status && (
             <Alert variant={status.variant}>
               {status.message}
-              {status.otpauth && (
-                <div className="small mt-2">
-                  Scan in Authenticator: <code>{status.otpauth}</code>
-                </div>
-              )}
             </Alert>
           )}
 
@@ -130,28 +114,6 @@ function LoginPage() {
                 required
               />
             </Form.Group>
-
-            <div className="bg-body-secondary bg-opacity-10 rounded-3 p-3 mb-3">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <div>
-                  <Form.Label className="text-light mb-0">Hardware/Authenticator Code</Form.Label>
-                  <small className="text-muted d-block">Enter a fresh 6-digit code from Microsoft/Google Authenticator.</small>
-                </div>
-                <Badge bg="info" text="dark">Required</Badge>
-              </div>
-              <Form.Group className="mt-3">
-                <Form.Control
-                  type="text"
-                  name="otp"
-                  value={form.otp}
-                  onChange={handleChange}
-                  placeholder="Enter 6-digit code"
-                  className="bg-dark text-light"
-                  maxLength={6}
-                  required
-                />
-              </Form.Group>
-            </div>
 
             <Form.Check
               type="checkbox"

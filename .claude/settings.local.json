@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go get golang.org/x/term)",
+      "Bash(go build ./...)",
+      "Bash(go mod tidy)",
+      "Bash(go build watchtower/api/database)"
+    ]
+  }
+}

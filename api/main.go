@@ -19,6 +19,7 @@ func main() {
 
 	utils.InitAuth()
 	database.Connect()
+	database.FirstRunSetup()
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()

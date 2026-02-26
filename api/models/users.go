@@ -14,8 +14,6 @@ type User struct {
 	Permissions  string    `json:"permissions"`
 	AvatarURL    string    `json:"avatar_url"`
 	ProfileColor string    `json:"profile_color"`
-	TotpEnabled  bool      `json:"totp_enabled"`
-	TotpSecret   string    `json:"-"` // never expose
 	RoleID       int       `json:"role_id"`
 	RoleName     string    `json:"role"`
 	RoleColor    string    `json:"role_color"`

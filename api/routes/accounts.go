@@ -13,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
-	"github.com/pquerna/otp/totp"
 )
 
 type accountRequest struct {
@@ -26,8 +25,6 @@ type accountRequest struct {
 	Phone        string `json:"phone"`
 	AvatarURL    string `json:"avatar_url"`
 	ProfileColor string `json:"profile_color"`
-	TotpSecret   string `json:"totp_secret"`
-	Otp          string `json:"otp"`
 	IsActive     *bool  `json:"is_active"`
 	Permissions  string `json:"permissions"`
 	Role         string `json:"role"`
@@ -39,7 +36,7 @@ func ListAccounts() gin.HandlerFunc {
 		rows, err := database.Pool.Query(ctx, `
 			SELECT u.id, u.email, u.username, u.password_hash, COALESCE(u.first_name, ''), COALESCE(u.last_name, ''),
 			       COALESCE(u.department, ''), COALESCE(u.phone, ''), u.is_active, COALESCE(u.permissions, ''),
-			       COALESCE(u.avatar_url, ''), COALESCE(u.profile_color, ''), COALESCE(u.totp_secret, ''), COALESCE(u.totp_enabled, false),
+			       COALESCE(u.avatar_url, ''), COALESCE(u.profile_color, ''),
 			       COALESCE(u.role_id, 0), COALESCE(r.name, ''), COALESCE(r.color, '#10a37f'), u.created_at, u.updated_at
 			FROM users u
 			LEFT JOIN roles r ON u.role_id = r.id
@@ -120,22 +117,12 @@ func CreateAccount() gin.HandlerFunc {
 			isActive = *req.IsActive
 		}
 
-		totpSecret := strings.TrimSpace(req.TotpSecret)
-		var otpauthURL string
-		if totpSecret == "" {
-			if sec, url, err := generateTOTPSecret(req.Email); err == nil {
-				totpSecret = sec
-				otpauthURL = url
-			}
-		}
-		totpEnabled := true
-
 		var user models.User
 		err = database.Pool.QueryRow(ctx, `
-			INSERT INTO users (email, username, password_hash, first_name, last_name, department, phone, avatar_url, profile_color, totp_secret, totp_enabled, is_active, permissions, role_id, created_at, updated_at)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW(),NOW())
+			INSERT INTO users (email, username, password_hash, first_name, last_name, department, phone, avatar_url, profile_color, is_active, permissions, role_id, created_at, updated_at)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),NOW())
 			RETURNING id, created_at, updated_at`,
-			req.Email, req.Username, hashed, req.FirstName, req.LastName, req.Department, req.Phone, req.AvatarURL, req.ProfileColor, totpSecret, totpEnabled, isActive, req.Permissions, roleID,
+			req.Email, req.Username, hashed, req.FirstName, req.LastName, req.Department, req.Phone, req.AvatarURL, req.ProfileColor, isActive, req.Permissions, roleID,
 		).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 
 		if err != nil {
@@ -151,19 +138,13 @@ func CreateAccount() gin.HandlerFunc {
 		user.Phone = req.Phone
 		user.AvatarURL = req.AvatarURL
 		user.ProfileColor = req.ProfileColor
-		user.TotpEnabled = totpEnabled
-		user.TotpSecret = "" // never return
 		user.IsActive = isActive
 		user.Permissions = req.Permissions
 		user.RoleID = roleID
 		user.RoleName, _ = lookupRoleName(ctx, roleID)
 		user.PasswordHash = ""
 
-		c.JSON(http.StatusCreated, gin.H{
-			"user":        user,
-			"totp_secret": totpSecret,
-			"otpauth_url": otpauthURL,
-		})
+		c.JSON(http.StatusCreated, gin.H{"user": user})
 	}
 }
 
@@ -218,17 +199,11 @@ func UpdateAccount() gin.HandlerFunc {
 			isActive = *req.IsActive
 		}
 
-		totpSecret := chooseString(req.TotpSecret, existing.TotpSecret)
-		if strings.TrimSpace(totpSecret) == "" {
-			totpSecret, _, _ = generateTOTPSecret(existing.Email)
-		}
-		totpEnabled := true
-
 		_, err = database.Pool.Exec(ctx, `
 			UPDATE users
 			SET email=$1, username=$2, password_hash=$3, first_name=$4, last_name=$5, department=$6,
-			    phone=$7, avatar_url=$8, profile_color=$9, totp_secret=$10, totp_enabled=$11, is_active=$12, permissions=$13, role_id=$14, updated_at=NOW()
-			WHERE id=$15`,
+			    phone=$7, avatar_url=$8, profile_color=$9, is_active=$10, permissions=$11, role_id=$12, updated_at=NOW()
+			WHERE id=$13`,
 			chooseString(req.Email, existing.Email),
 			chooseString(req.Username, existing.Username),
 			passwordHash,
@@ -238,8 +213,6 @@ func UpdateAccount() gin.HandlerFunc {
 			chooseString(req.Phone, existing.Phone),
 			chooseString(req.AvatarURL, existing.AvatarURL),
 			chooseString(req.ProfileColor, existing.ProfileColor),
-			totpSecret,
-			totpEnabled,
 			isActive,
 			chooseString(req.Permissions, existing.Permissions),
 			roleID,
@@ -253,7 +226,6 @@ func UpdateAccount() gin.HandlerFunc {
 
 		updated, _ := findUserByID(ctx, targetID)
 		updated.PasswordHash = ""
-		updated.TotpSecret = ""
 		c.JSON(http.StatusOK, updated)
 	}
 }
@@ -284,7 +256,6 @@ func Login() gin.HandlerFunc {
 		var req struct {
 			Email    string `json:"email" binding:"required,email"`
 			Password string `json:"password" binding:"required"`
-			Otp      string `json:"otp"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
@@ -303,26 +274,6 @@ func Login() gin.HandlerFunc {
 
 		if err := utils.CheckPasswordHash(req.Password, user.PasswordHash); err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
-			return
-		}
-
-		if strings.TrimSpace(user.TotpSecret) == "" {
-			// enroll user with a fresh secret, require setup
-			sec, url, _ := generateTOTPSecret(user.Email)
-			user.TotpSecret = sec
-			user.TotpEnabled = true
-			_, _ = database.Pool.Exec(ctx, "UPDATE users SET totp_secret=$1, totp_enabled=TRUE WHERE id=$2", sec, user.ID)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "otp_required", "totp_secret": sec, "otpauth_url": url})
-			return
-		}
-
-		code := strings.TrimSpace(req.Otp)
-		if code == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "otp_required"})
-			return
-		}
-		if ok := validateTOTP(code, user.TotpSecret); !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_otp"})
 			return
 		}
 
@@ -399,15 +350,6 @@ func BootstrapAdmin() gin.HandlerFunc {
 			return
 		}
 
-		if strings.TrimSpace(req.TotpSecret) == "" || strings.TrimSpace(req.Otp) == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "totp_secret and otp are required"})
-			return
-		}
-		if !validateTOTP(req.Otp, req.TotpSecret) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_otp"})
-			return
-		}
-
 		req.Role = "admin" // enforce admin role for bootstrap
 
 		roleID, err := ensureRole(ctx, req.Role)
@@ -428,13 +370,11 @@ func BootstrapAdmin() gin.HandlerFunc {
 		}
 
 		var user models.User
-		totpSecret := req.TotpSecret
-		otpauthURL := ""
 		err = database.Pool.QueryRow(ctx, `
-			INSERT INTO users (email, username, password_hash, first_name, last_name, department, phone, avatar_url, profile_color, totp_secret, totp_enabled, is_active, permissions, role_id, created_at, updated_at)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW(),NOW())
+			INSERT INTO users (email, username, password_hash, first_name, last_name, department, phone, avatar_url, profile_color, is_active, permissions, role_id, created_at, updated_at)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),NOW())
 			RETURNING id, created_at, updated_at`,
-			req.Email, req.Username, hashed, req.FirstName, req.LastName, req.Department, req.Phone, req.AvatarURL, req.ProfileColor, totpSecret, true, isActive, req.Permissions, roleID,
+			req.Email, req.Username, hashed, req.FirstName, req.LastName, req.Department, req.Phone, req.AvatarURL, req.ProfileColor, isActive, req.Permissions, roleID,
 		).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 
 		if err != nil {
@@ -470,10 +410,8 @@ func BootstrapAdmin() gin.HandlerFunc {
 		_, _ = database.Pool.Exec(ctx, "UPDATE sessions SET token=$1 WHERE id=$2", token, sessionID)
 
 		c.JSON(http.StatusCreated, gin.H{
-			"token":       token,
-			"user":        user,
-			"totp_secret": totpSecret,
-			"otpauth_url": otpauthURL,
+			"token": token,
+			"user":  user,
 		})
 	}
 }
@@ -493,8 +431,6 @@ func scanUser(row pgx.Row) (models.User, error) {
 		&user.Permissions,
 		&user.AvatarURL,
 		&user.ProfileColor,
-		&user.TotpSecret,
-		&user.TotpEnabled,
 		&user.RoleID,
 		&user.RoleName,
 		&user.RoleColor,
@@ -508,7 +444,7 @@ func findUserByEmail(ctx context.Context, email string) (models.User, error) {
 	row := database.Pool.QueryRow(ctx, `
 		SELECT u.id, u.email, u.username, u.password_hash, COALESCE(u.first_name, ''), COALESCE(u.last_name, ''),
 		       COALESCE(u.department, ''), COALESCE(u.phone, ''), u.is_active, COALESCE(u.permissions, ''),
-		       COALESCE(u.avatar_url, ''), COALESCE(u.profile_color, ''), COALESCE(u.totp_secret, ''), COALESCE(u.totp_enabled, false),
+		       COALESCE(u.avatar_url, ''), COALESCE(u.profile_color, ''),
 		       COALESCE(u.role_id, 0), COALESCE(r.name, ''), COALESCE(r.color, '#10a37f'), u.created_at, u.updated_at
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
@@ -525,7 +461,7 @@ func findUserByID(ctx context.Context, id int) (models.User, error) {
 	row := database.Pool.QueryRow(ctx, `
 		SELECT u.id, u.email, u.username, u.password_hash, COALESCE(u.first_name, ''), COALESCE(u.last_name, ''),
 		       COALESCE(u.department, ''), COALESCE(u.phone, ''), u.is_active, COALESCE(u.permissions, ''),
-		       COALESCE(u.avatar_url, ''), COALESCE(u.profile_color, ''), COALESCE(u.totp_secret, ''), COALESCE(u.totp_enabled, false),
+		       COALESCE(u.avatar_url, ''), COALESCE(u.profile_color, ''),
 		       COALESCE(u.role_id, 0), COALESCE(r.name, ''), COALESCE(r.color, '#10a37f'), u.created_at, u.updated_at
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
@@ -591,28 +527,3 @@ func chooseString(candidate, fallback string) string {
 	return fallback
 }
 
-// generateTOTPSecret produces a new secret for TOTP apps (Google/Microsoft Authenticator compatible).
-func generateTOTPSecret(email string) (string, string, error) {
-	key, err := totp.Generate(totp.GenerateOpts{
-		Issuer:      "Watchtower",
-		AccountName: email,
-		Period:      30,
-	})
-	if err != nil {
-		return "", "", err
-	}
-	return key.Secret(), key.URL(), nil
-}
-
-func validateTOTP(code, secret string) bool {
-	if secret == "" {
-		return false
-	}
-	opts := totp.ValidateOpts{
-		Period:    30,
-		Skew:      2, // allow slight clock drift
-		Digits:    totp.DigitsSix,
-		Algorithm: totp.AlgorithmSHA1,
-	}
-	return totp.ValidateCustom(code, secret, time.Now(), opts)
-}

@@ -10,7 +10,6 @@ function CreateAccountPage() {
   const [validated, setValidated] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [totpInfo, setTotpInfo] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -49,12 +48,8 @@ function CreateAccountPage() {
     setError('');
 
     apiClient.post('/accounts', formData)
-      .then(res => {
-        setTotpInfo({
-          secret: res.data?.totp_secret,
-          url: res.data?.otpauth_url
-        });
-        setTimeout(() => navigate('/accounts'), 2500);
+      .then(() => {
+        navigate('/accounts');
       })
       .catch(err => {
         console.error('Error creating account:', err);
@@ -89,15 +84,6 @@ function CreateAccountPage() {
         </Card.Header>
         <Card.Body className="bg-dark">
           {error && <Alert variant="danger">{error}</Alert>}
-          {totpInfo?.secret && (
-            <Alert variant="info">
-              TOTP enrolled. Secret: <strong>{totpInfo.secret}</strong>
-              {totpInfo.url && (
-                <div className="mt-1 small">OTPAuth URI: {totpInfo.url}</div>
-              )}
-              Share this with the user to add in Microsoft Authenticator.
-            </Alert>
-          )}
           
           <Form noValidate validated={validated} onSubmit={handleSubmit}>
 

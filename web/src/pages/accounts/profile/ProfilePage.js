@@ -318,12 +318,7 @@ function ProfilePage() {
                   </Row>
                 </Tab>
 
-                <Tab eventKey="2fa" title="2FA">
-                  <p className="text-muted">
-                    Two-factor authentication enforcement is coming soon. In the meantime, use a
-                    strong password and rotate credentials regularly.
-                  </p>
-                </Tab>
+
               </Tabs>
             </Card.Body>
           </Card>
