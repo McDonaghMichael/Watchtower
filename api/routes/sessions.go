@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 	"watchtower/api/database"
 	"watchtower/api/utils"
 
@@ -13,9 +15,25 @@ func ListSessions() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requesterRole := c.GetString("userRole")
 		requesterID := c.GetInt("userID")
+		requesterSessionID := c.GetInt("sessionID")
 
 		query := `
-			SELECT s.id, s.user_id, u.email, u.username, s.ip_address, s.user_agent, s.active, s.created_at, s.last_seen
+			SELECT s.id, s.user_id,
+				COALESCE(u.email, ''), COALESCE(u.username, ''),
+				COALESCE(s.ip_address, ''), COALESCE(s.user_agent, ''),
+				s.active, s.created_at, s.last_seen,
+				COALESCE(
+					(SELECT json_agg(a)
+					 FROM (
+						SELECT action, COALESCE(resource, '') AS resource, created_at
+						FROM audit_logs
+						WHERE user_id = s.user_id
+						ORDER BY created_at DESC
+						LIMIT 5
+					 ) a
+					),
+					'[]'::json
+				) AS recent_activity
 			FROM sessions s
 			LEFT JOIN users u ON s.user_id = u.id
 			WHERE 1=1`
@@ -24,6 +42,8 @@ func ListSessions() gin.HandlerFunc {
 			query += " AND s.user_id = $1"
 			args = append(args, requesterID)
 		}
+		query += " ORDER BY s.last_seen DESC"
+
 		rows, err := database.Pool.Query(c, query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query sessions"})
@@ -32,24 +52,41 @@ func ListSessions() gin.HandlerFunc {
 		defer rows.Close()
 
 		type sessionRow struct {
-			ID        int    `json:"id"`
-			UserID    int    `json:"user_id"`
-			Email     string `json:"email"`
-			Username  string `json:"username"`
-			IP        string `json:"ip_address"`
-			UserAgent string `json:"user_agent"`
-			Active    bool   `json:"active"`
-			CreatedAt string `json:"created_at"`
-			LastSeen  string `json:"last_seen"`
+			ID             int             `json:"id"`
+			UserID         int             `json:"user_id"`
+			Email          string          `json:"email"`
+			Username       string          `json:"username"`
+			IP             string          `json:"ip_address"`
+			UserAgent      string          `json:"user_agent"`
+			Active         bool            `json:"active"`
+			CreatedAt      time.Time       `json:"created_at"`
+			LastSeen       time.Time       `json:"last_seen"`
+			IsCurrent      bool            `json:"is_current"`
+			RecentActivity json.RawMessage `json:"recent_activity"`
 		}
+
 		var list []sessionRow
 		for rows.Next() {
 			var s sessionRow
-			if err := rows.Scan(&s.ID, &s.UserID, &s.Email, &s.Username, &s.IP, &s.UserAgent, &s.Active, &s.CreatedAt, &s.LastSeen); err != nil {
+			var rawActivity []byte
+			if err := rows.Scan(
+				&s.ID, &s.UserID, &s.Email, &s.Username,
+				&s.IP, &s.UserAgent, &s.Active, &s.CreatedAt, &s.LastSeen,
+				&rawActivity,
+			); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read session"})
 				return
 			}
+			s.IsCurrent = s.ID == requesterSessionID
+			if len(rawActivity) > 0 {
+				s.RecentActivity = json.RawMessage(rawActivity)
+			} else {
+				s.RecentActivity = json.RawMessage("[]")
+			}
 			list = append(list, s)
+		}
+		if list == nil {
+			list = []sessionRow{}
 		}
 		c.JSON(http.StatusOK, list)
 	}
@@ -60,6 +97,12 @@ func RevokeSession() gin.HandlerFunc {
 		id, _ := strconv.Atoi(c.Param("id"))
 		requesterRole := c.GetString("userRole")
 		requesterID := c.GetInt("userID")
+		requesterSessionID := c.GetInt("sessionID")
+
+		if id == requesterSessionID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot revoke your own session"})
+			return
+		}
 
 		if requesterRole != "admin" {
 			var owner int
