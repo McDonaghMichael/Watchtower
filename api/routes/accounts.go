@@ -30,6 +30,23 @@ type accountRequest struct {
 	Role         string `json:"role"`
 }
 
+// updateAccountRequest is the same as accountRequest but with no required tags,
+// so partial updates (password only, avatar only, is_active only, etc.) pass validation.
+type updateAccountRequest struct {
+	Email        string `json:"email"`
+	Username     string `json:"username"`
+	Password     string `json:"password,omitempty"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	Department   string `json:"department"`
+	Phone        string `json:"phone"`
+	AvatarURL    string `json:"avatar_url"`
+	ProfileColor string `json:"profile_color"`
+	IsActive     *bool  `json:"is_active"`
+	Permissions  string `json:"permissions"`
+	Role         string `json:"role"`
+}
+
 func ListAccounts() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
@@ -170,7 +187,7 @@ func UpdateAccount() gin.HandlerFunc {
 			return
 		}
 
-		var req accountRequest
+		var req updateAccountRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
 			return

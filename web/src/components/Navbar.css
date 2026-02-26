@@ -107,3 +107,8 @@
 .theme-toggle .form-check-label {
   color: var(--text) !important;
 }
+
+/* Hide Bootstrap caret on the avatar dropdown */
+.nav-avatar-dropdown .dropdown-toggle::after {
+  display: none;
+}

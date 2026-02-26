@@ -112,9 +112,36 @@ function NavigationBar() {
             />
             <NavDropdown
               align="end"
-              title={<i className="bi bi-gear-fill fs-5" aria-label="Profile" style={{ color: "var(--text)" }}></i>}
+              title={
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    background: user?.profile_color || "#10a37f",
+                    overflow: "hidden",
+                    border: "2px solid rgba(255,255,255,0.18)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt="avatar"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>
+                      {user?.username?.slice(0, 1)?.toUpperCase() || "?"}
+                    </span>
+                  )}
+                </span>
+              }
               id="profile-dropdown"
-              className="nav-pill"
+              className="nav-pill nav-avatar-dropdown"
             >
               <NavDropdown.Item as={Link} to={`/account/${user?.id || ''}`}>
                 View Profile
