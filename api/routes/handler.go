@@ -77,8 +77,9 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	auth.GET("/health/server/:id", GetHealthStatusByServerID())
 	auth.GET("/health", GetLatestHealthStatusAllServers())
 
-	// Agent install/update
+	// Agent install/update + live progress stream
 	auth.POST("/server/:id/install", RequirePermissions("manage_servers"), InstallAgent())
+	auth.GET("/server/:id/install/stream", RequirePermissions("manage_servers"), StreamInstallProgress())
 
 	// ========== Group Routes ==========
 	auth.POST("/group", addGroup())

@@ -12,6 +12,12 @@ import (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
+		// Fallback: EventSource/SSE cannot set headers, so accept ?token= query param.
+		if authHeader == "" {
+			if t := c.Query("token"); t != "" {
+				authHeader = "Bearer " + t
+			}
+		}
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
 			return

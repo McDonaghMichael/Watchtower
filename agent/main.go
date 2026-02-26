@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
@@ -40,158 +41,125 @@ type Metrics struct {
 	UptimeSeconds      int64   `json:"uptime_seconds"`
 }
 
+// latestMetrics is updated after every collection cycle and served on GET /status.
+var (
+	latestMu      sync.RWMutex
+	latestMetrics *Metrics
+)
+
+func startStatusServer() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		latestMu.RLock()
+		m := latestMetrics
+		latestMu.RUnlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if m == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintln(w, `{"status":"starting"}`)
+			return
+		}
+		json.NewEncoder(w).Encode(m)
+	})
+
+	log.Println("Status server listening on :8744")
+	if err := http.ListenAndServe(":8744", mux); err != nil {
+		log.Printf("Status server error: %v", err)
+	}
+}
+
 func main() {
-
-	serverIP := os.Getenv("SERVER_URL")
-
-	var routeIP string = serverIP
-
+	serverURL := os.Getenv("SERVER_URL")
 	serverID, _ := strconv.Atoi(os.Getenv("SERVER_ID"))
 
+	go startStatusServer()
+
 	for {
-		var memr runtime.MemStats
-		runtime.ReadMemStats(&memr)
-
 		vmen, _ := mem.VirtualMemory()
-
-		var numOfCPU int = runtime.NumCPU()
-		var totalMemoryAllocated uint64 = vmen.Used
-		var totalMemoryAllocations uint64 = vmen.Total
-		var totalUsedMemory float64 = vmen.UsedPercent
-		var totalCachedMemory uint64 = vmen.Cached
-		var totalBufferMemory uint64 = vmen.Buffers
-
+		swap, _ := mem.SwapMemory()
+		usage, _ := disk.Usage("/")
+		connections, _ := net.Connections("all")
+		uptime, _ := GetUptime()
 		cpuUsage, _ := getCPUUsage()
 
-		var totalSwap uint64 = vmen.SwapTotal
-		swap, _ := mem.SwapMemory()
-		var usedSwap uint64 = swap.Used
-		var freeSwap uint64 = swap.Free
-
-		systemUptimeSeconds, err := GetUptime()
-		if err != nil {
-			log.Printf("Error getting uptime: %v", err)
-			// Handle appropriately
-		}
-
-		usage, err := disk.Usage("/")
-		if err != nil {
-			panic(err)
-		}
-
-		connections, err := net.Connections("all")
-		if err != nil {
-			panic(err)
-		}
-
-		sshConnections := 0
-		httpConnections := 0
-		httpsConnections := 0
-
+		sshConns, httpConns, httpsConns := 0, 0, 0
 		for _, conn := range connections {
 			if conn.Status == "ESTABLISHED" {
 				switch conn.Laddr.Port {
 				case 22:
-					sshConnections++
+					sshConns++
 				case 80:
-					httpConnections++
+					httpConns++
 				case 443:
-					httpsConnections++
+					httpsConns++
 				}
 			}
 		}
-		// Create metrics struct first
+
 		metrics := Metrics{
 			ServerID:           serverID,
-			NumOfCPU:           numOfCPU,
+			NumOfCPU:           runtime.NumCPU(),
 			CPUUsage:           cpuUsage,
-			MemoryAllocated:    int(totalMemoryAllocated),
-			MemoryAllocations:  int(totalMemoryAllocations),
-			MemoryUsagePercent: totalUsedMemory,
-			SwapUsed:           int64(usedSwap),
-			SwapTotal:          int64(totalSwap),
-			SwapFree:           int64(freeSwap),
-			CacheMemory:        int64(totalCachedMemory),
-			BufferMemory:       int64(totalBufferMemory),
+			MemoryAllocated:    int(vmen.Used),
+			MemoryAllocations:  int(vmen.Total),
+			MemoryUsagePercent: vmen.UsedPercent,
+			SwapUsed:           int64(swap.Used),
+			SwapTotal:          int64(swap.Total),
+			SwapFree:           int64(swap.Free),
+			CacheMemory:        int64(vmen.Cached),
+			BufferMemory:       int64(vmen.Buffers),
 			DiskUsageTotal:     usage.Total,
 			DiskUsageUsed:      usage.Used,
 			DiskUsageFree:      usage.Free,
-			SSHConnections:     sshConnections,
-			HTTPConnections:    httpConnections,
-			HTTPSConnections:   httpsConnections,
-			UptimeSeconds:      int64(systemUptimeSeconds.Seconds()),
+			SSHConnections:     sshConns,
+			HTTPConnections:    httpConns,
+			HTTPSConnections:   httpsConns,
+			UptimeSeconds:      int64(uptime.Seconds()),
 		}
+
+		latestMu.Lock()
+		latestMetrics = &metrics
+		latestMu.Unlock()
 
 		body, err := json.Marshal(metrics)
 		if err != nil {
 			log.Printf("Error marshaling JSON: %v", err)
-			time.Sleep(time.Second * 5)
+			time.Sleep(5 * time.Second)
 			continue
 		}
 
-		fmt.Printf("Sending JSON: %s\n", string(body))
-
-		r, err := http.NewRequest("POST", routeIP, bytes.NewBuffer(body))
+		r, err := http.NewRequest("POST", serverURL, bytes.NewBuffer(body))
 		if err != nil {
 			log.Printf("Error creating request: %v", err)
-			time.Sleep(time.Second * 5)
+			time.Sleep(5 * time.Second)
 			continue
 		}
-
 		r.Header.Add("Content-Type", "application/json")
 
-		client := &http.Client{}
+		client := &http.Client{Timeout: 10 * time.Second}
 		res, err := client.Do(r)
 		if err != nil {
-			log.Printf("Error sending request: %v", err)
-			time.Sleep(time.Second * 5)
+			log.Printf("Error sending metrics: %v", err)
+			time.Sleep(5 * time.Second)
 			continue
 		}
-		defer res.Body.Close()
+		res.Body.Close()
 
-		// Check response status
 		if res.StatusCode != http.StatusCreated {
-			// Read the error response to see what's wrong
-			var errorBody bytes.Buffer
-			errorBody.ReadFrom(res.Body)
-			log.Printf("API Error %d: %s", res.StatusCode, errorBody.String())
-			time.Sleep(time.Second * 5)
-			continue
+			log.Printf("API returned status %d", res.StatusCode)
 		}
 
-		post := &Metrics{}
-		derr := json.NewDecoder(res.Body).Decode(post)
-		if derr != nil {
-			log.Printf("Error decoding response: %v", derr)
-			time.Sleep(time.Second * 5)
-			continue
-		}
-
-		fmt.Println("ID:", post.ID)
-		fmt.Println("CPU Usage:", cpuUsage)
-		fmt.Println("Num Of CPU:", numOfCPU)
-		fmt.Println("Memory Allocated:", totalMemoryAllocated)
-		fmt.Println("Memory Allocations:", totalMemoryAllocations)
-		fmt.Println("Memory Usage Percent:", totalUsedMemory)
-		fmt.Println("Memory Cache:", totalCachedMemory)
-		fmt.Println("Memory Buffer:", totalBufferMemory)
-		fmt.Println("Total Swap:", totalSwap)
-		fmt.Println("Used Swap:", usedSwap)
-		fmt.Println("Free Swap:", freeSwap)
-		fmt.Println("Uptime Seconds:", systemUptimeSeconds)
-
-		time.Sleep(time.Second * 5)
+		time.Sleep(5 * time.Second)
 	}
-
 }
 
 func getCPUUsage() (float64, error) {
-
 	percentages, err := cpu.Percent(time.Second, false)
 	if err != nil {
 		return 0, err
 	}
-
 	if len(percentages) > 0 {
 		return percentages[0], nil
 	}

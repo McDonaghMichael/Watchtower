@@ -1,9 +1,11 @@
 package routes
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -199,7 +201,8 @@ func UpdateLastPing(serverID int, wg *sync.WaitGroup) {
 
 }
 
-// InstallAgent connects via SSH and installs or updates the watchtower-agent Docker container.
+// InstallAgent starts agent installation in a background goroutine and returns immediately.
+// Progress is streamed via SSE at GET /server/:id/install/stream.
 func InstallAgent() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, _ := strconv.Atoi(c.Param("id"))
@@ -233,23 +236,104 @@ func InstallAgent() gin.HandlerFunc {
 		}
 
 		cmds := []string{
-			"command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh",
+			"command -v docker >/dev/null 2>&1 || (curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh)",
 			"docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest",
-			"docker rm -f watchtower-agent || true",
+			"docker rm -f watchtower-agent 2>/dev/null || true",
 			fmt.Sprintf(`docker run -d --name watchtower-agent --restart unless-stopped --network host -e SERVER_URL="%s" -e SERVER_ID=%d ghcr.io/mcdonaghmichael/watchtower-agent:latest`, metricURL, s.ID),
 		}
 		if req.Update {
-			cmds = cmds[1:] // skip docker install for update
+			cmds = cmds[1:]
 		}
 
-		out, err := runSSHCommands(s, cmds)
+		sess := utils.NewInstallSession(id)
+		sess.Write(fmt.Sprintf("▶ Starting installation on %s (%s) …", s.ServerName, s.IPAddress))
+
+		go func() {
+			if err := streamSSHCommands(s, cmds, sess); err != nil {
+				sess.Write("✗ " + err.Error())
+				sess.Finish(err.Error())
+			} else {
+				sess.Write("✓ Agent installed successfully — listening on port 8744")
+				sess.Finish("")
+			}
+		}()
+
+		utils.LogAudit(c, database.Pool, c.GetInt("userID"), "install_agent_started", "server", &s.ID, map[string]interface{}{"update": req.Update})
+		c.JSON(http.StatusAccepted, gin.H{"status": "started", "server_id": id})
+	}
+}
+
+// streamSSHCommands runs each command over SSH, writing every output line to sess in real time.
+func streamSSHCommands(s models.Server, commands []string, sess *utils.InstallSession) error {
+	signer, err := ssh.ParsePrivateKey([]byte(s.SSHPrivateKey))
+	if err != nil {
+		return fmt.Errorf("invalid ssh key: %w", err)
+	}
+	config := &ssh.ClientConfig{
+		User:            s.SSHUsername,
+		Auth:            []ssh.AuthMethod{ssh.PublicKeys(signer)},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         45 * time.Second,
+	}
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", s.IPAddress, s.SSHPort), config)
+	if err != nil {
+		return fmt.Errorf("ssh dial failed: %w", err)
+	}
+	defer client.Close()
+
+	for _, cmd := range commands {
+		sess.Write("$ " + cmd)
+		session, err := client.NewSession()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "log": out})
+			return fmt.Errorf("session error: %w", err)
+		}
+
+		pr, pw := io.Pipe()
+		session.Stdout = pw
+		session.Stderr = pw
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			scanner := bufio.NewScanner(pr)
+			for scanner.Scan() {
+				sess.Write(scanner.Text())
+			}
+		}()
+
+		runErr := session.Run(cmd)
+		pw.Close()
+		wg.Wait()
+		session.Close()
+
+		if runErr != nil {
+			return fmt.Errorf("command failed: %w", runErr)
+		}
+	}
+	return nil
+}
+
+// StreamInstallProgress streams installation log lines as Server-Sent Events.
+func StreamInstallProgress() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, _ := strconv.Atoi(c.Param("id"))
+		sess, ok := utils.GetInstallSession(id)
+		if !ok {
+			c.JSON(http.StatusNotFound, gin.H{"error": "no active install session for this server"})
 			return
 		}
-
-		utils.LogAudit(c, database.Pool, c.GetInt("userID"), "install_agent", "server", &s.ID, map[string]interface{}{"update": req.Update})
-		c.JSON(http.StatusOK, gin.H{"status": "ok", "log": out})
+		ch := sess.Subscribe()
+		c.Header("X-Accel-Buffering", "no")
+		c.Stream(func(w io.Writer) bool {
+			line, ok := <-ch
+			if !ok {
+				c.SSEvent("done", "")
+				return false
+			}
+			c.SSEvent("log", line)
+			return true
+		})
 	}
 }
 

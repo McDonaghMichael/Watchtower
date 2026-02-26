@@ -16,6 +16,7 @@ import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
 import PingBadge from "../../components/badges/PingBadge";
 import CustomBadge from "../../components/badges/CustomBadge";
 import StatusBadge from "../../components/badges/StatusBadge";
+import InstallProgressModal from "../../components/InstallProgressModal";
 
 function ServersPage() {
   var navigate = useNavigate();
@@ -23,6 +24,7 @@ function ServersPage() {
   const [servers, setServers] = useState([]);
   const [message, setMessage] = useState(null);
   const [installingId, setInstallingId] = useState(null);
+  const [progressServer, setProgressServer] = useState(null);
 
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -318,8 +320,8 @@ function ServersPage() {
     setMessage(null);
     apiClient
       .post(`/server/${server.id}/install`, { update: Boolean(server.last_ping) })
-      .then((res) => {
-        setMessage(res.data?.status === "ok" ? "Deployment completed" : "Install triggered");
+      .then(() => {
+        setProgressServer({ id: server.id, name: server.server_name });
       })
       .catch((err) => {
         setMessage(err.response?.data?.error || "Install failed");
@@ -477,6 +479,12 @@ function ServersPage() {
           <MaterialReactTable table={table} />
         </Card.Body>
       </Card>
+      <InstallProgressModal
+        serverId={progressServer?.id}
+        serverName={progressServer?.name}
+        show={Boolean(progressServer)}
+        onClose={() => setProgressServer(null)}
+      />
     </Container>
   );
 }
