@@ -40,7 +40,7 @@ function AuditLogsPage() {
 
   return (
     <Container className="py-4">
-      <Card className="bg-dark text-light shadow-sm">
+      <Card className="shadow-sm">
         <Card.Header className="d-flex justify-content-between align-items-center">
           <div>
             <h4 className="mb-0">Audit Logs</h4>
@@ -87,7 +87,7 @@ function AuditLogsPage() {
             </Col>
           </Row>
           <div className="table-responsive">
-            <Table hover variant="dark" className="align-middle">
+            <Table hover className="align-middle">
               <thead>
                 <tr>
                   <th>ID</th>

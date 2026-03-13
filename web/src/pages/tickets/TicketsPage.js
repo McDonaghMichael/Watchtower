@@ -67,7 +67,7 @@ function TicketsPage() {
         setReply("");
         openTicket(selected.id);
       })
-      .catch(() => setMessage("Failed to reply"))
+      .catch((err) => setMessage(err.response?.data?.error || "Failed to reply"))
       .finally(() => setLoading(false));
   };
 
@@ -223,7 +223,7 @@ function TicketsPage() {
                     <div className="text-muted">No replies yet.</div>
                   )}
                 </div>
-                {isSupport && (
+                {(isSupport || selected?.user_id === user?.id) && (
                   <div className="d-flex gap-2">
                     <Form.Control
                       as="textarea"

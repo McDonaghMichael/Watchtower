@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Container, Nav, Navbar, NavDropdown, Button, Form } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import './Navbar.css';
@@ -8,7 +9,13 @@ function NavigationBar() {
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const authed = isAuthenticated();
-  const user = getUser();
+  const [user, setUser] = useState(getUser());
+
+  useEffect(() => {
+    const refresh = () => setUser(getUser());
+    window.addEventListener('userUpdated', refresh);
+    return () => window.removeEventListener('userUpdated', refresh);
+  }, []);
   const isAdmin = user?.role === 'admin';
   const perms = user?.role_permissions || [];
   const has = (p) => isAdmin || perms.includes(p);
@@ -71,23 +78,25 @@ function NavigationBar() {
               </NavDropdown.Item>
             </NavDropdown>
 
-            <NavDropdown title="Security" id="security-dropdown" className="nav-pill">
-              {has("view_audit_logs") && (
-                <NavDropdown.Item as={Link} to="/audit-logs">
-                  Audit Logs
-                </NavDropdown.Item>
-              )}
-              {has("backup_read") && (
-                <NavDropdown.Item as={Link} to="/backups">
-                  Backups
-                </NavDropdown.Item>
-              )}
-              {has("manage_sessions") && (
-                <NavDropdown.Item as={Link} to="/sessions">
-                  Sessions
-                </NavDropdown.Item>
-              )}
-            </NavDropdown>
+            {(has("view_audit_logs") || has("backup_read") || has("manage_sessions")) && (
+              <NavDropdown title="Security" id="security-dropdown" className="nav-pill">
+                {has("view_audit_logs") && (
+                  <NavDropdown.Item as={Link} to="/audit-logs">
+                    Audit Logs
+                  </NavDropdown.Item>
+                )}
+                {has("backup_read") && (
+                  <NavDropdown.Item as={Link} to="/backups">
+                    Backups
+                  </NavDropdown.Item>
+                )}
+                {has("manage_sessions") && (
+                  <NavDropdown.Item as={Link} to="/sessions">
+                    Sessions
+                  </NavDropdown.Item>
+                )}
+              </NavDropdown>
+            )}
 
             <Nav.Link
               as={Link}
@@ -154,9 +163,11 @@ function NavigationBar() {
             <Button variant="outline-light" size="sm" className="nav-ghost" onClick={() => navigate('/servers')}>
               Servers
             </Button>
-            <Button variant="info" size="sm" className="nav-cta" onClick={() => navigate('/server/add')}>
-              + Add Server
-            </Button>
+            {has("manage_servers") && (
+              <Button variant="info" size="sm" className="nav-cta" onClick={() => navigate('/server/add')}>
+                + Add Server
+              </Button>
+            )}
           </div>
         </Navbar.Collapse>
       </Container>

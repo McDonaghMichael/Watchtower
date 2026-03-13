@@ -72,6 +72,7 @@ function ProfilePage() {
     updateAccount(custom, "Appearance updated");
     if (String(userId) === String(current?.id)) {
       setAuth(null, { ...current, ...custom });
+      window.dispatchEvent(new Event('userUpdated'));
     }
   };
 
