@@ -69,15 +69,11 @@ function LoginPage() {
       <Card className="shadow-lg border-0 bg-dark text-light rounded-4" style={{ maxWidth: 480, width: "100%" }}>
         <Card.Body className="p-4">
           <div className="text-center mb-4">
-            <div className="d-inline-flex align-items-center justify-content-center mb-2" style={{
-              width: 50,
-              height: 50,
-              borderRadius: 14,
-              background: "linear-gradient(135deg, #1f2937, #0f172a)",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.35)"
-            }}>
-              <i className="bi bi-shield-lock-fill fs-5 text-info"></i>
-            </div>
+            <img
+              src="/logo.jpg"
+              alt="Watchtower"
+              style={{ width: 80, height: 80, objectFit: "contain", borderRadius: 14, marginBottom: 12 }}
+            />
             <h4 className="mb-1">Secure Login</h4>
             <small className="text-muted">Authorized personnel only</small>
           </div>
