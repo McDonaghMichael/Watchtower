@@ -183,7 +183,9 @@ function TicketsPage() {
                   {selected.messages?.map((m) => (
                     <div key={m.id} className="mb-2">
                       <div className="small text-muted">
-                        User {m.user_id || "?"} · {new Date(m.created_at).toLocaleString()}
+                        {m.first_name && m.last_name
+                          ? `${m.first_name} ${m.last_name}`
+                          : m.email || `User ${m.user_id || "?"}`} · {new Date(m.created_at).toLocaleString()}
                       </div>
                       <div>{m.message}</div>
                     </div>

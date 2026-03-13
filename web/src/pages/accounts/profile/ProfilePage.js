@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Container, Row, Col, Card, Badge, Form, Button, Tabs, Tab, Alert } from "react-bootstrap";
 import apiClient from "../../../api/client";
 import LoadingOverlay from "../../../components/LoadingOverlay";
-import { getUser } from "../../../utils/auth";
+import { getUser, setAuth } from "../../../utils/auth";
 
 function ProfilePage() {
   const { id: paramId } = useParams();
@@ -70,6 +70,9 @@ function ProfilePage() {
 
   const handleSaveCustom = () => {
     updateAccount(custom, "Appearance updated");
+    if (String(userId) === String(current?.id)) {
+      setAuth(null, { ...current, ...custom });
+    }
   };
 
   const handleSavePassword = () => {

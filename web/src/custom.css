@@ -82,6 +82,101 @@ body {
   border: 1px solid var(--border);
 }
 
+[data-theme="dark"] .form-control::placeholder,
+[data-theme="dark"] .form-select::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] input::placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] input {
+  background-color: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] input:focus {
+  background-color: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 0.2rem rgba(16, 163, 127, 0.2) !important;
+}
+
+[data-theme="dark"] .dropdown-item {
+  color: var(--text) !important;
+}
+
+[data-theme="dark"] .nav-link {
+  color: var(--text) !important;
+}
+
+[data-theme="dark"] label,
+[data-theme="dark"] .form-label {
+  color: var(--text) !important;
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6,
+[data-theme="dark"] span,
+[data-theme="dark"] td,
+[data-theme="dark"] th,
+[data-theme="dark"] li,
+[data-theme="dark"] small {
+  color: var(--text);
+}
+
+[data-theme="dark"] .text-muted {
+  color: var(--muted) !important;
+}
+
+[data-theme="dark"] .table {
+  color: var(--text) !important;
+}
+
+[data-theme="dark"] .table td,
+[data-theme="dark"] .table th {
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-body,
+[data-theme="dark"] .modal-footer {
+  background-color: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .card-header,
+[data-theme="dark"] .card-footer {
+  background-color: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] hr {
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .nav-tabs .nav-link,
+[data-theme="dark"] .nav-tabs .nav-link.active {
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  background-color: var(--card) !important;
+}
+
 .form-check-label {
   color: var(--text);
 }
