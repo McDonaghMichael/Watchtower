@@ -145,6 +145,10 @@ body {
   color: var(--text) !important;
 }
 
+[data-theme="dark"] .table-responsive {
+  background-color: var(--card) !important;
+}
+
 [data-theme="dark"] .table td,
 [data-theme="dark"] .table th {
   color: var(--text) !important;
@@ -160,7 +164,8 @@ body {
 }
 
 [data-theme="dark"] .card-header,
-[data-theme="dark"] .card-footer {
+[data-theme="dark"] .card-footer,
+[data-theme="dark"] .card-body {
   background-color: var(--card) !important;
   color: var(--text) !important;
   border-color: var(--border) !important;

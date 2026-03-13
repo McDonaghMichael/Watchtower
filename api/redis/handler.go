@@ -16,6 +16,8 @@ var ctx = context.Background()
 
 var Rdb *redis.Client
 
+var Enabled bool
+
 func Init() {
 	utils.GetConsole().PrintSecondary("Connecting to Redis.")
 
@@ -41,14 +43,20 @@ func Init() {
 
 	_, err := Rdb.Ping(ctx).Result()
 	if err != nil {
-		panic(err)
+		utils.GetConsole().PrintWarning("Redis unavailable, running without Redis.")
+		Enabled = false
+		return
 	}
 
+	Enabled = true
 	utils.GetConsole().PrintSuccess("Connected to Redis!")
 
 }
 
 func StoreMetrics(serverID int, metric models.Metrics) {
+	if !Enabled {
+		return
+	}
 	key := fmt.Sprintf("server:%d:metrics", serverID)
 
 	jsonData, err := json.Marshal(metric)

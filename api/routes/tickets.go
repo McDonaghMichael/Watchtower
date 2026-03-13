@@ -26,6 +26,9 @@ type ticketMessage struct {
 	ID        int       `json:"id"`
 	TicketID  int       `json:"ticket_id"`
 	UserID    *int      `json:"user_id"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
 	Message   string    `json:"message"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -122,13 +125,17 @@ func GetTicket() gin.HandlerFunc {
 		}
 
 		msgRows, err := database.Pool.Query(c, `
-			SELECT id, ticket_id, user_id, message, created_at
-			FROM ticket_messages WHERE ticket_id=$1 ORDER BY created_at ASC`, id)
+			SELECT tm.id, tm.ticket_id, tm.user_id,
+			       COALESCE(a.first_name, ''), COALESCE(a.last_name, ''), COALESCE(a.email, ''),
+			       tm.message, tm.created_at
+			FROM ticket_messages tm
+			LEFT JOIN users a ON a.id = tm.user_id
+			WHERE tm.ticket_id=$1 ORDER BY tm.created_at ASC`, id)
 		if err == nil {
 			defer msgRows.Close()
 			for msgRows.Next() {
 				var m ticketMessage
-				msgRows.Scan(&m.ID, &m.TicketID, &m.UserID, &m.Message, &m.CreatedAt)
+				msgRows.Scan(&m.ID, &m.TicketID, &m.UserID, &m.FirstName, &m.LastName, &m.Email, &m.Message, &m.CreatedAt)
 				t.Messages = append(t.Messages, m)
 			}
 		}

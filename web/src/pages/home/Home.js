@@ -108,32 +108,6 @@ function Home() {
           </Card.Body>
         </Card>
 
-        <Card className="shadow-sm border-0 bg-dark text-light">
-          <Card.Header className="bg-dark border-0">
-            <div className="d-flex justify-content-between align-items-center">
-              <div>
-                <h5 className="mb-0">Quick Links</h5>
-                <small className="text-muted">Jump into key areas</small>
-              </div>
-            </div>
-          </Card.Header>
-          <Card.Body>
-            <div className="d-flex flex-wrap gap-2">
-              <Button
-                variant="outline-info"
-                onClick={() => navigate("/servers")}
-              >
-                Servers
-              </Button>
-              <Button
-                variant="outline-info"
-                onClick={() => navigate("/server/events/1")}
-              >
-                Events
-              </Button>
-            </div>
-          </Card.Body>
-        </Card>
       </Container>
     </div>
   );
