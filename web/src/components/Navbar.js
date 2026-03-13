@@ -33,9 +33,6 @@ function NavigationBar() {
     <Navbar expand="lg" className="nav-shell shadow-lg">
       <Container>
         <Navbar.Brand as={Link} to="/" className="d-flex align-items-center brand-glow">
-          <div className="brand-icon me-2">
-            <i className="bi bi-display" />
-          </div>
           <span className="fw-bold">WATCHTOWER</span>
         </Navbar.Brand>
 

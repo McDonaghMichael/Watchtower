@@ -4,9 +4,14 @@ import Container from "react-bootstrap/Container";
 import DisplayCard from "../../components/metrics/DisplayCard";
 import apiClient from "../../api/client";
 import { useNavigate } from "react-router-dom";
+import { getUser } from "../../utils/auth";
 
 function Home() {
   const navigate = useNavigate();
+  const user = getUser();
+  const isAdmin = user?.role === "admin";
+  const perms = user?.role_permissions || [];
+  const has = (p) => isAdmin || perms.includes(p);
   const [servers, setServers] = useState([]);
   const [health, setHealth] = useState([]);
   useEffect(() => {
@@ -42,17 +47,19 @@ function Home() {
       <Container className="mt-4 w-75">
         <div className="d-flex justify-content-between align-items-start mb-3">
           <div>
-            <h2 className="mb-1 text-white">Dashboard</h2>
+            <h2 className="mb-1">Dashboard</h2>
             <p className="text-muted mb-0">
               High-level overview of fleet health, availability, and events.
             </p>
           </div>
           <div className="d-flex gap-2">
-            <Button variant="info" onClick={() => navigate("/server/add")}>
-              Add Server
-            </Button>
+            {has("manage_servers") && (
+              <Button variant="info" onClick={() => navigate("/server/add")}>
+                Add Server
+              </Button>
+            )}
             <Button
-              variant="outline-light"
+              variant="outline-secondary"
               onClick={() => navigate("/servers")}
             >
               View Servers
@@ -83,8 +90,8 @@ function Home() {
           </Col>
         </Row>
 
-        <Card className="shadow-sm border-0 bg-dark text-light mb-4">
-          <Card.Header className="bg-dark border-0">
+        <Card className="shadow-sm border-0 mb-4">
+          <Card.Header className="border-0">
             <div className="d-flex justify-content-between align-items-center">
               <div>
                 <h5 className="mb-0">Environments</h5>
