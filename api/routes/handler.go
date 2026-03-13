@@ -55,7 +55,7 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	auth.POST("/tickets", CreateTicket())
 	auth.GET("/tickets", ListTickets())
 	auth.GET("/tickets/:id", GetTicket())
-	auth.POST("/tickets/:id/reply", RequirePermissions("support_manage"), ReplyTicket())
+	auth.POST("/tickets/:id/reply", ReplyTicket())
 	auth.PATCH("/tickets/:id/status", RequirePermissions("support_manage"), UpdateTicketStatus())
 
 	// ========== Server Routes ==========

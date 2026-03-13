@@ -149,10 +149,7 @@ func ReplyTicket() gin.HandlerFunc {
 		userID := c.GetInt("userID")
 		perms := c.GetStringSlice("permissions")
 		isSupport := contains(perms, "support_manage")
-		if !isSupport {
-			c.JSON(http.StatusForbidden, gin.H{"error": "support only"})
-			return
-		}
+
 		var req struct {
 			Message string `json:"message" binding:"required"`
 		}
@@ -160,9 +157,14 @@ func ReplyTicket() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "message required"})
 			return
 		}
-		var exists bool
-		if err := database.Pool.QueryRow(c, "SELECT EXISTS(SELECT 1 FROM tickets WHERE id=$1)", id).Scan(&exists); err != nil || !exists {
+
+		var ownerID *int
+		if err := database.Pool.QueryRow(c, "SELECT user_id FROM tickets WHERE id=$1", id).Scan(&ownerID); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "ticket not found"})
+			return
+		}
+		if !isSupport && (ownerID == nil || *ownerID != userID) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 			return
 		}
 		_, err := database.Pool.Exec(c, `
