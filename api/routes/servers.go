@@ -236,10 +236,10 @@ func InstallAgent() gin.HandlerFunc {
 		}
 
 		cmds := []string{
-			"command -v docker >/dev/null 2>&1 || (curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh)",
-			"docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest",
-			"docker rm -f watchtower-agent 2>/dev/null || true",
-			fmt.Sprintf(`docker run -d --name watchtower-agent --restart unless-stopped --network host -e SERVER_URL="%s" -e SERVER_ID=%d ghcr.io/mcdonaghmichael/watchtower-agent:latest`, metricURL, s.ID),
+			"command -v docker >/dev/null 2>&1 || (curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh)",
+			"sudo docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest",
+			"sudo docker rm -f watchtower-agent 2>/dev/null || true",
+			fmt.Sprintf(`sudo docker run -d --name watchtower-agent --restart unless-stopped --network host --pid host -v /proc:/host/proc:ro -v /sys:/host/sys:ro -e HOST_PROC=/host/proc -e HOST_SYS=/host/sys -e SERVER_URL="%s" -e SERVER_ID=%d -e AGENT_TOKEN="%s" ghcr.io/mcdonaghmichael/watchtower-agent:latest`, metricURL, s.ID, os.Getenv("AGENT_TOKEN")),
 		}
 		if req.Update {
 			cmds = cmds[1:]

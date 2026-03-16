@@ -1,396 +1,247 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Container, Badge, Button, Card, Row, Col } from "react-bootstrap";
+import React, { useEffect, useState } from "react";
+import { Container, Button, Card, Row, Col, Badge } from "react-bootstrap";
 import apiClient from "../../../api/client";
-import {
-  MaterialReactTable,
-  useMaterialReactTable,
-} from "material-react-table";
-import { ListItemIcon, MenuItem } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import CustomBadge from "../../../components/badges/CustomBadge";
-import EditIcon from '@mui/icons-material/Edit';
+
+const operatorLabel = {
+  "<": "less than", ">": "more than", "=": "equal to", "!=": "not equal to",
+  less_than: "less than", more_than: "more than", equal_to: "equal to", not_equal_to: "not equal to",
+};
+
+const metricLabel = {
+  cpu_usage: "CPU (%)", memory_allocated: "Memory Allocated", memory_allocations: "Memory Allocations",
+  memory_usage: "Memory (%)", swap_used: "Swap Used", swap_total: "Swap Total", swap_free: "Swap Free",
+  cache_memory: "Cache Memory", buffer_memory: "Buffer Memory", disk_usage_total: "Disk Total",
+  disk_usage_used: "Disk Used", disk_usage_free: "Disk Free", disk_usage: "Disk Usage (%)",
+  ssh_connections: "SSH Connections", http_connections: "HTTP Connections",
+  https_connections: "HTTPS Connections", connections: "Connections", uptime_seconds: "Uptime (s)",
+};
+
+const actionColors = {
+  webhook: "#3b82f6", slack_webhook: "#8b5cf6", discord_webhook: "#6366f1",
+  exec_command: "#f59e0b", reboot: "#ef4444",
+};
+
+function formatCondition(cond) {
+  const metric = metricLabel[cond.metric] || cond.metric;
+  const op = operatorLabel[cond.operator] || cond.operator;
+  return `${metric} ${op} ${cond.value}`;
+}
+
+function SummaryCard({ label, value, description }) {
+  return (
+    <Card className="h-100 border-0 shadow-sm" style={{ background: "var(--card)", borderRadius: 12, border: "1px solid var(--border)" }}>
+      <Card.Body className="p-4">
+        <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 6 }}>
+          {label}
+        </div>
+        <div style={{ fontSize: "2rem", fontWeight: 700, color: "var(--text)", lineHeight: 1, marginBottom: 6 }}>
+          {value}
+        </div>
+        <div style={{ fontSize: "0.82rem", color: "var(--muted)" }}>{description}</div>
+      </Card.Body>
+    </Card>
+  );
+}
+
+function GroupCard({ group, onEdit }) {
+  return (
+    <Card className="h-100 border-0 shadow-sm" style={{ background: "var(--card)", borderRadius: 12, border: "1px solid var(--border)" }}>
+      <Card.Header
+        className="d-flex justify-content-between align-items-center"
+        style={{ background: "var(--card)", borderBottom: "1px solid var(--border)", borderRadius: "12px 12px 0 0", padding: "0.85rem 1.1rem" }}
+      >
+        <div>
+          <span style={{ fontWeight: 600, color: "var(--text)" }}>Group #{group.group_id}</span>
+          <div style={{ fontSize: "0.78rem", color: "var(--muted)", marginTop: 2 }}>
+            {group.conditions?.length || 0} condition{group.conditions?.length !== 1 ? "s" : ""} ·{" "}
+            {group.actions?.length || 0} action{group.actions?.length !== 1 ? "s" : ""}
+          </div>
+        </div>
+        <Button
+          size="sm"
+          variant="outline-secondary"
+          onClick={onEdit}
+          style={{ fontSize: "0.78rem", borderRadius: 8 }}
+        >
+          Edit
+        </Button>
+      </Card.Header>
+
+      <Card.Body className="p-3">
+        <div className="mb-3">
+          <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>
+            Conditions
+          </div>
+          {group.conditions?.length > 0 ? (
+            <div className="d-flex flex-column gap-2">
+              {group.conditions.map((cond, i) => (
+                <div key={cond.condition_id || i}>
+                  {i > 0 && (
+                    <div style={{ fontSize: "0.7rem", color: "var(--accent)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", margin: "4px 0", paddingLeft: 8 }}>
+                      {cond.connector || "AND"}
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      background: "rgba(16,163,127,0.06)",
+                      border: "1px solid rgba(16,163,127,0.15)",
+                      borderRadius: 8,
+                      padding: "6px 10px",
+                      fontSize: "0.82rem",
+                      color: "var(--text)",
+                    }}
+                  >
+                    <span style={{ color: "var(--muted)", marginRight: 4 }}>#{cond.condition_id || i + 1}</span>
+                    {formatCondition(cond)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span style={{ fontSize: "0.82rem", color: "var(--muted)" }}>No conditions.</span>
+          )}
+        </div>
+
+        <div>
+          <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>
+            Actions
+          </div>
+          {group.actions?.length > 0 ? (
+            <div className="d-flex flex-wrap gap-2">
+              {group.actions.map((act) => (
+                <span
+                  key={act.action_id}
+                  style={{
+                    background: `${actionColors[act.action] || "#6b7280"}18`,
+                    border: `1px solid ${actionColors[act.action] || "#6b7280"}40`,
+                    color: actionColors[act.action] || "var(--muted)",
+                    borderRadius: 6,
+                    padding: "3px 9px",
+                    fontSize: "0.78rem",
+                    fontWeight: 500,
+                  }}
+                >
+                  {act.action.replace(/_/g, " ")}
+                  {act.value ? ` → ${act.value.length > 24 ? act.value.slice(0, 24) + "…" : act.value}` : ""}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span style={{ fontSize: "0.82rem", color: "var(--muted)" }}>No actions.</span>
+          )}
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
 
 function ServerEventsPage() {
-  const { id } = useParams("id");
-
-  var navigate = useNavigate();
-
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
-  const operatorLabel = {
-    "<": "less than",
-    ">": "more than",
-    "=": "equal to",
-    "!=": "not equal to",
-    less_than: "less than",
-    more_than: "more than",
-    equal_to: "equal to",
-    not_equal_to: "not equal to",
-  };
 
-  const metricLabel = {
-    cpu_usage: "CPU (%)",
-    memory_allocated: "Memory Allocated",
-    memory_allocations: "Memory Allocations",
-    memory_usage: "Memory (%)",
-    swap_used: "Swap Used",
-    swap_total: "Swap Total",
-    swap_free: "Swap Free",
-    cache_memory: "Cache Memory",
-    buffer_memory: "Buffer Memory",
-    disk_usage_total: "Disk Total",
-    disk_usage_used: "Disk Used",
-    disk_usage_free: "Disk Free",
-    disk_usage: "Disk Usage (%)",
-    ssh_connections: "SSH Connections",
-    http_connections: "HTTP Connections",
-    https_connections: "HTTPS Connections",
-    connections: "Connections",
-    uptime_seconds: "Uptime (s)",
-  };
-
- useEffect(() => {
-  const fetchGroupsData = async () => {
-    try {
-      const groupResponse = await apiClient.get(`/group/server/${id}`);
-      const groups = groupResponse.data;
-
-      const groupsWithData = await Promise.all(
-        groups.map(async (group) => {
-          const [conditionResponse, actionResponse] = await Promise.all([
-            apiClient.get(`/condition/group/${group.group_id}`),
-            apiClient.get(`/action/group/${group.group_id}`)
-          ]);
-
-          return {
-            ...group,
-            conditions: conditionResponse.data,
-            actions: actionResponse.data
-          };
-        })
-      );
-
-      console.log(groupsWithData);
-      setGroups(groupsWithData);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  fetchGroupsData();
-}, [id]);
-
-
-  const columns = useMemo(
-    () => [
-      {
-        header: "Group ID",
-        accessorKey: "group_id",
-        size: 10,
-      },
-      {
-        header: "Conditions",
-        accessorKey: "conditions",
-        Cell: ({ cell }) => ((cell.getValue().length > 0) ? <CustomBadge variant={"info"} text={cell.getValue().length} /> : <CustomBadge variant={"secondary"} text={"0"} />)
-      },
-      {
-        header: "Actions",
-        accessorKey: "actions",
-        Cell: ({ cell }) => ((cell.getValue().length > 0) ? <CustomBadge variant={"info"} text={cell.getValue().length} /> : <CustomBadge variant={"secondary"} text={"0"} />)
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const res = await apiClient.get(`/group/server/${id}`);
+        const withData = await Promise.all(
+          res.data.map(async (group) => {
+            const [cRes, aRes] = await Promise.all([
+              apiClient.get(`/condition/group/${group.group_id}`),
+              apiClient.get(`/action/group/${group.group_id}`),
+            ]);
+            return { ...group, conditions: cRes.data, actions: aRes.data };
+          })
+        );
+        setGroups(withData);
+      } catch (err) {
+        console.error(err);
       }
-    ],
-    []
-  );
+    };
+    fetchGroups();
+  }, [id]);
 
-  const totalConditions = groups.reduce(
-    (sum, g) => sum + (g.conditions ? g.conditions.length : 0),
-    0
-  );
-  const totalActions = groups.reduce(
-    (sum, g) => sum + (g.actions ? g.actions.length : 0),
-    0
-  );
-  const actionBreakdown = groups.flatMap((g) => g.actions || []);
-  const popularActions = Array.from(
-    actionBreakdown.reduce((map, act) => {
-      map.set(act.action, (map.get(act.action) || 0) + 1);
-      return map;
-    }, new Map())
-  ).sort((a, b) => b[1] - a[1]);
-
-  const formatCondition = (cond) => {
-    const metric = metricLabel[cond.metric] || cond.metric;
-    const op = operatorLabel[cond.operator] || cond.operator;
-    return `${metric} ${op} ${cond.value}`;
-  };
-const table = useMaterialReactTable({
-    columns,
-    data: groups,
-    enableColumnFilterModes: true,
-    enableColumnOrdering: true,
-    enableGrouping: true,
-    enableColumnPinning: true,
-    enableFacetedValues: true,
-    enableRowActions: true,
-    enableRowSelection: false,
-    enableGlobalFilter: true,
-    initialState: {
-      showColumnFilters: false,
-      showGlobalFilter: false,
-      columnPinning: {
-        left: ["mrt-row-expand", "mrt-row-select"],
-        right: ["mrt-row-actions"],
-      },
-    },
-    paginationDisplayMode: "pages",
-    positionToolbarAlertBanner: "bottom",
-    muiSearchTextFieldProps: {
-      size: "small",
-      variant: "outlined",
-    },
-    muiPaginationProps: {
-      color: "primary",
-      rowsPerPageOptions: [25, 50, 100],
-      shape: "rounded",
-      variant: "outlined",
-    },
-    // Dark mode styling
-    muiTablePaperProps: {
-      sx: {
-        backgroundColor: "#1e1e1e",
-      },
-    },
-    muiTableProps: {
-      sx: {
-        backgroundColor: "#1e1e1e",
-      },
-    },
-    muiTableHeadCellProps: {
-      sx: {
-        backgroundColor: "#2d2d2d",
-        color: "#fff",
-        borderBottom: "1px solid #404040",
-      },
-    },
-    muiTableBodyCellProps: {
-      sx: {
-        backgroundColor: "#1e1e1e",
-        color: "#e0e0e0",
-        borderBottom: "1px solid #404040",
-      },
-    },
-    muiTableBodyRowProps: {
-      sx: {
-        "&:hover": {
-          backgroundColor: "#2d2d2d",
-        },
-      },
-    },
-    muiTopToolbarProps: {
-      sx: {
-        backgroundColor: "#2d2d2d",
-        color: "#fff",
-        "& .MuiIconButton-root": {
-          color: "#fff",
-        },
-        "& .MuiButtonBase-root": {
-          color: "#fff",
-        },
-      },
-    },
-    muiBottomToolbarProps: {
-      sx: {
-        backgroundColor: "#2d2d2d",
-        color: "#fff",
-        "& .MuiTablePagination-root": {
-          color: "#fff",
-        },
-        "& .MuiTablePagination-selectLabel": {
-          color: "#fff",
-        },
-        "& .MuiTablePagination-displayedRows": {
-          color: "#fff",
-        },
-        "& .MuiTablePagination-select": {
-          color: "#fff",
-        },
-        "& .MuiIconButton-root": {
-          color: "#fff",
-        },
-      },
-    },
-    muiRowActionMenuProps: {
-      PaperProps: {
-        sx: {
-          backgroundColor: "#2d2d2d",
-          color: "#fff",
-        },
-      },
-    },
-    mrtTheme: {
-      baseBackgroundColor: "#1e1e1e",
-    },
-    state: {
-      isLoading: false,
-    },
-    renderRowActionMenuItems: ({ row }) => [
-      <MenuItem
-        key="Edit Group"
-        onClick={() => navigate(`/server/events/${id}/edit/${row.original.group_id}`)}
-        sx={{ m: 0, color: "#fff" }}
-      >
-        <ListItemIcon>
-          <EditIcon sx={{ color: "#90caf9" }} />
-        </ListItemIcon>
-        Edit Group
-      </MenuItem>
-    ],
-  });
-
+  const totalConditions = groups.reduce((s, g) => s + (g.conditions?.length || 0), 0);
+  const totalActions = groups.reduce((s, g) => s + (g.actions?.length || 0), 0);
 
   return (
-    <>
-      <Container fluid className="w-75 mt-5">
-        <div className="d-flex justify-content-between align-items-start mb-3">
-          <div>
-            <h2 className="mb-1">Server Events</h2>
-            <p className="text-muted mb-0">
-              Review alert groups, their conditions, and the actions they trigger.
-            </p>
-          </div>
-          <div className="d-flex gap-2">
-            <Button variant="outline-secondary" onClick={() => navigate(`/server/${id}`)}>
-              Back to Server
-            </Button>
+    <Container fluid className="w-75 py-4">
+      {/* Page Header */}
+      <div className="d-flex justify-content-between align-items-start mb-4">
+        <div>
+          <h4 className="mb-1 fw-semibold" style={{ color: "var(--text)" }}>Server Events</h4>
+          <p className="mb-0" style={{ color: "var(--muted)", fontSize: "0.88rem" }}>
+            Alert groups with conditions and the actions they trigger.
+          </p>
+        </div>
+        <div className="d-flex gap-2">
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => navigate(`/server/${id}`)}
+            style={{ borderRadius: 8 }}
+          >
+            ← Back
+          </Button>
+          <Button
+            variant="info"
+            size="sm"
+            className="text-white"
+            onClick={() => navigate(`/server/events/${id}/create`)}
+            style={{ borderRadius: 8 }}
+          >
+            + Create Event
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <Row className="g-3 mb-4">
+        <Col md={4}>
+          <SummaryCard label="Groups" value={groups.length} description="Alert groups configured for this server." />
+        </Col>
+        <Col md={4}>
+          <SummaryCard label="Conditions" value={totalConditions} description="Active checks that trigger actions." />
+        </Col>
+        <Col md={4}>
+          <SummaryCard label="Actions" value={totalActions} description="Responses when conditions are met." />
+        </Col>
+      </Row>
+
+      {/* Group Cards */}
+      {groups.length === 0 ? (
+        <Card className="border-0 shadow-sm" style={{ background: "var(--card)", borderRadius: 12, border: "1px solid var(--border)" }}>
+          <Card.Body className="py-5 text-center">
+            <div style={{ fontSize: "2rem", marginBottom: 12 }}>◎</div>
+            <div style={{ color: "var(--text)", fontWeight: 600, marginBottom: 4 }}>No event groups yet</div>
+            <div style={{ color: "var(--muted)", fontSize: "0.88rem", marginBottom: 16 }}>
+              Create your first event to start monitoring this server.
+            </div>
             <Button
               variant="info"
+              size="sm"
               className="text-white"
               onClick={() => navigate(`/server/events/${id}/create`)}
+              style={{ borderRadius: 8 }}
             >
-              Create Event
+              + Create Event
             </Button>
-          </div>
-        </div>
-
-        <Row className="g-3 mb-4">
-          <Col md={4}>
-            <Card className="shadow-sm h-100">
-              <Card.Body>
-                <small className="text-uppercase text-muted">Groups</small>
-                <h3 className="mb-0">{groups.length || 0}</h3>
-                <p className="text-muted mb-0">Alert groups configured for this server.</p>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={4}>
-            <Card className="shadow-sm h-100">
-              <Card.Body>
-                <small className="text-uppercase text-muted">Conditions</small>
-                <h3 className="mb-0">{totalConditions}</h3>
-                <p className="text-muted mb-0">Active checks that trigger actions.</p>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={4}>
-            <Card className="shadow-sm h-100">
-              <Card.Body>
-                <small className="text-uppercase text-muted">Actions</small>
-                <h3 className="mb-0">{totalActions}</h3>
-                <p className="text-muted mb-1">Responses when conditions match.</p>
-                <div className="d-flex flex-wrap gap-2">
-                  {popularActions.length === 0 && (
-                    <Badge bg="secondary" className="text-uppercase">None</Badge>
-                  )}
-                  {popularActions.slice(0, 3).map(([action, count]) => (
-                    <Badge key={action} bg="info" text="dark">
-                      {action.replace("_", " ")} · {count}
-                    </Badge>
-                  ))}
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-
-        <Card className="shadow-sm mb-4">
-          <Card.Header className="bg-dark text-white d-flex justify-content-between align-items-center">
-            <div>
-              <h5 className="mb-0">Group Overview</h5>
-              <small className="text-white-50">Counts for conditions and actions</small>
-            </div>
-          </Card.Header>
-          <Card.Body className="p-0">
-            <MaterialReactTable table={table} />
           </Card.Body>
         </Card>
-
-        <div className="mb-3">
-          <h5 className="mb-3">Details</h5>
-          {groups.length === 0 && (
-            <Card className="shadow-sm">
-              <Card.Body>
-                <p className="mb-0 text-muted">No event groups yet. Create your first rule to get started.</p>
-              </Card.Body>
-            </Card>
-          )}
-          <Row className="g-3">
-            {groups.map((group) => (
-              <Col md={6} key={group.group_id}>
-                <Card className="shadow-sm h-100">
-                  <Card.Header className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>Group #{group.group_id}</strong>
-                      <div className="text-muted small">
-                        {group.conditions?.length || 0} conditions · {group.actions?.length || 0} actions
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline-primary"
-                      onClick={() => navigate(`/server/events/${id}/edit/${group.group_id}`)}
-                    >
-                      Edit
-                    </Button>
-                  </Card.Header>
-                  <Card.Body>
-                    <div className="mb-3">
-                      <div className="text-uppercase text-muted small mb-1">Conditions</div>
-                      {group.conditions && group.conditions.length > 0 ? (
-                        <ul className="mb-0">
-                          {group.conditions.map((cond) => (
-                            <li key={cond.condition_id} className="mb-1">
-                              <Badge bg="secondary" className="me-2">
-                                #{cond.condition_id || "-"}
-                              </Badge>
-                              {formatCondition(cond)}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-muted">No conditions.</span>
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-uppercase text-muted small mb-1">Actions</div>
-                      {group.actions && group.actions.length > 0 ? (
-                        <div className="d-flex flex-wrap gap-2">
-                          {group.actions.map((act) => (
-                            <Badge key={act.action_id} bg="info" text="dark">
-                              {act.action.replace("_", " ")} {act.value ? `→ ${act.value}` : ""}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-muted">No actions.</span>
-                      )}
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </div>
-      </Container>
-    </>
+      ) : (
+        <Row className="g-3">
+          {groups.map((group) => (
+            <Col md={6} key={group.group_id}>
+              <GroupCard
+                group={group}
+                onEdit={() => navigate(`/server/events/${id}/edit/${group.group_id}`)}
+              />
+            </Col>
+          ))}
+        </Row>
+      )}
+    </Container>
   );
 }
 

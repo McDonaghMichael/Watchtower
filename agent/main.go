@@ -73,6 +73,7 @@ func startStatusServer() {
 func main() {
 	serverURL := os.Getenv("SERVER_URL")
 	serverID, _ := strconv.Atoi(os.Getenv("SERVER_ID"))
+	agentToken := os.Getenv("AGENT_TOKEN")
 
 	go startStatusServer()
 
@@ -137,6 +138,9 @@ func main() {
 			continue
 		}
 		r.Header.Add("Content-Type", "application/json")
+		if agentToken != "" {
+			r.Header.Add("Authorization", "Bearer "+agentToken)
+		}
 
 		client := &http.Client{Timeout: 10 * time.Second}
 		res, err := client.Do(r)

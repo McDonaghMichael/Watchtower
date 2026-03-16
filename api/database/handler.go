@@ -54,8 +54,8 @@ func Connect() {
 	utils.GetConsole().PrintSuccess("Connected to PostgreSQL!")
 }
 
-// resolveDBConfig returns DB credentials from config.db if it exists,
-// otherwise prompts the user interactively and saves the result.
+// resolveDBConfig returns DB credentials, checking in order:
+// 1. config.db (persisted config), 2. environment variables, 3. interactive prompt.
 func resolveDBConfig() (host, port, user, password, name string) {
 	if _, err := os.Stat(configDBPath); err == nil {
 		h, p, u, pw, n, err := loadConfig()
@@ -64,6 +64,20 @@ func resolveDBConfig() (host, port, user, password, name string) {
 			return h, p, u, pw, n
 		}
 		utils.GetConsole().PrintWarning("config.db found but could not be read: %v", err)
+	}
+
+	if h := os.Getenv("DB_HOST"); h != "" {
+		utils.GetConsole().PrintSecondary("Loaded database config from environment variables.")
+		host = h
+		if p := os.Getenv("DB_PORT"); p != "" {
+			port = p
+		} else {
+			port = "5432"
+		}
+		user = os.Getenv("DB_USER")
+		password = os.Getenv("DB_PASSWORD")
+		name = os.Getenv("DB_NAME")
+		return
 	}
 
 	utils.GetConsole().PrintWarning("No config.db found — prompting for database credentials.")

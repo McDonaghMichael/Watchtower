@@ -19,7 +19,8 @@ func RunMachineLearning(testInput []float32) float64 {
 
 	err := onnxruntime.InitializeEnvironment()
 	if err != nil {
-		fmt.Print("❌ Failed to initialize ONNX runtime:", err)
+		log.Printf("❌ Failed to initialize ONNX runtime: %v", err)
+		return 0
 	}
 	defer onnxruntime.DestroyEnvironment()
 
@@ -30,7 +31,6 @@ func RunMachineLearning(testInput []float32) float64 {
 	xScaler, yScaler, err := LoadScalers("models/scalers.json")
 	if err != nil {
 		log.Printf("⚠️ Warning: Could not load scalers: %v", err)
-		log.Println("⚠️ Continuing without scalers (assuming model doesn't need them)")
 		xScaler = nil
 		yScaler = nil
 	} else {
@@ -41,23 +41,23 @@ func RunMachineLearning(testInput []float32) float64 {
 	fmt.Println("\n🤖 Loading ONNX model...")
 	modelStart := time.Now()
 
-	// First, load with basic session to inspect the model
-	inputShape := onnxruntime.NewShape(1, 16) // batch_size=1, features=16
-	outputShape := onnxruntime.NewShape(1, 5) // batch_size=1, outputs=5
+	inputShape := onnxruntime.NewShape(1, 16)
+	outputShape := onnxruntime.NewShape(1, 5)
 
 	inputNames := []string{"input"}
 	outputNames := []string{"output"}
 
-	// Create input and output tensors for session initialization
 	dummyInput, err := onnxruntime.NewEmptyTensor[float32](inputShape)
 	if err != nil {
-		log.Fatal("❌ Failed to create dummy input tensor:", err)
+		log.Printf("❌ Failed to create dummy input tensor: %v", err)
+		return 0
 	}
 	defer dummyInput.Destroy()
 
 	dummyOutput, err := onnxruntime.NewEmptyTensor[float32](outputShape)
 	if err != nil {
-		log.Fatal("❌ Failed to create dummy output tensor:", err)
+		log.Printf("❌ Failed to create dummy output tensor: %v", err)
+		return 0
 	}
 	defer dummyOutput.Destroy()
 
@@ -67,7 +67,8 @@ func RunMachineLearning(testInput []float32) float64 {
 		[]onnxruntime.Value{dummyOutput},
 		nil)
 	if err != nil {
-		log.Fatal("❌ Failed to load model:", err)
+		log.Printf("❌ Failed to load model: %v", err)
+		return 0
 	}
 	defer session.Destroy()
 

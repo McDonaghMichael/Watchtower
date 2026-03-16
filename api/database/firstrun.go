@@ -25,20 +25,37 @@ func FirstRunSetup() {
 	utils.GetConsole().PrintWarning("No admin account found — running first-time setup.")
 	fmt.Println()
 
-	email := promptConfig("Admin email", "")
-	defaultUsername := strings.Split(email, "@")[0]
-	username := promptConfig("Admin username", defaultUsername)
+	var email, username, pw string
 
-	fmt.Print("Admin password: ")
-	pw, _ := readPassword()
-	fmt.Println()
-	fmt.Print("Confirm password: ")
-	pw2, _ := readPassword()
-	fmt.Println()
+	if e := os.Getenv("ADMIN_EMAIL"); e != "" {
+		email = e
+		if u := os.Getenv("ADMIN_USERNAME"); u != "" {
+			username = u
+		} else {
+			username = strings.Split(email, "@")[0]
+		}
+		pw = os.Getenv("ADMIN_PASSWORD")
+		if pw == "" {
+			utils.GetConsole().PrintError("ADMIN_EMAIL set but ADMIN_PASSWORD is missing.")
+			os.Exit(1)
+		}
+		utils.GetConsole().PrintSecondary("Creating admin account from environment variables.")
+	} else {
+		email = promptConfig("Admin email", "")
+		defaultUsername := strings.Split(email, "@")[0]
+		username = promptConfig("Admin username", defaultUsername)
 
-	if pw != pw2 {
-		utils.GetConsole().PrintError("Passwords do not match. Cannot continue.")
-		os.Exit(1)
+		fmt.Print("Admin password: ")
+		pw, _ = readPassword()
+		fmt.Println()
+		fmt.Print("Confirm password: ")
+		pw2, _ := readPassword()
+		fmt.Println()
+
+		if pw != pw2 {
+			utils.GetConsole().PrintError("Passwords do not match. Cannot continue.")
+			os.Exit(1)
+		}
 	}
 
 	hashed, err := utils.HashPassword(pw)

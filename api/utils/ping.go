@@ -1,8 +1,16 @@
 package utils
 
-import "os/exec"
+import (
+	"fmt"
+	"net"
+	"time"
+)
 
 func Ping(host string) ([]byte, error) {
-	output, err := exec.Command("ping", "-c", "3", host).CombinedOutput()
-	return output, err
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:22", host), 5*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	conn.Close()
+	return []byte("ok"), nil
 }
