@@ -12,7 +12,6 @@ function EditServerPage() {
   const { id } = useParams();
   
   const [validated, setValidated] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState({
@@ -113,14 +112,14 @@ function EditServerPage() {
   return (
     <Container className="py-4 w-75">
       <Card className="shadow-lg border-0 bg-dark text-light rounded-4 overflow-hidden">
-        <Card.Header className="bg-gradient bg-dark text-white d-flex justify-content-between align-items-center">
+        <Card.Header className="bg-dark d-flex justify-content-between align-items-center">
           <div>
             <h4 className="mb-0">Edit Server</h4>
             <small className="text-white-50">
               Update connection and metadata for this server.
             </small>
           </div>
-          <Button variant="outline-light" onClick={() => navigate('/servers')}>
+          <Button variant="outline-light" size="sm" onClick={() => navigate('/servers')}>
             Back
           </Button>
         </Card.Header>
@@ -185,24 +184,19 @@ function EditServerPage() {
               <Col md={5}>
                 <Form.Group className="mb-3">
                   <Form.Label className="text-light">SSH Private Key</Form.Label>
-                  <div className="input-group">
-                    <Form.Control
-                      required
-                      as="textarea"  
-                    rows={6}      
-                      type={showPassword ? "text" : "password"}
-                      name="ssh_private_key"
-                      value={formData.ssh_private_key}
-                      onChange={handleInputChange}
-                    />
-                    <Button 
-                      variant="outline-light"
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <i className={`bi bi-eye${showPassword ? '-slash' : ''}`}></i>
-                    </Button>
-                  </div>
+                  <Form.Control
+                    required
+                    type="password"
+                    name="ssh_private_key"
+                    value={formData.ssh_private_key}
+                    onChange={handleInputChange}
+                    placeholder="Paste new key to replace stored key"
+                    style={{ fontFamily: "monospace" }}
+                    autoComplete="new-password"
+                  />
+                  <Form.Text className="text-muted">
+                    <i className="bi bi-lock-fill me-1"></i>Key is stored securely. Paste a new key to replace it.
+                  </Form.Text>
                 </Form.Group>
               </Col>
               <Col md={3}>

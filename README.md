@@ -14,6 +14,22 @@
 
 ---
 
+## Showcase
+
+<div align="center">
+  <img src="images/image-1.png" alt="Screenshot 1" width="49%"/>
+  <img src="images/image-2.png" alt="Screenshot 2" width="49%"/>
+  <img src="images/image-3.png" alt="Screenshot 3" width="49%"/>
+  <img src="images/image-4.png" alt="Screenshot 4" width="49%"/>
+  <img src="images/image-5.png" alt="Screenshot 5" width="49%"/>
+  <img src="images/image-6.png" alt="Screenshot 6" width="49%"/>
+  <img src="images/image-7.png" alt="Screenshot 7" width="49%"/>
+  <img src="images/image-8.png" alt="Screenshot 8" width="49%"/>
+  <img src="images/image-9.png" alt="Screenshot 9" width="49%"/>
+</div>
+
+---
+
 ## Overview
 
 **Watchtower** is a robust, production-grade platform designed to monitor, manage, and automate infrastructure across multiple servers from a single, central dashboard.

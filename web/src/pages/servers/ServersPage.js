@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Container, Button, Card, Row, Col, Badge } from "react-bootstrap";
 import apiClient from "../../api/client";
+import { useTheme } from "../../theme/ThemeProvider";
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -20,6 +21,22 @@ import InstallProgressModal from "../../components/InstallProgressModal";
 
 function ServersPage() {
   var navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  const tc = {
+    paper: isDark ? "#1e1e1e" : "#ffffff",
+    headBg: isDark ? "#2d2d2d" : "#f0f0f0",
+    headText: isDark ? "#ffffff" : "#111111",
+    cellBg: isDark ? "#1e1e1e" : "#ffffff",
+    cellText: isDark ? "#e0e0e0" : "#333333",
+    border: isDark ? "#404040" : "#e0e0e0",
+    hoverBg: isDark ? "#2d2d2d" : "#f5f5f5",
+    toolbarBg: isDark ? "#2d2d2d" : "#f0f0f0",
+    iconColor: isDark ? "#ffffff" : "#333333",
+    menuBg: isDark ? "#2d2d2d" : "#ffffff",
+    menuText: isDark ? "#ffffff" : "#111111",
+  };
 
   const [servers, setServers] = useState([]);
   const [message, setMessage] = useState(null);
@@ -108,9 +125,10 @@ function ServersPage() {
             return <CustomBadge variant={"warning"} text={"WARNING"} />;
           }
 
+          if (!value) return <PingBadge seconds={null} />;
+
           const lastPingTime = new Date(value).getTime();
-          const currentMsDifference = currentTime - lastPingTime;
-          const seconds = currentMsDifference / 1000;
+          const seconds = (currentTime - lastPingTime) / 1000;
           return <PingBadge seconds={Math.abs(Math.floor(seconds))} />;
         },
       },
@@ -157,97 +175,63 @@ function ServersPage() {
       shape: "rounded",
       variant: "outlined",
     },
-    // Dark mode styling
     muiTablePaperProps: {
-      sx: {
-        backgroundColor: "#1e1e1e",
-      },
+      sx: { backgroundColor: tc.paper },
     },
     muiTableProps: {
-      sx: {
-        backgroundColor: "#1e1e1e",
-      },
+      sx: { backgroundColor: tc.paper },
     },
     muiTableHeadCellProps: {
       sx: {
-        backgroundColor: "#2d2d2d",
-        color: "#fff",
-        borderBottom: "1px solid #404040",
+        backgroundColor: tc.headBg,
+        color: tc.headText,
+        borderBottom: `1px solid ${tc.border}`,
       },
-      
     },
     muiTableBodyCellProps: {
       sx: {
-        backgroundColor: "#1e1e1e",
-        color: "#e0e0e0",
-        borderBottom: "1px solid #404040",
-        
+        backgroundColor: tc.cellBg,
+        color: tc.cellText,
+        borderBottom: `1px solid ${tc.border}`,
       },
     },
     muiTableBodyRowProps: {
       sx: {
-        "&:hover": {
-          backgroundColor: "#2d2d2d",
-        },
-        "& .MuiSvgIcon-root": {
-          fill: "#fff",
-          color: "#fff",
-        },
+        "&:hover td": { backgroundColor: tc.hoverBg },
+        "& .MuiSvgIcon-root": { fill: tc.iconColor, color: tc.iconColor },
       },
     },
     muiTopToolbarProps: {
       sx: {
-        backgroundColor: "#2d2d2d",
-        color: "#fff",
-        "& .MuiIconButton-root": {
-          color: "#fff",
-        },
-        "& .MuiButtonBase-root": {
-          color: "#fff",
-        },
-"& .MuiSvgIcon-root": {
-          fill: "#fff",
-          color: "#fff",
-        },
+        backgroundColor: tc.toolbarBg,
+        color: tc.headText,
+        "& .MuiIconButton-root": { color: tc.iconColor },
+        "& .MuiButtonBase-root": { color: tc.iconColor },
+        "& .MuiSvgIcon-root": { fill: tc.iconColor, color: tc.iconColor },
+        "& .MuiInputBase-root": { color: tc.cellText },
+        "& .MuiOutlinedInput-notchedOutline": { borderColor: tc.border },
       },
     },
     muiBottomToolbarProps: {
       sx: {
-        backgroundColor: "#2d2d2d",
-        color: "#fff",
-        "& .MuiTablePagination-root": {
-          color: "#fff",
-        },
-        "& .MuiTablePagination-selectLabel": {
-          color: "#fff",
-        },
-        "& .MuiTablePagination-displayedRows": {
-          color: "#fff",
-        },
-        "& .MuiTablePagination-select": {
-          color: "#fff",
-        },
-        "& .MuiIconButton-root": {
-          color: "#fff",
-        },
-        "& .MuiFormLabel-root": {
-          color: "#fff",
-        },
-        "& .MuiSvgIcon-root": {
-          fill: "#fff",
-        },
+        backgroundColor: tc.toolbarBg,
+        color: tc.headText,
+        "& .MuiTablePagination-root": { color: tc.headText },
+        "& .MuiTablePagination-selectLabel": { color: tc.headText },
+        "& .MuiTablePagination-displayedRows": { color: tc.headText },
+        "& .MuiTablePagination-select": { color: tc.headText },
+        "& .MuiIconButton-root": { color: tc.iconColor },
+        "& .MuiFormLabel-root": { color: tc.headText },
+        "& .MuiSvgIcon-root": { fill: tc.iconColor },
       },
     },
     muiRowActionMenuProps: {
       PaperProps: {
-        sx: {
-          backgroundColor: "#2d2d2d",
-          color: "#fff",
-        },
+        sx: { backgroundColor: tc.menuBg, color: tc.menuText },
       },
     },
     mrtTheme: {
-      baseBackgroundColor: "#1e1e1e",
+      baseBackgroundColor: tc.paper,
     },
     state: {
       isLoading: false,
@@ -257,7 +241,7 @@ function ServersPage() {
         key="install"
         onClick={() => handleInstall(row.original)}
         disabled={installingId === row.original.id}
-        sx={{ m: 0, color: "#fff" }}
+        sx={{ m: 0, color: tc.menuText }}
       >
         <ListItemIcon>
           {row.original.last_ping ? (
@@ -275,7 +259,7 @@ function ServersPage() {
       <MenuItem
         key="ping"
         onClick={() => handlePing(row.original.id)}
-        sx={{ m: 0, color: "#fff" }}
+        sx={{ m: 0, color: tc.menuText }}
       >
         <ListItemIcon>
           <SignalCellularAltIcon sx={{ color: "#4dd0e1" }} />
@@ -285,7 +269,7 @@ function ServersPage() {
       <MenuItem
         key="view_metrics"
         onClick={() => navigate(`/server/metrics/${row.original.id}`)}
-        sx={{ m: 0, color: "#fff" }}
+        sx={{ m: 0, color: tc.menuText }}
       >
         <ListItemIcon>
           <AssessmentIcon sx={{ color: "#ffb74d" }} />
@@ -295,7 +279,7 @@ function ServersPage() {
       <MenuItem
         key="view_events"
         onClick={() => navigate(`/server/events/${row.original.id}`)}
-        sx={{ m: 0, color: "#fff" }}
+        sx={{ m: 0, color: tc.menuText }}
       >
         <ListItemIcon>
           <CelebrationIcon sx={{ color: "#ce93d8" }} />
@@ -305,7 +289,7 @@ function ServersPage() {
       <MenuItem
         key="edit_server"
         onClick={() => navigate(`/server/edit/${row.original.id}`)}
-        sx={{ m: 0, color: "#fff" }}
+        sx={{ m: 0, color: tc.menuText }}
       >
         <ListItemIcon>
           <SettingsIcon sx={{ color: "#9e9e9e" }} />
@@ -388,7 +372,7 @@ function ServersPage() {
     <Container fluid className="w-75 mt-5">
       <div className="d-flex justify-content-between align-items-start mb-3">
         <div>
-          <h2 className="mb-1 text-white">Server Monitoring</h2>
+          <h2 className="mb-1" style={{ color: "var(--text)" }}>Server Monitoring</h2>
           <p className="text-muted mb-0">
             Fleet overview, status, and quick actions.
           </p>
@@ -405,55 +389,55 @@ function ServersPage() {
 
       <Row className="g-3 mb-4">
         <Col md={3}>
-          <Card className="shadow-sm border-0 bg-dark text-light">
+          <Card className="shadow-sm border-0" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
             <Card.Body>
-              <small className="text-uppercase text-muted">Total</small>
-              <h3 className="mb-0">{totalServers}</h3>
-              <p className="text-muted mb-0 small">Servers tracked</p>
+              <small className="text-uppercase" style={{ color: "var(--muted)" }}>Total</small>
+              <h3 className="mb-0" style={{ color: "var(--text)" }}>{totalServers}</h3>
+              <p className="mb-0 small" style={{ color: "var(--muted)" }}>Servers tracked</p>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm border-0 bg-dark text-light">
+          <Card className="shadow-sm border-0" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
             <Card.Body>
-              <small className="text-uppercase text-muted">Online</small>
-              <h3 className="mb-0 text-success">{onlineCount}</h3>
-              <p className="text-muted mb-0 small">Healthy status</p>
+              <small className="text-uppercase" style={{ color: "var(--muted)" }}>Online</small>
+              <h3 className="mb-0" style={{ color: "#7ee787" }}>{onlineCount}</h3>
+              <p className="mb-0 small" style={{ color: "var(--muted)" }}>Healthy status</p>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm border-0 bg-dark text-light">
+          <Card className="shadow-sm border-0" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
             <Card.Body>
-              <small className="text-uppercase text-muted">Offline</small>
-              <h3 className="mb-0 text-danger">{offlineCount}</h3>
-              <p className="text-muted mb-0 small">Unreachable</p>
+              <small className="text-uppercase" style={{ color: "var(--muted)" }}>Offline</small>
+              <h3 className="mb-0" style={{ color: "#ff8a80" }}>{offlineCount}</h3>
+              <p className="mb-0 small" style={{ color: "var(--muted)" }}>Unreachable</p>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm border-0 bg-dark text-light">
+          <Card className="shadow-sm border-0" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
             <Card.Body>
-              <small className="text-uppercase text-muted">Avg Ping</small>
-              <h3 className="mb-0">{Math.max(Math.round(avgPing / 1000), 0)}s</h3>
-              <p className="text-muted mb-0 small">Since last check</p>
+              <small className="text-uppercase" style={{ color: "var(--muted)" }}>Avg Ping</small>
+              <h3 className="mb-0" style={{ color: "var(--text)" }}>{Math.max(Math.round(avgPing / 1000), 0)}s</h3>
+              <p className="mb-0 small" style={{ color: "var(--muted)" }}>Since last check</p>
             </Card.Body>
           </Card>
         </Col>
       </Row>
 
-      <Card className="shadow-sm border-0 bg-dark text-light mb-4">
-        <Card.Header className="bg-dark border-0">
+      <Card className="shadow-sm border-0 mb-4" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <Card.Header className="border-0" style={{ background: "var(--card)", borderBottom: "1px solid var(--border)" }}>
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h5 className="mb-0">Environment Mix</h5>
-              <small className="text-muted">Top environments by count</small>
+              <h5 className="mb-0" style={{ color: "var(--text)" }}>Environment Mix</h5>
+              <small style={{ color: "var(--muted)" }}>Top environments by count</small>
             </div>
           </div>
         </Card.Header>
-        <Card.Body className="bg-dark">
+        <Card.Body style={{ background: "var(--card)" }}>
           {topEnvs.length === 0 && (
-            <p className="text-muted mb-0">No environment data yet.</p>
+            <p className="mb-0" style={{ color: "var(--muted)" }}>No environment data yet.</p>
           )}
           <div className="d-flex flex-wrap gap-2">
             {topEnvs.map(([env, count]) => (
@@ -465,11 +449,11 @@ function ServersPage() {
         </Card.Body>
       </Card>
 
-      <Card className="shadow-sm border-0 bg-dark text-light">
-        <Card.Header className="bg-dark border-0 d-flex justify-content-between align-items-center">
+      <Card className="shadow-sm border-0" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <Card.Header className="border-0 d-flex justify-content-between align-items-center" style={{ background: "var(--card)", borderBottom: "1px solid var(--border)" }}>
           <div>
-            <h5 className="mb-0">Servers</h5>
-            <small className="text-muted">Status, health, and actions</small>
+            <h5 className="mb-0" style={{ color: "var(--text)" }}>Servers</h5>
+            <small style={{ color: "var(--muted)" }}>Status, health, and actions</small>
           </div>
         </Card.Header>
         <Card.Body className="p-0">

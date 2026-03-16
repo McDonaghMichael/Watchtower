@@ -58,3 +58,11 @@
 .custom-badge-other {
   background: linear-gradient(135deg, #1d1d1d, #202020);
 }
+
+.custom-badge-online {
+  background: linear-gradient(135deg, #3ac47d, #2e9f68);
+}
+
+.custom-badge-offline {
+  background: linear-gradient(135deg, #e55039, #b71540);
+}

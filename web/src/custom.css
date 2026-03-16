@@ -143,6 +143,15 @@ body {
 
 [data-theme="dark"] .table {
   color: var(--text) !important;
+  --bs-table-bg: var(--card);
+  --bs-table-color: var(--text);
+  --bs-table-border-color: var(--border);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-hover-color: var(--text);
+  --bs-table-striped-bg: var(--card);
+  --bs-table-striped-color: var(--text);
+  --bs-table-active-bg: rgba(16, 163, 127, 0.12);
+  --bs-table-active-color: var(--text);
 }
 
 [data-theme="dark"] .table-responsive {
@@ -151,8 +160,25 @@ body {
 
 [data-theme="dark"] .table td,
 [data-theme="dark"] .table th {
+  background-color: var(--card) !important;
   color: var(--text) !important;
   border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .table tbody tr {
+  background-color: var(--card) !important;
+  color: var(--text) !important;
+}
+
+[data-theme="dark"] .table-hover > tbody > tr:hover > * {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text) !important;
+}
+
+[data-theme="dark"] .table-active,
+[data-theme="dark"] .table-active > td,
+[data-theme="dark"] .table-active > th {
+  background-color: rgba(16, 163, 127, 0.12) !important;
 }
 
 [data-theme="dark"] .modal-header,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../../../api/client';
+import DisplayCard from '../../../components/notices/DisplayCard';
 
 function EditAccountPage() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ function EditAccountPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState({ show: false, status: 'info', title: '', message: '' });
 
   const [formData, setFormData] = useState({
     username: '',
@@ -64,13 +66,14 @@ function EditAccountPage() {
     }
 
     apiClient.put(`/accounts/${id}`, submitData)
-      .then(res => {
-        console.log('Account updated successfully:', res.data);
-        navigate('/accounts');
+      .then(() => {
+        setNotice({ show: true, status: 'success', title: 'Account updated', message: 'The account details have been saved successfully.' });
       })
       .catch(err => {
+        const msg = err.response?.data?.error || 'Failed to update account. Please try again.';
         console.error('Error updating account:', err);
-        setError(err.response?.data?.error || 'Failed to update account. Please try again.');
+        setError(msg);
+        setNotice({ show: true, status: 'error', title: 'Update failed', message: msg });
       })
       .finally(() => {
         setLoading(false);
@@ -301,6 +304,14 @@ function EditAccountPage() {
           </Form>
         </Card.Body>
       </Card>
+      <DisplayCard
+        show={notice.show}
+        status={notice.status}
+        title={notice.title}
+        message={notice.message}
+        onClose={() => setNotice((prev) => ({ ...prev, show: false }))}
+        primaryAction={{ label: 'Back to Accounts', onClick: () => navigate('/accounts') }}
+      />
     </Container>
   );
 }

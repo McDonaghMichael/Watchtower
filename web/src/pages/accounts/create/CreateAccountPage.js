@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Form, Card, Button, Row, Col, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../../api/client';
+import DisplayCard from '../../../components/notices/DisplayCard';
 
 function CreateAccountPage() {
 
@@ -11,6 +12,7 @@ function CreateAccountPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState({ show: false, status: 'info', title: '', message: '' });
 
   const [formData, setFormData] = useState({
     username: '',
@@ -49,11 +51,13 @@ function CreateAccountPage() {
 
     apiClient.post('/accounts', formData)
       .then(() => {
-        navigate('/accounts');
+        setNotice({ show: true, status: 'success', title: 'Account created', message: 'The new account has been created successfully.' });
       })
       .catch(err => {
+        const msg = err.response?.data?.error || 'Failed to create account. Please try again.';
         console.error('Error creating account:', err);
-        setError(err.response?.data?.error || 'Failed to create account. Please try again.');
+        setError(msg);
+        setNotice({ show: true, status: 'error', title: 'Failed to create account', message: msg });
       })
       .finally(() => {
         setLoading(false);
@@ -285,6 +289,14 @@ function CreateAccountPage() {
           </Form>
         </Card.Body>
       </Card>
+      <DisplayCard
+        show={notice.show}
+        status={notice.status}
+        title={notice.title}
+        message={notice.message}
+        onClose={() => setNotice((prev) => ({ ...prev, show: false }))}
+        primaryAction={notice.status === 'success' ? { label: 'View Accounts', onClick: () => navigate('/accounts') } : undefined}
+      />
     </Container>
   );
 }

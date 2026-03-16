@@ -3,6 +3,7 @@ import { Container, Form, Card, Button, Row, Col, Alert } from "react-bootstrap"
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../../api/client";
 import InstallProgressModal from "../../../components/InstallProgressModal";
+import DisplayCard from "../../../components/notices/DisplayCard";
 
 function AddServerPage() {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ function AddServerPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [progressServer, setProgressServer] = useState(null); // { id, name }
+  const [notice, setNotice] = useState({ show: false, status: "info", title: "", message: "" });
 
   const environments = ["production", "staging", "development", "testing"];
   const operatingSystems = ["Ubuntu", "CentOS", "Debian", "RedHat", "Windows Server", "Other"];
@@ -52,7 +54,9 @@ function AddServerPage() {
       // 3. Show the live progress modal.
       setProgressServer({ id: server.id, name: server.server_name });
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to add server.");
+      const msg = err.response?.data?.error || "Failed to add server.";
+      setError(msg);
+      setNotice({ show: true, status: "error", title: "Failed to add server", message: msg });
     } finally {
       setSaving(false);
     }
@@ -243,6 +247,13 @@ function AddServerPage() {
           setProgressServer(null);
           navigate("/servers");
         }}
+      />
+      <DisplayCard
+        show={notice.show}
+        status={notice.status}
+        title={notice.title}
+        message={notice.message}
+        onClose={() => setNotice((prev) => ({ ...prev, show: false }))}
       />
     </>
   );
