@@ -341,6 +341,61 @@ func Me() gin.HandlerFunc {
 	}
 }
 
+// GenerateAPIToken creates a long-lived token (default 365 days) stored as a session.
+// The token can be revoked like any other session.
+func GenerateAPIToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+		userID := c.GetInt("userID")
+
+		var req struct {
+			TTLDays int    `json:"ttl_days"`
+			Label   string `json:"label"`
+		}
+		_ = c.ShouldBindJSON(&req)
+		if req.TTLDays <= 0 {
+			req.TTLDays = 365
+		}
+		if req.Label == "" {
+			req.Label = "api-token"
+		}
+
+		user, err := findUserByID(ctx, userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load user"})
+			return
+		}
+		user.RolePerms, _ = fetchPermissions(ctx, user.RoleID)
+
+		var sessionID int
+		err = database.Pool.QueryRow(ctx, `
+			INSERT INTO sessions (user_id, token, ip_address, user_agent)
+			VALUES ($1, '', $2, $3) RETURNING id`,
+			userID, c.ClientIP(), "api-token:"+req.Label,
+		).Scan(&sessionID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+			return
+		}
+
+		ttl := time.Duration(req.TTLDays) * 24 * time.Hour
+		token, err := utils.GenerateJWT(user, sessionID, ttl)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+			return
+		}
+		_, _ = database.Pool.Exec(ctx, "UPDATE sessions SET token=$1 WHERE id=$2", token, sessionID)
+
+		utils.LogAudit(c, database.Pool, userID, "generate_api_token", "session", &sessionID, map[string]interface{}{"ttl_days": req.TTLDays, "label": req.Label})
+		c.JSON(http.StatusCreated, gin.H{
+			"token":      token,
+			"session_id": sessionID,
+			"expires_in": req.TTLDays,
+			"label":      req.Label,
+		})
+	}
+}
+
 // BootstrapAdmin allows creation of the first admin account when no users exist.
 func BootstrapAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -7,12 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -101,7 +100,7 @@ func main() {
 
 		metrics := Metrics{
 			ServerID:           serverID,
-			NumOfCPU:           runtime.NumCPU(),
+			NumOfCPU:           getNumCPU(),
 			CPUUsage:           cpuUsage,
 			MemoryAllocated:    int(vmen.Used),
 			MemoryAllocations:  int(vmen.Total),
@@ -168,6 +167,14 @@ func getCPUUsage() (float64, error) {
 		return percentages[0], nil
 	}
 	return 0, nil
+}
+
+func getNumCPU() int {
+	count, err := cpu.Counts(true)
+	if err != nil || count == 0 {
+		return 1
+	}
+	return count
 }
 
 func GetUptime() (time.Duration, error) {

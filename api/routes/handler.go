@@ -13,6 +13,11 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	r.POST("/auth/bootstrap", BootstrapAdmin())
 	r.GET("/auth/permissions", ListPermissions())
 
+	// Authenticated auth routes
+	authPublic := r.Group("")
+	authPublic.Use(AuthMiddleware())
+	authPublic.POST("/auth/api-token", GenerateAPIToken())
+
 	// Authenticated routes
 	auth := r.Group("")
 	auth.Use(AuthMiddleware())
@@ -77,9 +82,10 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	auth.GET("/health/server/:id", GetHealthStatusByServerID())
 	auth.GET("/health", GetLatestHealthStatusAllServers())
 
-	// Agent install/update + live progress stream
+	// Agent install/update + live progress stream + logs
 	auth.POST("/server/:id/install", RequirePermissions("manage_servers"), InstallAgent())
 	auth.GET("/server/:id/install/stream", RequirePermissions("manage_servers"), StreamInstallProgress())
+	auth.GET("/server/:id/agent/logs", RequirePermissions("manage_servers"), StreamAgentLogs())
 
 	// ========== Group Routes ==========
 	auth.POST("/group", addGroup())

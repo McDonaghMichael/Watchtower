@@ -14,10 +14,12 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
+import ArticleIcon from "@mui/icons-material/Article";
 import PingBadge from "../../components/badges/PingBadge";
 import CustomBadge from "../../components/badges/CustomBadge";
 import StatusBadge from "../../components/badges/StatusBadge";
 import InstallProgressModal from "../../components/InstallProgressModal";
+import AgentLogsModal from "../../components/AgentLogsModal";
 
 function ServersPage() {
   var navigate = useNavigate();
@@ -42,6 +44,7 @@ function ServersPage() {
   const [message, setMessage] = useState(null);
   const [installingId, setInstallingId] = useState(null);
   const [progressServer, setProgressServer] = useState(null);
+  const [logsServer, setLogsServer] = useState(null);
 
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -287,6 +290,16 @@ function ServersPage() {
         View Events
       </MenuItem>,
       <MenuItem
+        key="view_logs"
+        onClick={() => setLogsServer({ id: row.original.id, name: row.original.server_name })}
+        sx={{ m: 0, color: tc.menuText }}
+      >
+        <ListItemIcon>
+          <ArticleIcon sx={{ color: "#80cbc4" }} />
+        </ListItemIcon>
+        View Agent Logs
+      </MenuItem>,
+      <MenuItem
         key="edit_server"
         onClick={() => navigate(`/server/edit/${row.original.id}`)}
         sx={{ m: 0, color: tc.menuText }}
@@ -468,6 +481,12 @@ function ServersPage() {
         serverName={progressServer?.name}
         show={Boolean(progressServer)}
         onClose={() => setProgressServer(null)}
+      />
+      <AgentLogsModal
+        serverId={logsServer?.id}
+        serverName={logsServer?.name}
+        show={Boolean(logsServer)}
+        onClose={() => setLogsServer(null)}
       />
     </Container>
   );

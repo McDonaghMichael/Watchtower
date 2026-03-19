@@ -315,6 +315,83 @@ func streamSSHCommands(s models.Server, commands []string, sess *utils.InstallSe
 }
 
 // StreamInstallProgress streams installation log lines as Server-Sent Events.
+// StreamAgentLogs SSHs into the server and streams docker logs for the watchtower-agent container.
+func StreamAgentLogs() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, _ := strconv.Atoi(c.Param("id"))
+
+		var s models.Server
+		err := database.Pool.QueryRow(context.Background(), `
+			SELECT id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port
+			FROM servers WHERE id=$1`, id).Scan(
+			&s.ID, &s.ServerName, &s.IPAddress, &s.SSHUsername, &s.SSHPrivateKey, &s.SSHPort,
+		)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
+			return
+		}
+
+		signer, err := ssh.ParsePrivateKey([]byte(s.SSHPrivateKey))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid ssh key"})
+			return
+		}
+		config := &ssh.ClientConfig{
+			User:            s.SSHUsername,
+			Auth:            []ssh.AuthMethod{ssh.PublicKeys(signer)},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			Timeout:         15 * time.Second,
+		}
+		client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", s.IPAddress, s.SSHPort), config)
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "ssh connection failed"})
+			return
+		}
+		defer client.Close()
+
+		session, err := client.NewSession()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ssh session failed"})
+			return
+		}
+		defer session.Close()
+
+		pr, pw := io.Pipe()
+		session.Stdout = pw
+		session.Stderr = pw
+
+		if err := session.Start("sudo docker logs watchtower-agent --tail 300 2>&1"); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to run docker logs"})
+			return
+		}
+
+		c.Header("X-Accel-Buffering", "no")
+		c.Header("Content-Type", "text/event-stream")
+		c.Header("Cache-Control", "no-cache")
+
+		done := make(chan struct{})
+		go func() {
+			session.Wait()
+			pw.Close()
+			close(done)
+		}()
+
+		scanner := bufio.NewScanner(pr)
+		c.Stream(func(w io.Writer) bool {
+			if scanner.Scan() {
+				c.SSEvent("log", scanner.Text())
+				return true
+			}
+			select {
+			case <-done:
+			default:
+			}
+			c.SSEvent("done", "")
+			return false
+		})
+	}
+}
+
 func StreamInstallProgress() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, _ := strconv.Atoi(c.Param("id"))
