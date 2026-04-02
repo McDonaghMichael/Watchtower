@@ -10,6 +10,7 @@ import AlertDefaultNotice from "../../../components/notices/AlertDefaultNotice";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import { useTheme } from "../../../theme/ThemeProvider";
+import ConsoleModal from "../../../components/ConsoleModal";
 import "./ServerMetricsPage.css";
 
 const DEFAULT_METRIC = {
@@ -75,6 +76,12 @@ function ServerMetricsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [queryLimit, setQueryLimit] = useState(10);
   const [loading, setLoading] = useState(true);
+  const [showConsole, setShowConsole] = useState(false);
+  const [server, setServer] = useState(null);
+
+  useEffect(() => {
+    apiClient.get(`/server/${id}`).then((res) => setServer(res.data)).catch(() => {});
+  }, [id]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -176,6 +183,9 @@ function ServerMetricsPage() {
             </Button>
             <Button variant="info" size="sm" className="text-white" onClick={() => navigate(`/server/events/${id}/create`)}>
               + Create Event
+            </Button>
+            <Button variant="outline-success" size="sm" onClick={() => setShowConsole(true)}>
+              ⌨ Console
             </Button>
           </div>
         </Card.Header>
@@ -392,6 +402,12 @@ function ServerMetricsPage() {
           </Card>
         </Card.Body>
       </Card>
+      <ConsoleModal
+        serverId={id}
+        serverName={server?.server_name || `Server ${id}`}
+        show={showConsole}
+        onClose={() => setShowConsole(false)}
+      />
     </Container>
   );
 }

@@ -651,3 +651,50 @@ func ExecuteSSHCommand(client *ssh.Client, command string) (string, error) {
 
 	return string(output), nil
 }
+
+func ExecCommand() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid server id"})
+			return
+		}
+
+		var req struct {
+			Command string `json:"command"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.Command) == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "command is required"})
+			return
+		}
+
+		var s models.Server
+		err = database.Pool.QueryRow(context.Background(),
+			`SELECT id, server_name, ip_address, ssh_username, ssh_private_key, ssh_port
+			FROM servers WHERE id=$1`, id).Scan(
+			&s.ID, &s.ServerName, &s.IPAddress, &s.SSHUsername, &s.SSHPrivateKey, &s.SSHPort,
+		)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
+			return
+		}
+
+		client, err := EstablishSSHConnection(s)
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+			return
+		}
+		defer client.Close()
+
+		output, err := ExecuteSSHCommand(client, req.Command)
+		if err != nil {
+			// Return output + error so the console still shows partial output
+			c.JSON(http.StatusOK, gin.H{"output": output, "error": err.Error()})
+			return
+		}
+
+		serverIDInt := id
+		utils.LogAudit(c, database.Pool, c.GetInt("userID"), "exec_command", "server", &serverIDInt, map[string]interface{}{"command": req.Command})
+		c.JSON(http.StatusOK, gin.H{"output": output})
+	}
+}

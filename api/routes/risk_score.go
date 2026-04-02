@@ -49,22 +49,22 @@ func GetRiskScoreByServerId() gin.HandlerFunc {
 		}
 
 		res := machinelearning.RunMachineLearning([]float32{
-			float32(m.NumOfCPU),                                 // num_of_cpu
-			float32(m.CPUUsage),                                 // cpu_usage (25% utilization)
-			float32(m.MemoryAllocated),                          // memory_allocated (8 GB)
-			float32(m.MemoryAllocations),                        // memory_allocations
-			float32((m.DiskUsageTotal / m.DiskUsageUsed) * 100), // memory_usage_percent
-			float32(m.DiskUsageTotal),                           // disk_usage_total (250 GB)
-			float32(m.DiskUsageUsed),                            // disk_usage_used (50 GB - 20% full)
-			float32(m.DiskUsageFree),                            // disk_usage_free (200 GB)
-			float32(m.SwapTotal),                                // swap_total (4 GB)
-			float32(m.SwapFree),                                 // swap_free (4 GB - no swap used)
-			float32(m.SwapFree),                                 // swap_used
-			float32(m.CacheMemory),                              // cache_memory
-			float32(m.BufferMemory),                             // buffer_memory
-			float32(m.SSHConnections),                           // ssh_connections
-			float32(m.HTTPConnections),                          // http_connections
-			float32(m.HTTPSConnections),                         // https_connections
+			float32(m.NumOfCPU),            // num_of_cpu
+			float32(m.CPUUsage),            // cpu_usage
+			float32(m.MemoryAllocated),     // memory_allocated
+			float32(m.MemoryAllocations),   // memory_allocations
+			float32(m.MemoryUsagePercent),  // memory_usage_percent
+			float32(m.DiskUsageTotal),      // disk_usage_total
+			float32(m.DiskUsageUsed),       // disk_usage_used
+			float32(m.DiskUsageFree),       // disk_usage_free
+			float32(m.SwapTotal),           // swap_total
+			float32(m.SwapFree),            // swap_free
+			float32(m.SwapUsed),            // swap_used
+			float32(m.CacheMemory),         // cache_memory
+			float32(m.BufferMemory),        // buffer_memory
+			float32(m.SSHConnections),      // ssh_connections
+			float32(m.HTTPConnections),     // http_connections
+			float32(m.HTTPSConnections),    // https_connections
 		})
 
 		c.JSON(http.StatusOK, gin.H{"score": res})

@@ -87,6 +87,9 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	auth.GET("/server/:id/install/stream", RequirePermissions("manage_servers"), StreamInstallProgress())
 	auth.GET("/server/:id/agent/logs", RequirePermissions("manage_servers"), StreamAgentLogs())
 
+	// Remote console
+	auth.POST("/server/:id/exec", RequirePermissions("manage_servers"), ExecCommand())
+
 	// ========== Group Routes ==========
 	auth.POST("/group", addGroup())
 	auth.GET("/group/server/:id", GetGroupsByServerId())

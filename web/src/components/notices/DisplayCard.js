@@ -3,6 +3,7 @@ import { Modal, Button } from "react-bootstrap";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import "./DisplayCard.css";
 
 const statusConfig = {
@@ -24,6 +25,12 @@ const statusConfig = {
     icon: InfoOutlinedIcon,
     title: "Info",
   },
+  warning: {
+    color: "#ffb74d",
+    bg: "rgba(255,183,77,0.08)",
+    icon: WarningAmberIcon,
+    title: "Warning",
+  },
 };
 
 function DisplayCard({
@@ -33,6 +40,7 @@ function DisplayCard({
   message,
   onClose,
   primaryAction,
+  secondaryAction,
 }) {
   const config = statusConfig[status] || statusConfig.info;
   const Icon = config.icon;
@@ -68,11 +76,13 @@ function DisplayCard({
           <Button variant="outline-light" onClick={onClose}>
             Close
           </Button>
+          {secondaryAction && (
+            <Button variant={secondaryAction.variant || "outline-danger"} onClick={secondaryAction.onClick}>
+              {secondaryAction.label}
+            </Button>
+          )}
           {primaryAction && (
-            <Button
-              variant="info"
-              onClick={primaryAction.onClick}
-            >
+            <Button variant="info" onClick={primaryAction.onClick}>
               {primaryAction.label}
             </Button>
           )}

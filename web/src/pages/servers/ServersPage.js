@@ -15,11 +15,13 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
 import ArticleIcon from "@mui/icons-material/Article";
+import DeleteIcon from "@mui/icons-material/Delete";
 import PingBadge from "../../components/badges/PingBadge";
 import CustomBadge from "../../components/badges/CustomBadge";
 import StatusBadge from "../../components/badges/StatusBadge";
 import InstallProgressModal from "../../components/InstallProgressModal";
 import AgentLogsModal from "../../components/AgentLogsModal";
+import DisplayCard from "../../components/notices/DisplayCard";
 
 function ServersPage() {
   var navigate = useNavigate();
@@ -45,6 +47,8 @@ function ServersPage() {
   const [installingId, setInstallingId] = useState(null);
   const [progressServer, setProgressServer] = useState(null);
   const [logsServer, setLogsServer] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteNotice, setDeleteNotice] = useState({ show: false, status: "success", title: "", message: "" });
 
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -309,8 +313,46 @@ function ServersPage() {
         </ListItemIcon>
         Edit Server
       </MenuItem>,
+      <MenuItem
+        key="delete_server"
+        onClick={() => handleDelete(row.original)}
+        sx={{ m: 0, color: "#ef5350" }}
+      >
+        <ListItemIcon>
+          <DeleteIcon sx={{ color: "#ef5350" }} />
+        </ListItemIcon>
+        Delete Server
+      </MenuItem>,
     ],
   });
+
+  const handleDelete = (server) => {
+    setDeleteTarget(server);
+  };
+
+  const confirmDelete = () => {
+    const server = deleteTarget;
+    setDeleteTarget(null);
+    apiClient
+      .delete(`/server/${server.id}`)
+      .then(() => {
+        setServers((prev) => prev.filter((s) => s.id !== server.id));
+        setDeleteNotice({
+          show: true,
+          status: "success",
+          title: "Server deleted",
+          message: `"${server.server_name}" has been permanently removed.`,
+        });
+      })
+      .catch((err) => {
+        setDeleteNotice({
+          show: true,
+          status: "error",
+          title: "Delete failed",
+          message: err.response?.data?.error || "Could not delete this server. Please try again.",
+        });
+      });
+  };
 
   const handleInstall = (server) => {
     setInstallingId(server.id);
@@ -487,6 +529,25 @@ function ServersPage() {
         serverName={logsServer?.name}
         show={Boolean(logsServer)}
         onClose={() => setLogsServer(null)}
+      />
+      <DisplayCard
+        show={Boolean(deleteTarget)}
+        status="warning"
+        title="Delete server?"
+        message={`Are you sure you want to permanently delete "${deleteTarget?.server_name}"? This action cannot be undone.`}
+        onClose={() => setDeleteTarget(null)}
+        secondaryAction={{
+          label: "Delete",
+          variant: "danger",
+          onClick: confirmDelete,
+        }}
+      />
+      <DisplayCard
+        show={deleteNotice.show}
+        status={deleteNotice.status}
+        title={deleteNotice.title}
+        message={deleteNotice.message}
+        onClose={() => setDeleteNotice((prev) => ({ ...prev, show: false }))}
       />
     </Container>
   );
