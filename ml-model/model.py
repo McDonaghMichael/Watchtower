@@ -166,15 +166,15 @@ dummy_input = torch.randn(batch_size, 16, dtype=torch.float32)
 onnx_path = "server_metrics_model.onnx"
 
 torch.onnx.export(
-    model,                    # Your trained model
-    dummy_input,              # Dummy input for tracing
-    onnx_path,               # Output file path
-    export_params=True,      # Store trained parameters
-    opset_version=14,        # ONNX opset version
-    do_constant_folding=True, # Optimize constants
-    input_names=['input'],   # Input name
-    output_names=['output'], # Output name
-    dynamic_axes={           # Dynamic axes for variable batch size
+    model,                 
+    dummy_input,              
+    onnx_path,               
+    export_params=True,     
+    opset_version=14,        
+    do_constant_folding=True, 
+    input_names=['input'],  
+    output_names=['output'], 
+    dynamic_axes={           
         'input': {0: 'batch_size'},
         'output': {0: 'batch_size'}
     }

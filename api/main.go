@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
 	"os"
@@ -78,8 +77,6 @@ func corsMiddleware() gin.HandlerFunc {
 		} else {
 			c.Header("Access-Control-Allow-Origin", "*") // allow debug requests with empty origin
 		}
-
-		fmt.Printf("=== CORS DEBUG 5 ===\n")
 
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")

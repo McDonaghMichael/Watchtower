@@ -48,7 +48,8 @@ func GetRiskScoreByServerId() gin.HandlerFunc {
 			m.Connections = m.HTTPConnections + m.SSHConnections + m.HTTPSConnections
 		}
 
-		res := machinelearning.RunMachineLearning([]float32{
+		// Keep ONNX call for future use
+		_ = machinelearning.RunMachineLearning([]float32{
 			float32(m.NumOfCPU),            // num_of_cpu
 			float32(m.CPUUsage),            // cpu_usage
 			float32(m.MemoryAllocated),     // memory_allocated
@@ -67,6 +68,40 @@ func GetRiskScoreByServerId() gin.HandlerFunc {
 			float32(m.HTTPSConnections),    // https_connections
 		})
 
-		c.JSON(http.StatusOK, gin.H{"score": res})
+		// Inline risk score (0-100) weighted by key metrics
+		var score float64
+
+		// CPU usage: up to 35 points
+		score += m.CPUUsage / 100.0 * 35.0
+
+		// Memory usage: up to 35 points
+		score += m.MemoryUsagePercent / 100.0 * 35.0
+
+		// Disk usage: up to 20 points
+		if m.DiskUsageTotal > 0 {
+			diskPercent := float64(m.DiskUsageUsed) / float64(m.DiskUsageTotal)
+			score += diskPercent * 20.0
+		}
+
+		// Swap usage: up to 7 points
+		if m.SwapTotal > 0 {
+			swapPercent := float64(m.SwapUsed) / float64(m.SwapTotal)
+			score += swapPercent * 7.0
+		}
+
+		// SSH connections: up to 3 points (elevated connections = higher risk)
+		if m.SSHConnections > 10 {
+			score += 3.0
+		} else if m.SSHConnections > 5 {
+			score += 1.5
+		} else if m.SSHConnections > 2 {
+			score += 0.5
+		}
+
+		if score > 100 {
+			score = 100
+		}
+
+		c.JSON(http.StatusOK, gin.H{"score": score})
 	}
 }

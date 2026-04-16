@@ -1,3 +1,5 @@
 /backups
 ./.claude
 ./.vscode
+api/config.db
+/stats
