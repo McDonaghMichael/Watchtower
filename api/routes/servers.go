@@ -226,7 +226,11 @@ func InstallAgent() gin.HandlerFunc {
 		if metricURL == "" {
 			base := os.Getenv("API_PUBLIC_URL")
 			if base == "" {
-				base = fmt.Sprintf("http://%s", c.Request.Host)
+				host := c.Request.Host
+			if !strings.Contains(host, ":") {
+				host = host + ":8080"
+			}
+			base = fmt.Sprintf("http://%s", host)
 			}
 			base = strings.TrimSuffix(base, "/")
 			if !strings.Contains(base, "/api/") {
