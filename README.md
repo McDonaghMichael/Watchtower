@@ -243,24 +243,29 @@ sudo systemctl start caddy && sudo systemctl enable caddy
 
 ### 8. Set up SSH access for remote agent installs
 
-Watchtower SSHes into remote servers to install and manage agents. On each **target/agent server**, generate a key pair and authorise it:
+Watchtower SSHes into remote servers to install and manage agents. Use the included `generate_key.sh` script on each **target/agent server** to generate a key pair:
 
 ```sh
-# Generate key pair on the agent server
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/watchtower_key -N ""
+# Download and run the script on the target server
+bash generate_key.sh
+```
 
-# Authorise the public key so Watchtower can SSH in
-cat ~/.ssh/watchtower_key.pub >> ~/.ssh/authorized_keys
+The script will print the private and public keys, then leave the files at `/tmp/watchtower_key` and `/tmp/watchtower_key.pub`.
+
+Authorise the public key so Watchtower can SSH in:
+
+```sh
+cat /tmp/watchtower_key.pub >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 
-# Print the private key — paste this into the Watchtower UI when adding the server
-cat ~/.ssh/watchtower_key
+# Clean up key files when done
+rm -f /tmp/watchtower_key /tmp/watchtower_key.pub
 ```
 
 Then in the Watchtower UI, when adding a server, provide:
 - The server's **IP address**
-- **SSH username** (e.g. `ubuntu` for Ubuntu AMIs, `ec2-user` for Amazon Linux)
-- The **private key** (copied from `cat ~/.ssh/watchtower_key` above)
+- **SSH username** (e.g. `ubuntu` for Ubuntu AMIs, `root` for most VPS providers)
+- The **private key** (copied from the script output)
 
 ---
 
