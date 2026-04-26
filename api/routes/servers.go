@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -239,11 +241,22 @@ func InstallAgent() gin.HandlerFunc {
 			metricURL = base + "/metric"
 		}
 
+		tokenBytes := make([]byte, 32)
+		if _, err := rand.Read(tokenBytes); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate agent token"})
+			return
+		}
+		agentToken := hex.EncodeToString(tokenBytes)
+		if _, err := database.Pool.Exec(context.Background(), "UPDATE servers SET agent_token = $1 WHERE id = $2", agentToken, s.ID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save agent token"})
+			return
+		}
+
 		cmds := []string{
 			"command -v docker >/dev/null 2>&1 || (curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh)",
 			"sudo docker pull ghcr.io/mcdonaghmichael/watchtower-agent:latest",
 			"sudo docker rm -f watchtower-agent 2>/dev/null || true",
-			fmt.Sprintf(`sudo docker run -d --name watchtower-agent --restart unless-stopped --network host --pid host -v /proc:/host/proc:ro -v /sys:/host/sys:ro -e HOST_PROC=/host/proc -e HOST_SYS=/host/sys -e SERVER_URL="%s" -e SERVER_ID=%d -e AGENT_TOKEN="%s" ghcr.io/mcdonaghmichael/watchtower-agent:latest`, metricURL, s.ID, os.Getenv("AGENT_TOKEN")),
+			fmt.Sprintf(`sudo docker run -d --name watchtower-agent --restart unless-stopped --network host --pid host -v /proc:/host/proc:ro -v /sys:/host/sys:ro -e HOST_PROC=/host/proc -e HOST_SYS=/host/sys -e SERVER_URL="%s" -e SERVER_ID=%d -e AGENT_TOKEN="%s" ghcr.io/mcdonaghmichael/watchtower-agent:latest`, metricURL, s.ID, agentToken),
 		}
 		if req.Update {
 			cmds = cmds[1:]

@@ -13,6 +13,7 @@ type Server struct {
 	Environment     string     `json:"environment"`
 	Location        string     `json:"location"`
 	Description     string     `json:"description"`
+	AgentToken      string     `json:"agent_token,omitempty"`
 	LastPing        *time.Time `json:"last_ping"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`

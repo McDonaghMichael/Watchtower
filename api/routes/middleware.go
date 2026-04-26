@@ -2,7 +2,6 @@ package routes
 
 import (
 	"net/http"
-	"os"
 	"strings"
 	"watchtower/api/database"
 	"watchtower/api/utils"
@@ -101,17 +100,19 @@ func RequirePermissions(perms ...string) gin.HandlerFunc {
 
 func AgentTokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		expected := os.Getenv("AGENT_TOKEN")
-		if expected == "" {
-			c.Next()
-			return
-		}
 		auth := c.GetHeader("Authorization")
 		token := strings.TrimPrefix(auth, "Bearer ")
-		if token != expected {
+		if token == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing agent token"})
+			return
+		}
+		var serverID int
+		err := database.Pool.QueryRow(c, "SELECT id FROM servers WHERE agent_token = $1", token).Scan(&serverID)
+		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid agent token"})
 			return
 		}
+		c.Set("agentServerID", serverID)
 		c.Next()
 	}
 }
