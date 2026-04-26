@@ -14,32 +14,16 @@
 
 ---
 
-## Showcase
-
-<div align="center">
-  <img src="images/image-1.png" alt="Screenshot 1" width="49%"/>
-  <img src="images/image-2.png" alt="Screenshot 2" width="49%"/>
-  <img src="images/image-3.png" alt="Screenshot 3" width="49%"/>
-  <img src="images/image-4.png" alt="Screenshot 4" width="49%"/>
-  <img src="images/image-5.png" alt="Screenshot 5" width="49%"/>
-  <img src="images/image-6.png" alt="Screenshot 6" width="49%"/>
-  <img src="images/image-7.png" alt="Screenshot 7" width="49%"/>
-  <img src="images/image-8.png" alt="Screenshot 8" width="49%"/>
-  <img src="images/image-9.png" alt="Screenshot 9" width="49%"/>
-</div>
-
----
-
 ## Overview
 
 **Watchtower** is a robust, production-grade platform designed to monitor, manage, and automate infrastructure across multiple servers from a single, central dashboard.
 
 It combines:
 
-- **Agent-based data collection** — lightweight Go binaries installed on remote servers
-- **Centralised control** — ReactJS admin dashboard for full visibility and management
-- **Real-time alerting & automation** — Redis + Go worker engine for instant response
-- **Database-backed persistence** — PostgreSQL for storing all configuration, incidents, and logs
+- **Agent-based data collection** - lightweight Go binaries installed on remote servers
+- **Centralised control** - ReactJS admin dashboard for full visibility and management
+- **Real-time alerting & automation** - Redis + Go worker engine for instant response
+- **Database-backed persistence** - PostgreSQL for storing all configuration, incidents, and logs
 
 With Watchtower, users can deploy monitoring agents, collect system metrics, configure custom events, and manage multiple servers from a single dashboard and/or command line interface.
 
@@ -47,7 +31,7 @@ With Watchtower, users can deploy monitoring agents, collect system metrics, con
 
 ## Problem Statement
 
-Modern companies run many servers, services, and jobs. When something goes wrong — server overload, service downtime, security event — teams need:
+Modern companies run many servers, services, and jobs. When something goes wrong - server overload, service downtime, security event - teams need:
 
 - Immediate detection (before users notice)
 - Real-time notifications & escalation
@@ -62,7 +46,51 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 
 ## Architecture
 
-> Diagram: **[View on Draw.io](https://drive.google.com/file/d/1M5uuJO1P3fCySoNSBnkVTFyPqVh9pYCr/view?usp=drive_link)**
+```mermaid
+graph TD
+    API(("REST API"))
+    ML(("Machine Learning"))
+    DB[("PostgreSQL")]
+    REDIS[("Redis")]
+    ONNX{{"ONNX"}}
+    
+    CLI["Command Line Interface Tool"]
+    WEB["WebUI Interface"]
+    
+    AGENTS(("Go Agents"))
+    SRV1["Server"]
+    SRV2["Server"]
+    SRV3["Server"]
+    
+    CMD["Commands"]
+    WEBHOOKS["Webhooks"]
+
+    DB --> ML
+    ML -->|"ML will be done using PyTorch<br/>so I can train it on data from the database<br/>in order to predict outages within the servers<br/>and help take action before it occurs"| DB
+
+    ML -->|"ML Model will get exported to ONNX<br/>so it can be used in to REST API written in GoLang"| ONNX
+    ONNX --> API
+
+    API -->|"Data is written to the database,<br/>but only historical data is fetched, as<br/>live data is fetched from Redis"| DB
+    DB --> API
+
+    API --> REDIS
+    REDIS -->|"Live data is cached to in Redis, so it can<br/>be read to quicker by the API"| API
+
+    CLI -->|"Admins will be given option to either use<br/>a command line interface tool or use a<br/>web interface when interacting with the system tools"| API
+    WEB --> API
+
+    SRV1 -.-> AGENTS
+    SRV2 -.-> AGENTS
+    SRV3 -.-> AGENTS
+    AGENTS -->|"Metrics Data from Servers<br/><br/>Go System deployed<br/>on each of the servers which will<br/>feedback information to the main server"| API
+
+    API -->|"Execute specific commands on<br/>the server when it occurs"| CMD
+    API -->|"Webhooks will allow for system admins<br/>to integrate their own event webhooks<br/>that will execute if conditions are met"| WEBHOOKS
+
+    classDef docker fill:#f0f8ff,stroke:#0db7ed,stroke-width:2px;
+    class ML,CLI,WEB,API,AGENTS docker;
+```
 
 | Component           | Tech Stack                  | Function                                                                 |
 | ------------------- | --------------------------- | ------------------------------------------------------------------------ |
@@ -105,7 +133,7 @@ Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://w
 ### Authenticate with GHCR
 
 ```sh
-echo YOUR_GITHUB_PAT | docker login ghcr.io -u mcdonaghmichael --password-stdin
+echo YOUR_GITHUB_PAT | docker login ghcr.io -u YOUR_USERNAME --password-stdin
 ```
 
 > Your PAT needs scopes: `write:packages`, `read:packages`, `repo`
@@ -243,7 +271,7 @@ sudo systemctl start caddy && sudo systemctl enable caddy
 
 ### 8. Set up SSH access for remote agent installs
 
-Watchtower SSHes into remote servers to install and manage agents. Use the included `generate_key.sh` script on each **target/agent server** to generate a key pair:
+Watchtower SSHes into remote servers to install and manage agents. Use the included `/scripts/generate_key.sh` script on each **target/agent server** to generate a key pair:
 
 ```sh
 # Download and run the script on the target server
@@ -272,6 +300,8 @@ Then in the Watchtower UI, when adding a server, provide:
 ## Running the Agent
 
 The agent runs on each monitored server and sends metrics back to the API. You need the **Server ID** from the Watchtower UI (shown after adding a server).
+
+> This is only for running the Agent manually as the WebUI will allow for it to run automatically
 
 ### Via Docker (recommended for testing)
 
@@ -302,7 +332,7 @@ SERVER_URL="http://<API_HOST>:8080/api/v1/metric" SERVER_ID=<SERVER_ID> go run .
 1. SSH into the new instance: `ssh -i your-key.pem ubuntu@<INSTANCE_IP>`
 2. Install Docker: `curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh`
 3. Authenticate with GHCR (see above)
-4. Generate the SSH key pair and authorise it (see step 8 above) — copy the private key
+4. Generate the SSH key pair and authorise it (see step 8 above) - copy the private key
 5. In the Watchtower UI, add the server with its IP, SSH username, and the private key
 6. Watchtower will install the agent automatically via SSH, **or** run it manually:
    ```sh
@@ -311,3 +341,19 @@ SERVER_URL="http://<API_HOST>:8080/api/v1/metric" SERVER_ID=<SERVER_ID> go run .
      -e SERVER_ID=<SERVER_ID> \
      ghcr.io/mcdonaghmichael/watchtower-agent:latest
    ```
+
+---
+
+## Showcase
+
+<div align="center">
+  <img src="images/image-1.png" alt="Screenshot 1" width="49%"/>
+  <img src="images/image-2.png" alt="Screenshot 2" width="49%"/>
+  <img src="images/image-3.png" alt="Screenshot 3" width="49%"/>
+  <img src="images/image-4.png" alt="Screenshot 4" width="49%"/>
+  <img src="images/image-5.png" alt="Screenshot 5" width="49%"/>
+  <img src="images/image-6.png" alt="Screenshot 6" width="49%"/>
+  <img src="images/image-7.png" alt="Screenshot 7" width="49%"/>
+  <img src="images/image-8.png" alt="Screenshot 8" width="49%"/>
+  <img src="images/image-9.png" alt="Screenshot 9" width="49%"/>
+</div>

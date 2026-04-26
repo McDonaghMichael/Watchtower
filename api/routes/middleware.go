@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"os"
 	"strings"
 	"watchtower/api/database"
 	"watchtower/api/utils"
@@ -95,6 +96,23 @@ func RequirePermissions(perms ...string) gin.HandlerFunc {
 			}
 		}
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	}
+}
+
+func AgentTokenMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		expected := os.Getenv("AGENT_TOKEN")
+		if expected == "" {
+			c.Next()
+			return
+		}
+		auth := c.GetHeader("Authorization")
+		token := strings.TrimPrefix(auth, "Bearer ")
+		if token != expected {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid agent token"})
+			return
+		}
+		c.Next()
 	}
 }
 

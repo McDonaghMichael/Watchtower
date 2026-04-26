@@ -4,7 +4,6 @@ RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Download ONNX Runtime shared library for linux/amd64
 RUN wget -q https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz \
     && tar -xzf onnxruntime-linux-x64-1.20.1.tgz \
     && cp onnxruntime-linux-x64-1.20.1/lib/libonnxruntime.so* /usr/local/lib/ \

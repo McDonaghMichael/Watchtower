@@ -29,8 +29,6 @@ function AuditLogsPage() {
       .finally(() => setLoading(false));
   };
 
-  // initial load once
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(load, []);
 
   const handleChange = (e) => {

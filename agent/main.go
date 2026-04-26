@@ -74,15 +74,45 @@ func main() {
 	serverID, _ := strconv.Atoi(os.Getenv("SERVER_ID"))
 	agentToken := os.Getenv("AGENT_TOKEN")
 
+	log.Printf("Starting Watchtower agent — server_id=%d url=%s token_set=%v", serverID, serverURL, agentToken != "")
+
+	if serverURL == "" {
+		log.Fatal("SERVER_URL is not set")
+	}
+	if serverID == 0 {
+		log.Fatal("SERVER_ID is not set or is 0")
+	}
+
 	go startStatusServer()
 
+	cycle := 0
 	for {
-		vmen, _ := mem.VirtualMemory()
-		swap, _ := mem.SwapMemory()
-		usage, _ := disk.Usage("/")
-		connections, _ := net.Connections("all")
-		uptime, _ := GetUptime()
-		cpuUsage, _ := getCPUUsage()
+		cycle++
+
+		vmen, err := mem.VirtualMemory()
+		if err != nil {
+			log.Printf("[cycle %d] failed to read memory: %v", cycle, err)
+		}
+		swap, err := mem.SwapMemory()
+		if err != nil {
+			log.Printf("[cycle %d] failed to read swap: %v", cycle, err)
+		}
+		usage, err := disk.Usage("/")
+		if err != nil {
+			log.Printf("[cycle %d] failed to read disk: %v", cycle, err)
+		}
+		connections, err := net.Connections("all")
+		if err != nil {
+			log.Printf("[cycle %d] failed to read connections: %v", cycle, err)
+		}
+		uptime, err := GetUptime()
+		if err != nil {
+			log.Printf("[cycle %d] failed to read uptime: %v", cycle, err)
+		}
+		cpuUsage, err := getCPUUsage()
+		if err != nil {
+			log.Printf("[cycle %d] failed to read cpu: %v", cycle, err)
+		}
 
 		sshConns, httpConns, httpsConns := 0, 0, 0
 		for _, conn := range connections {
@@ -119,20 +149,32 @@ func main() {
 			UptimeSeconds:      int64(uptime.Seconds()),
 		}
 
+		log.Printf("[cycle %d] cpu=%.1f%% mem=%.1f%% disk=%dGB/%dGB ssh=%d http=%d https=%d uptime=%s",
+			cycle,
+			metrics.CPUUsage,
+			metrics.MemoryUsagePercent,
+			metrics.DiskUsageUsed/1e9,
+			metrics.DiskUsageTotal/1e9,
+			metrics.SSHConnections,
+			metrics.HTTPConnections,
+			metrics.HTTPSConnections,
+			uptime.Round(time.Second),
+		)
+
 		latestMu.Lock()
 		latestMetrics = &metrics
 		latestMu.Unlock()
 
 		body, err := json.Marshal(metrics)
 		if err != nil {
-			log.Printf("Error marshaling JSON: %v", err)
+			log.Printf("[cycle %d] error marshaling JSON: %v", cycle, err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
 
 		r, err := http.NewRequest("POST", serverURL, bytes.NewBuffer(body))
 		if err != nil {
-			log.Printf("Error creating request: %v", err)
+			log.Printf("[cycle %d] error creating request: %v", cycle, err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -144,14 +186,16 @@ func main() {
 		client := &http.Client{Timeout: 10 * time.Second}
 		res, err := client.Do(r)
 		if err != nil {
-			log.Printf("Error sending metrics: %v", err)
+			log.Printf("[cycle %d] error sending metrics to %s: %v", cycle, serverURL, err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
 		res.Body.Close()
 
-		if res.StatusCode != http.StatusCreated {
-			log.Printf("API returned status %d", res.StatusCode)
+		if res.StatusCode == http.StatusCreated {
+			log.Printf("[cycle %d] metrics sent OK (%d)", cycle, res.StatusCode)
+		} else {
+			log.Printf("[cycle %d] API returned unexpected status %d (url=%s)", cycle, res.StatusCode, serverURL)
 		}
 
 		time.Sleep(5 * time.Second)

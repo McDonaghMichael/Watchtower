@@ -72,15 +72,18 @@ func SetupAPIRoutes(r *gin.RouterGroup) {
 	auth.DELETE("/server/:id", DeleteServer()) // Delete the server given the ID
 
 	// ========== Metrics Routes ==========
-	auth.POST("/metric", AddMetric())
 	auth.GET("/metrics/server/:id", GetMetricsByServerID()) // Gets metrics by server ID
-
-	auth.GET("/risk/server/:id", GetRiskScoreByServerId()) // Gets risk score by server ID
+	auth.GET("/risk/server/:id", GetRiskScoreByServerId())  // Gets risk score by server ID
 
 	// ========== Health Routes ==========
-	auth.POST("/health", addHealthStatus())
 	auth.GET("/health/server/:id", GetHealthStatusByServerID())
 	auth.GET("/health", GetLatestHealthStatusAllServers())
+
+	// ========== Agent Routes (token auth, not JWT) ==========
+	agent := r.Group("")
+	agent.Use(AgentTokenMiddleware())
+	agent.POST("/metric", AddMetric())
+	agent.POST("/health", addHealthStatus())
 
 	// Agent install/update + live progress stream + logs
 	auth.POST("/server/:id/install", RequirePermissions("manage_servers"), InstallAgent())
