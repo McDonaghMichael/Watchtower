@@ -13,6 +13,8 @@
 </div>
 
 - Demonstration Brief Video - [https://youtu.be/cD0AnEx1Bic](https://youtu.be/cD0AnEx1Bic)
+
+> In the case the URL does not work, it is available in the `brief.mp4`
 ---
 
 ## Overview
@@ -39,7 +41,7 @@ Modern companies run many servers, services, and jobs. When something goes wrong
 - Automated recovery workflows
 - Centralised visibility into all incidents
 
-Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://www.datadoghq.com/), and [Ansible](https://docs.ansible.com/) are powerful but expensive and often overly complex for smaller teams.
+Existing tools like [PagerDuty](https://www.pagerduty.com/), [Datadog](https://www.datadoghq.com/), and [New Relic](https://newrelic.com/) are powerful but expensive and often overly complex for smaller teams.
 
 **Watchtower** offers an open-source, lightweight alternative that combines monitoring, incident management, and remote orchestration in one platform.
 
