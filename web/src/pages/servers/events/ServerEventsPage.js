@@ -179,7 +179,7 @@ function ServerEventsPage() {
           <Button
             variant="outline-secondary"
             size="sm"
-            onClick={() => navigate(`/server/${id}`)}
+            onClick={() => navigate(`/server/metrics/${id}`)}
             style={{ borderRadius: 8 }}
           >
             ← Back
