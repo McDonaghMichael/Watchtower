@@ -51,6 +51,7 @@ function LoginPage() {
       })
       .then((res) => {
         setAuth(res.data.token, res.data.user);
+        window.dispatchEvent(new Event('userUpdated'));
         navigate(redirectTo, { replace: true });
       })
       .catch((err) => {

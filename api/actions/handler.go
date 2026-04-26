@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 	"watchtower/api/database"
 	"watchtower/api/models"
@@ -104,20 +105,23 @@ func ExecuteActions() {
 
 	}
 
-	for _, value := range conditionals {
-		var server models.Server = GetServerByID(value.ServerID)
-		if IsConditionCorrect(value.ServerID, value.Metric, value.Value, value.ConditionalID, value.Operation) {
-			executeAction(server, value.Action, value.ActionValue)
-
+	for _, cond := range conditionals {
+		server := GetServerByID(cond.ServerID)
+		if IsConditionCorrect(cond.ServerID, cond.Metric, cond.Value, cond.ConditionalID, cond.Operation) {
+			executeAction(server, cond)
 		}
 	}
 
 }
 
-func executeAction(server models.Server, action string, value string) {
-	switch action {
+func executeAction(server models.Server, cond Conditionals) {
+	switch cond.Action {
 	case "webhook":
-		sendDiscordWebhook(value, "server has err")
+		sendGenericWebhook(cond.ActionValue, fmt.Sprintf("Alert on %s: %s %s %d", server.ServerName, cond.Metric, cond.Operation, cond.Value))
+	case "discord_webhook":
+		if err := sendDiscordWebhook(server, cond); err != nil {
+			fmt.Printf("Discord webhook failed: %v\n", err)
+		}
 	case "reboot":
 		client, err := routes.EstablishSSHConnection(server)
 		if err != nil {
@@ -125,15 +129,9 @@ func executeAction(server models.Server, action string, value string) {
 			return
 		}
 		defer client.Close()
-
-		// Debug: Print the command before executing
-		fmt.Printf("Executing command: %s\n", "reboot")
-
-		// Execute the command and capture output/error
 		output, err := routes.ExecuteSSHCommand(client, "reboot")
 		if err != nil {
-			fmt.Printf("Command execution failed: %v\n", err)
-			fmt.Printf("Command output: %s\n", output)
+			fmt.Printf("Command execution failed: %v\nOutput: %s\n", err, output)
 		} else {
 			fmt.Printf("Command executed successfully. Output: %s\n", output)
 		}
@@ -144,15 +142,9 @@ func executeAction(server models.Server, action string, value string) {
 			return
 		}
 		defer client.Close()
-
-		// Debug: Print the command before executing
-		fmt.Printf("Executing command: %s\n", value)
-
-		// Execute the command and capture output/error
-		output, err := routes.ExecuteSSHCommand(client, value)
+		output, err := routes.ExecuteSSHCommand(client, cond.ActionValue)
 		if err != nil {
-			fmt.Printf("Command execution failed: %v\n", err)
-			fmt.Printf("Command output: %s\n", output)
+			fmt.Printf("Command execution failed: %v\nOutput: %s\n", err, output)
 		} else {
 			fmt.Printf("Command executed successfully. Output: %s\n", output)
 		}
@@ -292,35 +284,99 @@ func hasMetricBeenCondition(conditionID int, metricID int) (bool, error) {
 	return exists, nil
 }
 
-type DiscordWebhook struct {
-	Content string `json:"content"`
+type discordEmbedField struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Inline bool   `json:"inline"`
 }
 
-func sendDiscordWebhook(webhookURL string, message string) error {
-	// Create the webhook payload
-	payload := DiscordWebhook{
-		Content: message,
+type discordEmbed struct {
+	Title       string               `json:"title"`
+	Description string               `json:"description,omitempty"`
+	Color       int                  `json:"color"`
+	Fields      []discordEmbedField  `json:"fields"`
+	Timestamp   string               `json:"timestamp"`
+	Footer      struct{ Text string `json:"text"` } `json:"footer"`
+}
+
+type discordWebhookPayload struct {
+	Embeds []discordEmbed `json:"embeds"`
+}
+
+func sendDiscordWebhook(server models.Server, cond Conditionals) error {
+	parts := strings.SplitN(cond.ActionValue, "|||", 2)
+	webhookURL := strings.TrimSpace(parts[0])
+	customMessage := ""
+	if len(parts) == 2 {
+		customMessage = strings.TrimSpace(parts[1])
 	}
 
-	// Convert to JSON
+	metrics, _ := getMetricsById(cond.ServerID)
+
+	description := customMessage
+	if description == "" {
+		description = fmt.Sprintf("Condition **%s %s %d** was triggered.", cond.Metric, cond.Operation, cond.Value)
+	}
+
+	env := server.Environment
+	if env == "" {
+		env = "unknown"
+	}
+
+	payload := discordWebhookPayload{
+		Embeds: []discordEmbed{
+			{
+				Title:       fmt.Sprintf("⚠️ Alert: %s", server.ServerName),
+				Description: description,
+				Color:       15158332,
+				Fields: []discordEmbedField{
+					{Name: "Server", Value: fmt.Sprintf("%s (%s)", server.ServerName, server.IPAddress), Inline: true},
+					{Name: "Environment", Value: env, Inline: true},
+					{Name: "Condition", Value: fmt.Sprintf("`%s %s %d`", cond.Metric, cond.Operation, cond.Value), Inline: false},
+					{Name: "CPU Usage", Value: fmt.Sprintf("%.1f%%", metrics.CPUUsage), Inline: true},
+					{Name: "Memory Usage", Value: fmt.Sprintf("%.1f%%", metrics.MemoryUsagePercent), Inline: true},
+					{Name: "Disk Used", Value: fmt.Sprintf("%d GB / %d GB", metrics.DiskUsageUsed/1e9, metrics.DiskUsageTotal/1e9), Inline: true},
+					{Name: "SSH Connections", Value: fmt.Sprintf("%d", metrics.SSHConnections), Inline: true},
+				},
+				Timestamp: time.Now().UTC().Format(time.RFC3339),
+			},
+		},
+	}
+	payload.Embeds[0].Footer.Text = "Watchtower Monitoring"
+
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %v", err)
 	}
 
-	// Send HTTP POST request
+	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to send discord webhook: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("discord webhook returned status: %s", resp.Status)
+	}
+
+	fmt.Println("Discord webhook sent successfully!")
+	return nil
+}
+
+func sendGenericWebhook(webhookURL string, message string) error {
+	payload := map[string]string{"content": message}
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %v", err)
+	}
 	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to send webhook: %v", err)
 	}
 	defer resp.Body.Close()
-
-	// Check response status
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("webhook returned status: %s", resp.Status)
 	}
-
-	fmt.Println("Discord webhook sent successfully!")
 	return nil
 }
 

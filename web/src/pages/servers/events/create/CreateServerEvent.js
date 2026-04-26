@@ -110,7 +110,9 @@ function CreateServerEvent() {
         action_id: cond.action_id || null,
         group_id: group.group_id,
         action: cond.action,
-        value: cond.value,
+        value: cond.action === "discord_webhook" && cond.message?.trim()
+          ? `${cond.value}|||${cond.message.trim()}`
+          : cond.value,
       }));
 
       await apiClient.put(`/condition/server/${id}`, payload);
@@ -206,6 +208,21 @@ function CreateServerEvent() {
                               <DeleteIcon fontSize="small" />
                             </Button>
                           </InputGroup>
+                        </Form.Group>
+                      </Col>
+                    )}
+                    {action.action === "discord_webhook" && (
+                      <Col md={12}>
+                        <Form.Group className="mt-1 mb-0">
+                          <Form.Label style={labelStyle}>Custom Message <span style={{ fontWeight: 400 }}>(optional — leave blank for default server details)</span></Form.Label>
+                          <Form.Control
+                            as="textarea"
+                            rows={2}
+                            value={action.message || ""}
+                            onChange={(e) => handleChangeAction(index, "message", e.target.value)}
+                            placeholder="e.g. CPU spike detected, please investigate immediately"
+                            style={{ background: "var(--card)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 8, resize: "none" }}
+                          />
                         </Form.Group>
                       </Col>
                     )}
